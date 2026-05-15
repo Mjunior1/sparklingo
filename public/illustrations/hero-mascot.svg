@@ -1,0 +1,45 @@
+<svg width="560" height="420" viewBox="0 0 560 420" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="58" y1="34" x2="487" y2="357" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F5EFFF"/>
+      <stop offset="1" stop-color="#E2D6FF"/>
+    </linearGradient>
+    <linearGradient id="body" x1="254" y1="108" x2="343" y2="304" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#8F7DFF"/>
+      <stop offset="1" stop-color="#5C37EA"/>
+    </linearGradient>
+    <linearGradient id="pencil" x1="363" y1="76" x2="421" y2="278" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFD55D"/>
+      <stop offset="1" stop-color="#FF9C2A"/>
+    </linearGradient>
+    <filter id="shadow" x="188" y="94" width="210" height="238" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="20" stdDeviation="20" flood-color="#6F55E5" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+  <rect width="560" height="420" rx="36" fill="url(#bg)"/>
+  <circle cx="444" cy="116" r="18" fill="#E4D6FF"/>
+  <circle cx="109" cy="106" r="14" fill="#FFF1A8"/>
+  <circle cx="483" cy="324" r="26" fill="#F7DBFF"/>
+  <circle cx="173" cy="322" r="22" fill="#D8F7FF"/>
+  <g filter="url(#shadow)">
+    <path d="M270 104C240.31 104 216 128.31 216 158V214C216 274.75 265.25 324 326 324H332C369.555 324 400 293.555 400 256V177C400 136.683 367.317 104 327 104H270Z" fill="url(#body)"/>
+  </g>
+  <path d="M258 101L235 76C228 69 229 57 238 51C248 45 261 47 268 55L287 76L258 101Z" fill="#856CF8"/>
+  <path d="M345 102L374 78C382 71 383 58 374 51C364 43 351 46 344 55L318 88L345 102Z" fill="#856CF8"/>
+  <path d="M236 181C236 164.431 249.431 151 266 151H298C314.569 151 328 164.431 328 181V183C328 199.569 314.569 213 298 213H266C249.431 213 236 199.569 236 183V181Z" fill="#6F58EB"/>
+  <circle cx="268" cy="183" r="23" fill="#fff"/>
+  <circle cx="266" cy="182" r="10" fill="#2C255F"/>
+  <circle cx="299" cy="183" r="24" fill="#fff"/>
+  <path d="M287 183C287 170.297 297.297 160 310 160H329C341.703 160 352 170.297 352 183C352 195.703 341.703 206 329 206H310C297.297 206 287 195.703 287 183Z" fill="#F7F3FF"/>
+  <path d="M327 173C331.418 173 335 177.029 335 182C335 186.971 331.418 191 327 191C322.582 191 319 186.971 319 182C319 177.029 322.582 173 327 173Z" fill="#2C255F"/>
+  <path d="M284 216C295.379 216 304.913 224.038 307.225 234.728L278.775 240.272C281.087 229.582 290.621 216 302 216H284Z" fill="#2C255F"/>
+  <path d="M277 241C288.5 254 304.5 258 323 252" stroke="#FFCC7D" stroke-width="11" stroke-linecap="round"/>
+  <path d="M244 232C252 226 263 226 271 232" stroke="#FF8FA1" stroke-width="11" stroke-linecap="round"/>
+  <path d="M328 232C336 226 347 226 355 232" stroke="#FF8FA1" stroke-width="11" stroke-linecap="round"/>
+  <path d="M403 52L441 255" stroke="url(#pencil)" stroke-width="32" stroke-linecap="round"/>
+  <path d="M384 41L422 244" stroke="#39286E" stroke-width="10" stroke-linecap="round"/>
+  <path d="M389 23L421 37L405 58L389 23Z" fill="#1E173E"/>
+  <path d="M426 279L448 257L428 249L426 279Z" fill="#F5C7A0"/>
+  <path d="M118 84C138 73 177 70 195 96C205 110 198 127 181 134C163 141 137 138 122 126C108 115 104 95 118 84Z" fill="#FFE067"/>
+  <text x="150" y="107" text-anchor="middle" fill="#412B71" font-family="Arial, sans-serif" font-size="25" font-weight="700">Let's learn!</text>
+</svg>

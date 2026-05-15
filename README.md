@@ -1,38 +1,51 @@
 # SparkLingo
 
-SparkLingo is a playful English-learning web app with a strong game-like interface inspired by modern mobile learning products.
+SparkLingo é uma plataforma gamificada de inglês com visual forte, cards interativos e exercícios que parecem parte de um jogo.
 
-## What is already implemented
+## O que já está implementado
 
-- immersive dashboard with sidebar, XP, streak and mission widgets
-- responsive lesson and quiz layout inspired by the provided references
-- interactive exercise cards with filters by skill category
-- production-ready React + TypeScript + Vite setup
+- home redesenhada com sidebar, hero ilustrado, trilha de aulas e rail lateral de progresso
+- textos corrigidos em UTF-8
+- estados reais de acerto e erro nas questões de múltipla escolha
+- drag and drop funcional para completar frase
+- ordenação arrastável de palavras
+- pacote inicial de ilustrações locais em `public/illustrations`
 
 ## Stack
 
 - React 18
 - TypeScript
 - Vite 5
-- CSS with custom responsive layout and animation
+- `@dnd-kit` para drag and drop
+- `lucide-react` para ícones
 
-## Run locally
+## Rodar localmente
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Validate
+## Validar
 
 ```bash
 npm run build
 npm run lint
 ```
 
-## Next product steps
+## Geração de artes com API gratuita
 
-- add authentication and student profiles
-- persist XP, streak and lesson progress in a backend
-- add real audio, speaking evaluation and quiz authoring
-- split the prototype into routed pages and reusable feature modules
+O projeto inclui um script para gerar artes com Pollinations:
+
+```bash
+npm run generate:art
+```
+
+Se o endpoint exigir autenticação na sua sessão, defina antes uma chave publicável:
+
+```bash
+$env:POLLINATIONS_KEY="sua-chave"
+npm run generate:art
+```
+
+As saídas vão para `public/pollinations/`.
