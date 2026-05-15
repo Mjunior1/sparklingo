@@ -17,10 +17,12 @@ import {
   RotateCcw,
   Search,
   Sparkles,
+  Star,
   Store,
   Target,
   Trophy,
   UserRound,
+  WandSparkles,
 } from 'lucide-react'
 import { DndContext, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, arrayMove, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
@@ -108,7 +110,7 @@ const navItems: NavItem[] = [
 const dailyMissions = [
   { title: 'Ouça 3 áudios', progress: '2/3', xp: 30, progressValue: 67, icon: Headphones },
   { title: 'Acerte 5 perguntas', progress: '3/5', xp: 40, progressValue: 60, icon: Medal },
-  { title: 'Estude por 15 minutos', progress: '10/15', xp: 20, progressValue: 68, icon: Flame },
+  { title: 'Estude 15 minutos', progress: '10/15', xp: 20, progressValue: 68, icon: Flame },
   { title: 'Complete 1 quiz', progress: '0/1', xp: 50, progressValue: 8, icon: Sparkles },
 ]
 
@@ -165,7 +167,7 @@ const exercises: Exercise[] = [
     artAlt: 'Cachorro cartunesco com fones de ouvido',
     options: ['It is a cat.', 'It is a dog.', 'It is a bird.'],
     correct: 'It is a dog.',
-    explanation: 'O áudio desta demo é ilustrativo, mas o estado da questão já é real.',
+    explanation: 'O áudio desta demo é ilustrativo, mas o estado da questão já responde como produto real.',
     reward: 30,
   },
   {
@@ -235,76 +237,44 @@ function App() {
   const [orderWords, setOrderWords] = useState<string[]>(['you', 'where', 'are', 'from', '?'])
 
   const visibleExercises = useMemo(() => {
-    if (activeFilter === 'Todos') {
-      return exercises
-    }
-
+    if (activeFilter === 'Todos') return exercises
     return exercises.filter((exercise) => exercise.tag === activeFilter)
   }, [activeFilter])
 
   const completedCount = useMemo(() => {
     return exercises.filter((exercise) => {
-      if (exercise.kind === 'multiple-choice') {
-        return choiceAnswers[exercise.id] === exercise.correct
-      }
-
-      if (exercise.kind === 'drag-fill') {
-        return dragFillAnswer === exercise.correct
-      }
-
+      if (exercise.kind === 'multiple-choice') return choiceAnswers[exercise.id] === exercise.correct
+      if (exercise.kind === 'drag-fill') return dragFillAnswer === exercise.correct
       return orderWords.join('|') === exercise.solution.join('|')
     }).length
   }, [choiceAnswers, dragFillAnswer, orderWords])
 
   const totalXp = useMemo(() => {
     let xp = 0
-
     exercises.forEach((exercise) => {
-      if (exercise.kind === 'multiple-choice' && choiceAnswers[exercise.id] === exercise.correct) {
-        xp += exercise.reward
-      }
-
-      if (exercise.kind === 'drag-fill' && dragFillAnswer === exercise.correct) {
-        xp += exercise.reward
-      }
-
-      if (exercise.kind === 'ordering' && orderWords.join('|') === exercise.solution.join('|')) {
-        xp += exercise.reward
-      }
+      if (exercise.kind === 'multiple-choice' && choiceAnswers[exercise.id] === exercise.correct) xp += exercise.reward
+      if (exercise.kind === 'drag-fill' && dragFillAnswer === exercise.correct) xp += exercise.reward
+      if (exercise.kind === 'ordering' && orderWords.join('|') === exercise.solution.join('|')) xp += exercise.reward
     })
-
     return xp
   }, [choiceAnswers, dragFillAnswer, orderWords])
 
   const handleChoiceSelect = (id: MultipleChoiceExercise['id'], option: string) => {
-    setChoiceAnswers((current) => ({
-      ...current,
-      [id]: option,
-    }))
+    setChoiceAnswers((current) => ({ ...current, [id]: option }))
   }
 
   const resetChoice = (id: MultipleChoiceExercise['id']) => {
-    setChoiceAnswers((current) => ({
-      ...current,
-      [id]: null,
-    }))
+    setChoiceAnswers((current) => ({ ...current, [id]: null }))
   }
 
   const handleDragFillEnd = (event: DragEndEvent) => {
     const draggedWord = String(event.active.id)
-    const overId = event.over?.id
-
-    if (overId === 'drag-fill-slot') {
-      setDragFillAnswer(draggedWord)
-    }
+    if (event.over?.id === 'drag-fill-slot') setDragFillAnswer(draggedWord)
   }
 
   const handleOrderingEnd = (event: DragEndEvent) => {
     const { active, over } = event
-
-    if (!over || active.id === over.id) {
-      return
-    }
+    if (!over || active.id === over.id) return
 
     setOrderWords((current) => {
       const oldIndex = current.indexOf(String(active.id))
@@ -318,7 +288,7 @@ function App() {
       <aside className="sidebar">
         <div className="brand-block">
           <div className="brand-mark">
-            <Sparkles size={20} strokeWidth={2.25} />
+            <WandSparkles size={20} strokeWidth={2.25} />
           </div>
           <div>
             <strong>SparkLingo</strong>
@@ -358,8 +328,11 @@ function App() {
           <div className="hero-copy">
             <div className="hero-topbar">
               <div>
-                <p className="micro-label">Hey, learner! 👋</p>
+                <p className="micro-label">Hey, learner!</p>
                 <h1>Vamos turbinar seu inglês hoje?</h1>
+                <p className="hero-subtitle">
+                  Missões curtas, exercícios vivos e uma trilha que parece jogo de verdade.
+                </p>
               </div>
 
               <div className="hero-status">
@@ -388,6 +361,21 @@ function App() {
 
               <div className="gift-chip">
                 <Gift size={22} />
+              </div>
+            </div>
+
+            <div className="hero-badges">
+              <div className="hero-badge">
+                <Star size={16} />
+                <span>7 dias seguidos</span>
+              </div>
+              <div className="hero-badge">
+                <Sparkles size={16} />
+                <span>6 tipos de desafio</span>
+              </div>
+              <div className="hero-badge">
+                <Medal size={16} />
+                <span>Feedback instantâneo</span>
               </div>
             </div>
 
@@ -426,6 +414,9 @@ function App() {
           </div>
 
           <div className="hero-visual">
+            <div className="hero-orb hero-orb-left" />
+            <div className="hero-orb hero-orb-right" />
+            <div className="hero-speech">Let&apos;s learn!</div>
             <img src="/illustrations/hero-mascot.svg" alt="Mascote principal do SparkLingo" />
           </div>
         </section>
@@ -478,6 +469,7 @@ function App() {
 
                   return (
                     <article key={exercise.id} className="exercise-card">
+                      <div className="exercise-glow" />
                       <div className="exercise-head">
                         <span className="exercise-kicker">{exercise.kicker}</span>
                         <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
@@ -547,6 +539,7 @@ function App() {
 
                   return (
                     <article key={exercise.id} className="exercise-card">
+                      <div className="exercise-glow" />
                       <div className="exercise-head">
                         <span className="exercise-kicker">{exercise.kicker}</span>
                         <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
@@ -577,18 +570,19 @@ function App() {
 
                         <div className="token-bank">
                           {exercise.options.map((option) => (
-                            <DraggableToken
-                              key={option}
-                              id={option}
-                              disabled={dragFillAnswer === option}
-                              label={option}
-                            />
+                            <DraggableToken key={option} id={option} disabled={dragFillAnswer === option} label={option} />
                           ))}
                         </div>
                       </DndContext>
 
                       <div className={`feedback-strip${isCorrect ? ' success' : ''}${isWrong ? ' error' : ''}`}>
-                        <span>{isCorrect ? exercise.explanation : isWrong ? `A palavra certa é "${exercise.correct}". ${exercise.explanation}` : 'Arraste uma opção para a lacuna.'}</span>
+                        <span>
+                          {isCorrect
+                            ? exercise.explanation
+                            : isWrong
+                              ? `A palavra certa é "${exercise.correct}". ${exercise.explanation}`
+                              : 'Arraste uma opção para a lacuna.'}
+                        </span>
                         <strong>⚡ {exercise.reward} XP</strong>
                       </div>
                     </article>
@@ -599,6 +593,7 @@ function App() {
 
                 return (
                   <article key={exercise.id} className="exercise-card">
+                    <div className="exercise-glow" />
                     <div className="exercise-head">
                       <span className="exercise-kicker">{exercise.kicker}</span>
                       <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
@@ -657,7 +652,7 @@ function App() {
               <Flame size={44} />
               <strong>12</strong>
               <span>dias</span>
-              <small>Incrível 🔥</small>
+              <small>Incrível</small>
             </article>
 
             <article className="rail-card ranking-card">
@@ -675,9 +670,9 @@ function App() {
             <article className="rail-card badges-card">
               <h3>Conquistas recentes</h3>
               <div className="badge-row">
-                <span className="badge">🎧</span>
-                <span className="badge">⭐</span>
-                <span className="badge">🎯</span>
+                <span className="badge"><Headphones size={22} /></span>
+                <span className="badge"><Star size={22} /></span>
+                <span className="badge"><Target size={22} /></span>
               </div>
               <small>{completedCount} de {exercises.length} desafios concluídos</small>
             </article>
@@ -741,10 +736,7 @@ function App() {
 }
 
 function DraggableToken({ id, label, disabled }: { id: string; label: string; disabled?: boolean }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id,
-    disabled,
-  })
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id, disabled })
 
   return (
     <button
