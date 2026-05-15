@@ -427,7 +427,7 @@
 
 .content-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 290px;
+  grid-template-columns: minmax(0, 1fr);
   gap: 18px;
   align-items: start;
 }
@@ -444,6 +444,11 @@
   gap: 16px;
 }
 
+.lesson-meta {
+  display: grid;
+  gap: 4px;
+}
+
 .lesson-art {
   min-height: 110px;
   border-radius: 24px;
@@ -458,11 +463,13 @@
 .stats-column {
   display: grid;
   gap: 16px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .ring-card,
 .side-highlight {
   padding: 22px;
+  height: 100%;
 }
 
 .progress-ring {
@@ -814,6 +821,10 @@
   .mission-row,
   .footer-widgets {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stats-column {
+    grid-template-columns: 1fr 1fr;
   }
 
   .bottom-nav {
