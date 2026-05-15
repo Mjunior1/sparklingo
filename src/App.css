@@ -5,6 +5,7 @@
   gap: 24px;
   padding: 24px;
   position: relative;
+  overflow-x: clip;
 }
 
 .app-shell::before,
@@ -46,6 +47,7 @@
   position: sticky;
   top: 24px;
   height: calc(100vh - 48px);
+  min-width: 0;
 }
 
 .brand {
@@ -156,6 +158,7 @@
   display: flex;
   flex-direction: column;
   gap: 22px;
+  min-width: 0;
 }
 
 .glass-panel {
@@ -203,6 +206,7 @@
   align-items: flex-start;
   gap: 12px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .status-pill,
@@ -267,6 +271,11 @@
   justify-content: space-between;
   align-items: center;
   gap: 12px;
+}
+
+.journey-header,
+.section-heading {
+  flex-wrap: wrap;
 }
 
 .progress-track,
@@ -745,6 +754,7 @@
   flex-wrap: wrap;
   gap: 10px;
   justify-content: flex-end;
+  min-width: 0;
 }
 
 .filter-chip {
@@ -805,6 +815,10 @@
   .footer-widgets {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .bottom-nav {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 760px) {
@@ -816,11 +830,26 @@
   .sidebar {
     padding: 20px 16px;
     gap: 18px;
+    position: static;
+    height: auto;
   }
 
   .sidebar-nav {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 10px;
+    padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+
+  .sidebar-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-pill {
+    flex: 0 0 auto;
+    white-space: nowrap;
   }
 
   .topbar,
@@ -835,13 +864,46 @@
   .mission-row,
   .lesson-strip,
   .exercise-grid,
-  .footer-widgets,
-  .bottom-nav {
+  .footer-widgets {
     grid-template-columns: 1fr;
   }
 
   .xp-row {
     grid-template-columns: 1fr;
+  }
+
+  .hero-panel,
+  .ring-card,
+  .side-highlight,
+  .exercise-card,
+  .glass-panel,
+  .purple-panel {
+    border-radius: 24px;
+  }
+
+  .hero-panel {
+    padding: 22px 18px;
+  }
+
+  .hero-copy h1,
+  .journey-header h2,
+  .section-heading h2 {
+    font-size: 2rem;
+  }
+
+  .hero-art {
+    order: -1;
+  }
+
+  .mascot-circle {
+    width: min(100%, 260px);
+  }
+
+  .speech-bubble {
+    top: 4%;
+    left: 6%;
+    padding: 12px 14px;
+    font-size: 0.9rem;
   }
 
   .status-pills {
@@ -850,5 +912,69 @@
 
   .content-grid {
     grid-template-columns: 1fr;
+  }
+
+  .stats-column {
+    grid-template-columns: 1fr;
+  }
+
+  .streak-card {
+    display: none;
+  }
+
+  .exercise-card {
+    min-height: auto;
+    padding: 18px;
+  }
+
+  .option-button,
+  .word-chip {
+    padding: 13px 14px;
+  }
+
+  .bottom-nav {
+    position: static;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    padding: 14px;
+  }
+}
+
+@media (max-width: 520px) {
+  .app-shell {
+    padding: 10px;
+  }
+
+  .sidebar,
+  .hero-panel,
+  .mission-card,
+  .lesson-card,
+  .ring-card,
+  .side-highlight,
+  .exercise-card,
+  .mini-stat,
+  .bottom-nav {
+    border-radius: 20px;
+  }
+
+  .brand strong {
+    font-size: 1.55rem;
+  }
+
+  .bottom-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .bottom-nav .play-button {
+    grid-column: 1 / -1;
+  }
+
+  .status-pill,
+  .avatar-pill,
+  .filter-chip {
+    padding: 10px 12px;
+  }
+
+  .exercise-prompt {
+    font-size: 1.08rem;
   }
 }
