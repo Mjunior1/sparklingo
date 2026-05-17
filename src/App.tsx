@@ -137,7 +137,7 @@ const exercises: Exercise[] = [
     artAlt: 'Ilustração colorida de cenário escolar',
     options: ['go', 'goes', 'going', 'gone'],
     correct: 'goes',
-    explanation: 'Com he, she e it, usamos o verbo no present simple com “s”.',
+    explanation: 'Com he, she e it, usamos o verbo no present simple com "s".',
     reward: 25,
   },
   {
@@ -154,7 +154,7 @@ const exercises: Exercise[] = [
     artAlt: 'Ilustração vibrante de montanhas',
     options: ['swim', 'to swim', 'swimming', 'swam'],
     correct: 'swimming',
-    explanation: 'Depois de “enjoy”, o verbo costuma ficar no gerúndio.',
+    explanation: 'Depois de "enjoy", o verbo costuma ficar no gerúndio.',
     reward: 35,
   },
   {
@@ -381,6 +381,11 @@ function App() {
               </div>
             </div>
 
+            <div className="hero-actions">
+              <button className="hero-primary">Começar agora</button>
+              <button className="hero-secondary">Ver trilha</button>
+            </div>
+
             <div className="hero-highlight-row">
               <article className="hero-highlight hero-highlight-gold">
                 <p>Daily Quest</p>
@@ -454,11 +459,12 @@ function App() {
           {lessonCards.map((lesson, index) => (
             <article
               key={lesson.title}
-              className={`lesson-card lesson-tone-${lesson.tone}${index === 0 ? ' is-featured' : ''}`}
+              className={`lesson-card lesson-tone-${lesson.tone}${index === 0 ? ' is-featured' : ''}${index === 1 ? ' is-mid' : ''}`}
             >
               <div className="lesson-copy">
                 <span>{lesson.category}</span>
                 <strong>{lesson.title}</strong>
+                {index === 0 && <p className="lesson-description">Vocabulário visual com cenários, objetos e contexto real.</p>}
               </div>
               <img src={lesson.image} alt={lesson.title} className="lesson-card-image" />
               <div className="track soft">
@@ -494,13 +500,15 @@ function App() {
 
             <div className="exercise-grid">
               {visibleExercises.map((exercise) => {
+                const exerciseTagClass = exercise.tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, '-')
+
                 if (exercise.kind === 'multiple-choice') {
                   const selected = choiceAnswers[exercise.id]
                   const isCorrect = selected === exercise.correct
                   const isWrong = selected !== null && selected !== exercise.correct
 
                   return (
-                    <article key={exercise.id} className="exercise-card">
+                    <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
                       <div className="exercise-glow" />
                       <div className="exercise-head">
                         <span className="exercise-kicker">{exercise.kicker}</span>
@@ -570,7 +578,7 @@ function App() {
                   const isWrong = dragFillAnswer !== null && dragFillAnswer !== exercise.correct
 
                   return (
-                    <article key={exercise.id} className="exercise-card">
+                    <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
                       <div className="exercise-glow" />
                       <div className="exercise-head">
                         <span className="exercise-kicker">{exercise.kicker}</span>
@@ -624,7 +632,7 @@ function App() {
                 const isOrdered = orderWords.join('|') === exercise.solution.join('|')
 
                 return (
-                  <article key={exercise.id} className="exercise-card">
+                  <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
                     <div className="exercise-glow" />
                     <div className="exercise-head">
                       <span className="exercise-kicker">{exercise.kicker}</span>
