@@ -138,9 +138,9 @@
   width: 100%;
   height: 100%;
   display: block;
-  object-fit: contain;
-  transform: scale(1.16) translateY(8px);
-  filter: drop-shadow(0 18px 28px rgba(46, 18, 132, 0.22));
+  object-fit: cover;
+  transform: scale(1.1);
+  filter: drop-shadow(0 18px 28px rgba(46, 18, 132, 0.2));
 }
 
 .sidebar-streak button,
@@ -523,7 +523,7 @@
   width: min(84%, 540px);
   aspect-ratio: 1 / 1;
   border-radius: 42px;
-  overflow: visible;
+  overflow: hidden;
   background:
     radial-gradient(circle at 32% 22%, rgba(255, 255, 255, 0.28), transparent 20%),
     radial-gradient(circle at 50% 82%, rgba(115, 78, 239, 0.18), transparent 28%),
@@ -559,15 +559,15 @@
 
 .hero-mascot-image {
   position: absolute;
-  left: 50%;
-  bottom: 3%;
-  width: 112%;
-  height: 112%;
-  object-fit: contain;
-  transform: translateX(-46%);
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: none;
   filter:
-    drop-shadow(0 10px 0 rgba(120, 90, 228, 0.12))
-    drop-shadow(0 34px 54px rgba(94, 65, 214, 0.3));
+    saturate(1.03)
+    drop-shadow(0 18px 34px rgba(94, 65, 214, 0.12));
   animation: float-soft 4.6s ease-in-out infinite;
   z-index: 2;
 }

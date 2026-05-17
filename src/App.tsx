@@ -122,7 +122,7 @@ const lessonCards: LessonCard[] = [
     category: 'Vocabulário',
     title: 'At the Airport',
     progress: 60,
-    image: '/illustrations/airport-card.svg',
+    image: '/pollinations/airport-card.png',
     tone: 'sky',
     blurb: 'Palavras visuais, objetos reais e micro-histórias para memorizar sem esforço.',
   },
@@ -130,7 +130,7 @@ const lessonCards: LessonCard[] = [
     category: 'Gramática',
     title: 'Present Simple',
     progress: 40,
-    image: '/illustrations/grammar-card.svg',
+    image: '/pollinations/grammar-card.png',
     tone: 'violet',
     blurb: 'Regra rápida, exemplos vivos e desafios curtos que fixam o padrão.',
   },
@@ -138,7 +138,7 @@ const lessonCards: LessonCard[] = [
     category: 'Listening',
     title: 'Daily Routines',
     progress: 20,
-    image: '/illustrations/listening-card.svg',
+    image: '/pollinations/listening-card.png',
     tone: 'mint',
     blurb: 'Áudios curtos e repetição inteligente para treinar ouvido e confiança.',
   },
@@ -155,7 +155,7 @@ const exercises: Exercise[] = [
     kicker: '1. Múltipla escolha',
     title: 'Forma correta',
     prompt: 'What is the correct form?',
-    art: '/illustrations/airport-card.svg',
+    art: '/pollinations/airport-card.png',
     artAlt: 'Ilustração colorida de cenário escolar',
     options: ['go', 'goes', 'going', 'gone'],
     correct: 'goes',
@@ -172,7 +172,7 @@ const exercises: Exercise[] = [
     prompt: 'Complete the sentence.',
     sentenceBefore: 'I enjoy',
     sentenceAfter: 'in the mountains.',
-    art: '/illustrations/mountain-card.svg',
+    art: '/pollinations/mountain-card.png',
     artAlt: 'Ilustração vibrante de montanhas',
     options: ['swim', 'to swim', 'swimming', 'swam'],
     correct: 'swimming',
@@ -187,7 +187,7 @@ const exercises: Exercise[] = [
     kicker: '3. Ouça e escolha',
     title: 'What did you hear?',
     prompt: 'Listen to the audio and choose the answer.',
-    art: '/illustrations/dog-card.svg',
+    art: '/pollinations/dog-card.png',
     artAlt: 'Cachorro cartunesco com fones de ouvido',
     options: ['It is a cat.', 'It is a dog.', 'It is a bird.'],
     correct: 'It is a dog.',
@@ -202,7 +202,7 @@ const exercises: Exercise[] = [
     kicker: '4. Complete com a palavra correta',
     title: 'Futuro com if',
     prompt: 'Fill in the blanks with the correct word.',
-    art: '/illustrations/storm-card.svg',
+    art: '/pollinations/storm-card.png',
     artAlt: 'Nuvem estilizada com relâmpago',
     options: ['will stay', 'stay', 'stayed', 'stays'],
     correct: 'will stay',
@@ -217,7 +217,7 @@ const exercises: Exercise[] = [
     kicker: '5. Ordene as palavras',
     title: 'Monte a frase',
     prompt: 'Put the words in the correct order.',
-    art: '/illustrations/grammar-card.svg',
+    art: '/pollinations/grammar-card.png',
     artAlt: 'Caderno e lápis estilizados',
     scrambled: ['you', 'where', 'are', 'from', '?'],
     solution: ['Where', 'are', 'you', 'from', '?'],
@@ -232,7 +232,7 @@ const exercises: Exercise[] = [
     kicker: '6. Encontre o par',
     title: 'Happy means...',
     prompt: 'Match the word to its meaning.',
-    art: '/illustrations/listening-card.svg',
+    art: '/pollinations/listening-card.png',
     artAlt: 'Headphone brilhante em fundo azul',
     options: ['Grande', 'Rápido', 'Bonito', 'Feliz'],
     correct: 'Feliz',
@@ -339,7 +339,7 @@ function App() {
           </p>
           <strong>12 dias!</strong>
           <div className="sidebar-creature">
-            <img src="/illustrations/mascot-spark-cutout.png" alt="Spark, mascote do SparkLingo" className="sidebar-mascot-image" />
+            <img src="/pollinations/sidebar-mascot.png" alt="Spark, mascote do SparkLingo" className="sidebar-mascot-image" />
           </div>
           <button>Keep going!</button>
         </div>
@@ -428,7 +428,7 @@ function App() {
               <div className="hero-speech hero-speech-top">Let&apos;s learn!</div>
               <div className="hero-speech hero-speech-bottom">Level up!</div>
               <div className="hero-mascot-stage">
-                <img src="/illustrations/mascot-spark-cutout.png" alt="Spark, mascote principal do SparkLingo" className="hero-mascot-image" />
+                <img src="/pollinations/hero-scene.png" alt="Spark em uma cena principal do SparkLingo" className="hero-mascot-image" />
               </div>
               <div className="hero-stat-card hero-stat-card-top">
                 <Zap size={16} />
