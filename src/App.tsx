@@ -339,7 +339,7 @@ function App() {
           </p>
           <strong>12 dias!</strong>
           <div className="sidebar-creature">
-            <img src="/illustrations/mascot-spark.png" alt="Spark, mascote do SparkLingo" className="sidebar-mascot-image" />
+            <img src="/illustrations/mascot-spark-cutout.png" alt="Spark, mascote do SparkLingo" className="sidebar-mascot-image" />
           </div>
           <button>Keep going!</button>
         </div>
@@ -427,7 +427,9 @@ function App() {
               <div className="hero-orb hero-orb-right" />
               <div className="hero-speech hero-speech-top">Let&apos;s learn!</div>
               <div className="hero-speech hero-speech-bottom">Level up!</div>
-              <img src="/illustrations/mascot-spark.png" alt="Spark, mascote principal do SparkLingo" className="hero-mascot-image" />
+              <div className="hero-mascot-stage">
+                <img src="/illustrations/mascot-spark-cutout.png" alt="Spark, mascote principal do SparkLingo" className="hero-mascot-image" />
+              </div>
               <div className="hero-stat-card hero-stat-card-top">
                 <Zap size={16} />
                 <div>
