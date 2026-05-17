@@ -23,6 +23,7 @@ import {
   Trophy,
   UserRound,
   WandSparkles,
+  Zap,
 } from 'lucide-react'
 import { DndContext, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
 import { SortableContext, arrayMove, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
@@ -42,6 +43,7 @@ type LessonCard = {
   title: string
   progress: number
   image: string
+  tone: 'sky' | 'violet' | 'mint'
 }
 
 type MultipleChoiceExercise = {
@@ -115,9 +117,9 @@ const dailyMissions = [
 ]
 
 const lessonCards: LessonCard[] = [
-  { category: 'Vocabulário', title: 'At the Airport', progress: 60, image: '/illustrations/airport-card.svg' },
-  { category: 'Gramática', title: 'Present Simple', progress: 40, image: '/illustrations/grammar-card.svg' },
-  { category: 'Listening', title: 'Daily Routines', progress: 20, image: '/illustrations/listening-card.svg' },
+  { category: 'Vocabulário', title: 'At the Airport', progress: 60, image: '/illustrations/airport-card.svg', tone: 'sky' },
+  { category: 'Gramática', title: 'Present Simple', progress: 40, image: '/illustrations/grammar-card.svg', tone: 'violet' },
+  { category: 'Listening', title: 'Daily Routines', progress: 20, image: '/illustrations/listening-card.svg', tone: 'mint' },
 ]
 
 const filters: FilterKey[] = ['Todos', 'Gramática', 'Vocabulário', 'Listening', 'Reading', 'Speaking']
@@ -379,6 +381,19 @@ function App() {
               </div>
             </div>
 
+            <div className="hero-highlight-row">
+              <article className="hero-highlight hero-highlight-gold">
+                <p>Daily Quest</p>
+                <strong>Complete 3 atividades hoje</strong>
+                <span>Ganhe uma caixa surpresa e mantenha sua streak viva.</span>
+              </article>
+              <article className="hero-highlight hero-highlight-soft">
+                <p>Modo rápido</p>
+                <strong>5 minutos por sessão</strong>
+                <span>Perfeito para estudar entre tarefas sem perder o ritmo.</span>
+              </article>
+            </div>
+
             <div className="mission-band">
               <div className="mission-band-head">
                 <div>
@@ -418,12 +433,29 @@ function App() {
             <div className="hero-orb hero-orb-right" />
             <div className="hero-speech">Let&apos;s learn!</div>
             <img src="/illustrations/hero-mascot.svg" alt="Mascote principal do SparkLingo" />
+            <div className="hero-stat-card hero-stat-card-top">
+              <Zap size={16} />
+              <div>
+                <strong>+120 XP</strong>
+                <span>Semana passada</span>
+              </div>
+            </div>
+            <div className="hero-stat-card hero-stat-card-bottom">
+              <Trophy size={16} />
+              <div>
+                <strong>Top 2</strong>
+                <span>No ranking da turma</span>
+              </div>
+            </div>
           </div>
         </section>
 
         <section className="lesson-showcase">
-          {lessonCards.map((lesson) => (
-            <article key={lesson.title} className="lesson-card">
+          {lessonCards.map((lesson, index) => (
+            <article
+              key={lesson.title}
+              className={`lesson-card lesson-tone-${lesson.tone}${index === 0 ? ' is-featured' : ''}`}
+            >
               <div className="lesson-copy">
                 <span>{lesson.category}</span>
                 <strong>{lesson.title}</strong>

@@ -348,6 +348,61 @@
   color: #5c4f8c;
 }
 
+.hero-highlight-row {
+  display: grid;
+  grid-template-columns: 1.2fr 0.8fr;
+  gap: 14px;
+}
+
+.hero-highlight {
+  padding: 18px;
+  border-radius: 26px;
+  border: 1px solid rgba(123, 93, 231, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.hero-highlight p,
+.hero-highlight span {
+  margin: 0;
+}
+
+.hero-highlight p {
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
+.hero-highlight strong {
+  display: block;
+  margin: 8px 0 6px;
+  font-size: 1.35rem;
+  line-height: 1.15;
+  color: #281f4c;
+}
+
+.hero-highlight span {
+  color: #64598f;
+  line-height: 1.45;
+}
+
+.hero-highlight-gold {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.58), transparent 30%),
+    linear-gradient(135deg, #fff1b9 0%, #ffe49b 42%, #ffd67e 100%);
+}
+
+.hero-highlight-gold p,
+.hero-highlight-gold strong {
+  color: #6a4218;
+}
+
+.hero-highlight-soft {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.66), transparent 30%),
+    linear-gradient(135deg, rgba(237, 231, 255, 0.96), rgba(225, 240, 255, 0.9));
+}
+
 .track,
 .micro-track {
   width: 100%;
@@ -532,6 +587,44 @@
   z-index: 1;
 }
 
+.hero-stat-card {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.92);
+  border: 1px solid rgba(124, 96, 227, 0.12);
+  box-shadow: 0 18px 28px rgba(106, 93, 176, 0.12);
+  color: #31265c;
+}
+
+.hero-stat-card strong,
+.hero-stat-card span {
+  display: block;
+}
+
+.hero-stat-card strong {
+  font-size: 0.98rem;
+}
+
+.hero-stat-card span {
+  color: #7266a0;
+  font-size: 0.8rem;
+}
+
+.hero-stat-card-top {
+  right: 8%;
+  top: 10%;
+}
+
+.hero-stat-card-bottom {
+  left: 6%;
+  bottom: 12%;
+}
+
 .lesson-showcase {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -543,6 +636,8 @@
   display: grid;
   gap: 14px;
   transition: transform 180ms ease, box-shadow 180ms ease;
+  position: relative;
+  overflow: hidden;
 }
 
 .lesson-copy {
@@ -553,6 +648,45 @@
 .lesson-card-image {
   width: 100%;
   border-radius: 22px;
+}
+
+.lesson-tone-sky {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(235, 246, 255, 0.96));
+}
+
+.lesson-tone-violet {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(244, 238, 255, 0.96));
+}
+
+.lesson-tone-mint {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(237, 255, 248, 0.94));
+}
+
+.lesson-card.is-featured {
+  transform-origin: center;
+}
+
+.lesson-card::after {
+  content: '';
+  position: absolute;
+  inset: auto -26px -34px auto;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.lesson-tone-sky::after {
+  background: radial-gradient(circle, rgba(114, 194, 255, 0.42), transparent 70%);
+}
+
+.lesson-tone-violet::after {
+  background: radial-gradient(circle, rgba(171, 131, 255, 0.42), transparent 70%);
+}
+
+.lesson-tone-mint::after {
+  background: radial-gradient(circle, rgba(131, 240, 203, 0.38), transparent 70%);
 }
 
 .dashboard-layout {
@@ -879,6 +1013,9 @@
 .rail-card {
   padding: 18px;
   transition: transform 180ms ease, box-shadow 180ms ease;
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.74), transparent 28%),
+    rgba(255, 255, 255, 0.84);
 }
 
 .progress-card {
@@ -1113,6 +1250,10 @@
   .dashboard-rail {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .hero-highlight-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 1080px) {
@@ -1222,6 +1363,10 @@
     align-items: stretch;
   }
 
+  .hero-highlight-row {
+    grid-template-columns: 1fr;
+  }
+
   .hero-visual {
     min-height: 240px;
   }
@@ -1235,12 +1380,22 @@
     max-width: 360px;
   }
 
+  .hero-stat-card {
+    position: static;
+    margin-top: 8px;
+    width: 100%;
+  }
+
   .lesson-showcase,
   .exercise-grid,
   .mission-grid,
   .dashboard-rail,
   .stats-footer {
     grid-template-columns: 1fr;
+  }
+
+  .lesson-card.is-featured {
+    transform: none;
   }
 
   .exercise-card {
