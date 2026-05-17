@@ -1,11 +1,42 @@
 <svg width="320" height="180" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="320" height="180" rx="28" fill="#EAF6FF"/>
-  <path d="M0 140C54 110 98 118 149 137C188 151 237 161 320 131V180H0V140Z" fill="#D8EEFF"/>
-  <rect x="34" y="92" width="56" height="40" rx="12" fill="#BBD9F6"/>
-  <rect x="46" y="78" width="32" height="14" rx="7" fill="#7FB4F2"/>
-  <path d="M176 45H190L203 132H163L176 45Z" fill="#87B6F4"/>
-  <path d="M186 25C191 25 195 29 195 34V45H177V34C177 29 181 25 186 25Z" fill="#699EF0"/>
-  <path d="M152 117L223 79L251 92L180 129L152 117Z" fill="#6A8AEF"/>
-  <path d="M164 102L227 74L236 79L173 108L164 102Z" fill="#9AB2FF"/>
-  <circle cx="73" cy="67" r="20" fill="#fff" fill-opacity=".7"/>
+  <defs>
+    <linearGradient id="airportBg" x1="28" y1="20" x2="281" y2="176" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EFF8FF"/>
+      <stop offset="1" stop-color="#D8ECFF"/>
+    </linearGradient>
+    <linearGradient id="airportRunway" x1="136" y1="62" x2="248" y2="144" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#97B3FF"/>
+      <stop offset="1" stop-color="#6D7BEE"/>
+    </linearGradient>
+    <linearGradient id="airportTower" x1="180" y1="34" x2="211" y2="130" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#88BCFF"/>
+      <stop offset="1" stop-color="#6392E9"/>
+    </linearGradient>
+    <filter id="airportShadow" x="122" y="54" width="140" height="88" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#7EA3EA" flood-opacity="0.22"/>
+    </filter>
+  </defs>
+
+  <rect width="320" height="180" rx="28" fill="url(#airportBg)"/>
+  <circle cx="59" cy="47" r="23" fill="#FFFFFF" fill-opacity="0.76"/>
+  <circle cx="82" cy="62" r="12" fill="#FFFFFF" fill-opacity="0.58"/>
+  <path d="M0 144C48 114 96 118 144 135C184 149 232 159 320 126V180H0V144Z" fill="#D3EAFD"/>
+  <path d="M0 157C63 141 107 141 149 155C186 167 226 169 320 147V180H0V157Z" fill="#C1E1FA"/>
+
+  <rect x="31" y="88" width="72" height="47" rx="16" fill="#A9CFF4"/>
+  <rect x="47" y="72" width="40" height="18" rx="9" fill="#DFF2FF"/>
+  <rect x="51" y="120" width="32" height="10" rx="5" fill="#92BCE8"/>
+
+  <g filter="url(#airportShadow)">
+    <path d="M138 119L230 77L266 95L174 138L138 119Z" fill="url(#airportRunway)"/>
+    <path d="M156 103L238 66L249 72L166 109L156 103Z" fill="#B4C3FF"/>
+  </g>
+
+  <path d="M185 39H202L215 132H172L185 39Z" fill="url(#airportTower)"/>
+  <path d="M194 22C200 22 205 27 205 33V39H184V33C184 27 189 22 194 22Z" fill="#5791E8"/>
+  <rect x="182" y="72" width="22" height="7" rx="3.5" fill="#D9F1FF"/>
+  <rect x="179" y="88" width="28" height="7" rx="3.5" fill="#D9F1FF"/>
+
+  <path d="M254 49C269 39 292 41 304 55" stroke="#90D3FF" stroke-width="8" stroke-linecap="round"/>
+  <path d="M266 36C281 28 300 29 312 39" stroke="#C5E9FF" stroke-width="6" stroke-linecap="round"/>
 </svg>

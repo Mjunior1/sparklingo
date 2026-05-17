@@ -1,11 +1,26 @@
 <svg width="320" height="180" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="320" height="180" rx="28" fill="#EEF8FF"/>
-  <path d="M83 103C83 67.1015 112.102 38 148 38C183.899 38 213 67.1015 213 103V121H83V103Z" fill="#6F7FF5"/>
-  <rect x="74" y="98" width="38" height="52" rx="18" fill="#2C2F69"/>
-  <rect x="184" y="98" width="38" height="52" rx="18" fill="#2C2F69"/>
-  <rect x="86" y="107" width="17" height="34" rx="8.5" fill="#A9D7FF"/>
-  <rect x="193" y="107" width="17" height="34" rx="8.5" fill="#A9D7FF"/>
-  <circle cx="147" cy="88" r="26" fill="#fff" fill-opacity=".2"/>
-  <path d="M238 58C248 65 255 77 257 92" stroke="#8BD4FF" stroke-width="10" stroke-linecap="round"/>
-  <path d="M257 47C271 57 281 74 284 95" stroke="#8BD4FF" stroke-width="8" stroke-linecap="round"/>
+  <defs>
+    <linearGradient id="listenBg" x1="40" y1="24" x2="282" y2="164" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAF8FF"/>
+      <stop offset="1" stop-color="#D7F2FF"/>
+    </linearGradient>
+    <linearGradient id="listenBand" x1="89" y1="42" x2="211" y2="132" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#798DFF"/>
+      <stop offset="1" stop-color="#5769EB"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="320" height="180" rx="28" fill="url(#listenBg)"/>
+  <circle cx="246" cy="50" r="18" fill="#DFF7FF"/>
+  <circle cx="69" cy="46" r="14" fill="#FFF1AB"/>
+  <path d="M82 104C82 65.3401 113.34 34 152 34C190.66 34 222 65.3401 222 104V122H82V104Z" fill="url(#listenBand)"/>
+  <rect x="70" y="98" width="42" height="56" rx="19" fill="#2B2E63"/>
+  <rect x="192" y="98" width="42" height="56" rx="19" fill="#2B2E63"/>
+  <rect x="82" y="108" width="18" height="35" rx="9" fill="#A5D8FF"/>
+  <rect x="204" y="108" width="18" height="35" rx="9" fill="#A5D8FF"/>
+  <circle cx="152" cy="90" r="28" fill="#FFFFFF" fill-opacity="0.18"/>
+  <circle cx="152" cy="90" r="16" fill="#FFFFFF" fill-opacity="0.16"/>
+  <path d="M245 58C256 66 263 79 266 95" stroke="#89D8FF" stroke-width="10" stroke-linecap="round"/>
+  <path d="M264 48C279 59 288 76 291 97" stroke="#89D8FF" stroke-width="8" stroke-linecap="round"/>
+  <path d="M234 70C241 75 246 83 248 92" stroke="#C4F1FF" stroke-width="6" stroke-linecap="round"/>
 </svg>

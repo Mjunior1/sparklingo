@@ -1517,7 +1517,7 @@
   }
 }
 
-@media (max-width: 1280px) {
+@media (max-width: 1180px) {
   .hero-card,
   .dashboard-layout {
     grid-template-columns: 1fr;

@@ -1,15 +1,37 @@
 <svg width="320" height="180" viewBox="0 0 320 180" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="320" height="180" rx="28" fill="#F2F7FF"/>
-  <rect x="74" y="34" width="108" height="122" rx="16" fill="#fff"/>
-  <rect x="88" y="55" width="78" height="8" rx="4" fill="#D7E6FF"/>
-  <rect x="88" y="75" width="58" height="8" rx="4" fill="#D7E6FF"/>
-  <rect x="88" y="95" width="72" height="8" rx="4" fill="#D7E6FF"/>
-  <rect x="88" y="115" width="48" height="8" rx="4" fill="#D7E6FF"/>
-  <path d="M201 104L234 56L258 77L226 126L199 130L201 104Z" fill="#FF8459"/>
-  <path d="M234 56L243 42L268 59L258 77L234 56Z" fill="#FFCC56"/>
-  <path d="M210 130L200 140L199 130H210Z" fill="#6B5BEF"/>
-  <circle cx="95" cy="49" r="5" fill="#8D74FF"/>
-  <circle cx="95" cy="69" r="5" fill="#8D74FF"/>
-  <circle cx="95" cy="89" r="5" fill="#8D74FF"/>
-  <circle cx="95" cy="109" r="5" fill="#8D74FF"/>
+  <defs>
+    <linearGradient id="grammarBg" x1="34" y1="18" x2="287" y2="167" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7F4FF"/>
+      <stop offset="1" stop-color="#ECE7FF"/>
+    </linearGradient>
+    <linearGradient id="grammarPaper" x1="76" y1="33" x2="173" y2="160" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F6F8FF"/>
+    </linearGradient>
+    <linearGradient id="grammarPencil" x1="206" y1="53" x2="252" y2="135" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFC86C"/>
+      <stop offset="1" stop-color="#FF8757"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="320" height="180" rx="28" fill="url(#grammarBg)"/>
+  <circle cx="260" cy="38" r="18" fill="#FEEBAA"/>
+  <circle cx="73" cy="132" r="28" fill="#E7F4FF"/>
+
+  <rect x="71" y="29" width="110" height="124" rx="22" fill="url(#grammarPaper)" stroke="#E4E8FF"/>
+  <rect x="84" y="52" width="80" height="10" rx="5" fill="#D9E6FF"/>
+  <rect x="84" y="74" width="63" height="10" rx="5" fill="#D9E6FF"/>
+  <rect x="84" y="96" width="74" height="10" rx="5" fill="#D9E6FF"/>
+  <rect x="84" y="118" width="56" height="10" rx="5" fill="#D9E6FF"/>
+  <circle cx="91" cy="46" r="5" fill="#8D74FF"/>
+  <circle cx="91" cy="68" r="5" fill="#8D74FF"/>
+  <circle cx="91" cy="90" r="5" fill="#8D74FF"/>
+  <circle cx="91" cy="112" r="5" fill="#8D74FF"/>
+
+  <path d="M199 109L235 53L263 75L228 130L197 136L199 109Z" fill="url(#grammarPencil)"/>
+  <path d="M235 53L246 36L275 55L263 75L235 53Z" fill="#FFDB6D"/>
+  <path d="M207 135L196 147L197 136L207 135Z" fill="#6452E8"/>
+
+  <path d="M228 36C236 24 252 21 264 29" stroke="#FFD77A" stroke-width="7" stroke-linecap="round"/>
+  <path d="M53 39C65 29 80 27 94 32" stroke="#C4B8FF" stroke-width="7" stroke-linecap="round"/>
 </svg>
