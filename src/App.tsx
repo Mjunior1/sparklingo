@@ -44,6 +44,7 @@ type LessonCard = {
   progress: number
   image: string
   tone: 'sky' | 'violet' | 'mint'
+  blurb: string
 }
 
 type MultipleChoiceExercise = {
@@ -117,9 +118,30 @@ const dailyMissions = [
 ]
 
 const lessonCards: LessonCard[] = [
-  { category: 'Vocabulário', title: 'At the Airport', progress: 60, image: '/illustrations/airport-card.svg', tone: 'sky' },
-  { category: 'Gramática', title: 'Present Simple', progress: 40, image: '/illustrations/grammar-card.svg', tone: 'violet' },
-  { category: 'Listening', title: 'Daily Routines', progress: 20, image: '/illustrations/listening-card.svg', tone: 'mint' },
+  {
+    category: 'Vocabulário',
+    title: 'At the Airport',
+    progress: 60,
+    image: '/illustrations/airport-card.svg',
+    tone: 'sky',
+    blurb: 'Palavras visuais, objetos reais e micro-histórias para memorizar sem esforço.',
+  },
+  {
+    category: 'Gramática',
+    title: 'Present Simple',
+    progress: 40,
+    image: '/illustrations/grammar-card.svg',
+    tone: 'violet',
+    blurb: 'Regra rápida, exemplos vivos e desafios curtos que fixam o padrão.',
+  },
+  {
+    category: 'Listening',
+    title: 'Daily Routines',
+    progress: 20,
+    image: '/illustrations/listening-card.svg',
+    tone: 'mint',
+    blurb: 'Áudios curtos e repetição inteligente para treinar ouvido e confiança.',
+  },
 ]
 
 const filters: FilterKey[] = ['Todos', 'Gramática', 'Vocabulário', 'Listening', 'Reading', 'Speaking']
@@ -333,7 +355,7 @@ function App() {
                 <p className="micro-label">Hey, learner!</p>
                 <h1>Vamos turbinar seu inglês hoje?</h1>
                 <p className="hero-subtitle">
-                  Missões curtas, exercícios vivos e uma trilha que parece jogo de verdade.
+                  Missões curtas, exercícios vivos e uma trilha com energia de jogo, não de dashboard.
                 </p>
               </div>
 
@@ -398,90 +420,128 @@ function App() {
                 <span>Perfeito para estudar entre tarefas sem perder o ritmo.</span>
               </article>
             </div>
+          </div>
 
-            <div className="mission-band">
-              <div className="mission-band-head">
+          <div className="hero-scene">
+            <div className="hero-scene-label">Adventure mode</div>
+            <div className="hero-scene-panel">
+              <div className="hero-orb hero-orb-left" />
+              <div className="hero-orb hero-orb-right" />
+              <div className="hero-speech hero-speech-top">Let&apos;s learn!</div>
+              <div className="hero-speech hero-speech-bottom">Level up!</div>
+              <img src="/illustrations/hero-mascot.svg" alt="Mascote principal do SparkLingo" />
+              <div className="hero-stat-card hero-stat-card-top">
+                <Zap size={16} />
                 <div>
-                  <p className="micro-label">Missões do dia</p>
-                  <h2>Continue sua jornada</h2>
+                  <strong>+120 XP</strong>
+                  <span>Semana passada</span>
                 </div>
-                <button className="ghost-link">Ver todas</button>
               </div>
-
-              <div className="mission-grid">
-                {dailyMissions.map((mission) => {
-                  const Icon = mission.icon
-                  return (
-                    <article key={mission.title} className="mission-tile">
-                      <div className="mission-icon">
-                        <Icon size={18} />
-                      </div>
-                      <div className="mission-content">
-                        <strong>{mission.title}</strong>
-                        <span>{mission.progress}</span>
-                      </div>
-                      <div className="mission-bottom">
-                        <div className="micro-track">
-                          <span style={{ width: `${mission.progressValue}%` }} />
-                        </div>
-                        <small>{mission.xp} XP</small>
-                      </div>
-                    </article>
-                  )
-                })}
+              <div className="hero-stat-card hero-stat-card-bottom">
+                <Trophy size={16} />
+                <div>
+                  <strong>Top 2</strong>
+                  <span>No ranking da turma</span>
+                </div>
               </div>
             </div>
-          </div>
-
-          <div className="hero-visual">
-            <div className="hero-orb hero-orb-left" />
-            <div className="hero-orb hero-orb-right" />
-            <div className="hero-speech">Let&apos;s learn!</div>
-            <img src="/illustrations/hero-mascot.svg" alt="Mascote principal do SparkLingo" />
-            <div className="hero-stat-card hero-stat-card-top">
-              <Zap size={16} />
-              <div>
-                <strong>+120 XP</strong>
-                <span>Semana passada</span>
-              </div>
-            </div>
-            <div className="hero-stat-card hero-stat-card-bottom">
-              <Trophy size={16} />
-              <div>
-                <strong>Top 2</strong>
-                <span>No ranking da turma</span>
-              </div>
+            <div className="hero-scene-footer">
+              <article className="scene-mini-card">
+                <span>⭐ Destaque</span>
+                <strong>Sessão com streak viva</strong>
+              </article>
+              <article className="scene-mini-card">
+                <span>🎯 Meta</span>
+                <strong>Missões do dia em progresso</strong>
+              </article>
             </div>
           </div>
         </section>
 
-        <section className="lesson-showcase">
-          {lessonCards.map((lesson, index) => (
-            <article
-              key={lesson.title}
-              className={`lesson-card lesson-tone-${lesson.tone}${index === 0 ? ' is-featured' : ''}${index === 1 ? ' is-mid' : ''}`}
-            >
-              <div className="lesson-copy">
-                <span>{lesson.category}</span>
-                <strong>{lesson.title}</strong>
-                {index === 0 && <p className="lesson-description">Vocabulário visual com cenários, objetos e contexto real.</p>}
-              </div>
-              <img src={lesson.image} alt={lesson.title} className="lesson-card-image" />
-              <div className="track soft">
-                <div className="track-fill green" style={{ width: `${lesson.progress}%` }} />
-              </div>
-              <small>{lesson.progress}% concluído</small>
-            </article>
-          ))}
+        <section className="journey-section">
+          <div className="section-heading-row">
+            <div>
+              <p className="micro-label">Sua trilha</p>
+              <h2>Continue sua jornada</h2>
+            </div>
+            <div className="journey-meta-pill">
+              <Sparkles size={16} />
+              <span>Escolha uma aula com mais cara de aventura</span>
+            </div>
+          </div>
+
+          <div className="lesson-showcase">
+            {lessonCards.map((lesson, index) => (
+              <article
+                key={lesson.title}
+                className={`lesson-card lesson-tone-${lesson.tone}${index === 0 ? ' is-featured' : ''}${index === 1 ? ' is-mid' : ''}`}
+              >
+                <div className="lesson-copy">
+                  <span>{lesson.category}</span>
+                  <strong>{lesson.title}</strong>
+                  <p className="lesson-description">{lesson.blurb}</p>
+                </div>
+                <img src={lesson.image} alt={lesson.title} className="lesson-card-image" />
+                <div className="track soft">
+                  <div className="track-fill green" style={{ width: `${lesson.progress}%` }} />
+                </div>
+                <small>{lesson.progress}% concluído</small>
+              </article>
+            ))}
+          </div>
         </section>
 
-        <section className="dashboard-layout">
-          <div className="dashboard-main">
-            <div className="section-header">
-              <div>
-                <p className="micro-label">Escolha seu quiz</p>
-                <h2>Aprender com cara de jogo, não de formulário</h2>
-              </div>
+        <section className="mission-band mission-band-standalone">
+          <div className="mission-band-head">
+            <div>
+              <p className="micro-label">Missões do dia</p>
+              <h2>Blocos rápidos para manter ritmo</h2>
+            </div>
+            <button className="ghost-link">Ver todas</button>
+          </div>
+
+          <div className="mission-grid">
+            {dailyMissions.map((mission) => {
+              const Icon = mission.icon
+              return (
+                <article key={mission.title} className="mission-tile">
+                  <div className="mission-icon">
+                    <Icon size={18} />
+                  </div>
+                  <div className="mission-content">
+                    <strong>{mission.title}</strong>
+                    <span>{mission.progress}</span>
+                  </div>
+                  <div className="mission-bottom">
+                    <div className="micro-track">
+                      <span style={{ width: `${mission.progressValue}%` }} />
+                    </div>
+                    <small>{mission.xp} XP</small>
+                  </div>
+                </article>
+              )
+            })}
+          </div>
+        </section>
+
+        <section className="quiz-zone">
+          <div className="quiz-zone-hero">
+            <div>
+              <p className="micro-label">Escolha seu quiz</p>
+              <h2>Aprender com cara de jogo, não de formulário</h2>
+              <p className="quiz-zone-copy">
+                Um catálogo de desafios com visuais vivos, feedback imediato e microvitórias espalhadas pela jornada.
+              </p>
+            </div>
+
+            <div className="quiz-zone-chip">
+              <Target size={18} />
+              <span>Desafios curtos, ritmo alto, impacto visual maior</span>
+            </div>
+          </div>
+
+          <div className="dashboard-layout">
+            <div className="dashboard-main">
               <div className="filter-row">
                 {filters.map((filter) => (
                   <button
@@ -496,86 +556,139 @@ function App() {
                   <Search size={16} />
                 </button>
               </div>
-            </div>
 
-            <div className="exercise-grid">
-              {visibleExercises.map((exercise) => {
-                const exerciseTagClass = exercise.tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, '-')
+              <div className="exercise-grid">
+                {visibleExercises.map((exercise) => {
+                  const exerciseTagClass = exercise.tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, '-')
 
-                if (exercise.kind === 'multiple-choice') {
-                  const selected = choiceAnswers[exercise.id]
-                  const isCorrect = selected === exercise.correct
-                  const isWrong = selected !== null && selected !== exercise.correct
+                  if (exercise.kind === 'multiple-choice') {
+                    const selected = choiceAnswers[exercise.id]
+                    const isCorrect = selected === exercise.correct
+                    const isWrong = selected !== null && selected !== exercise.correct
 
-                  return (
-                    <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
-                      <div className="exercise-glow" />
-                      <div className="exercise-head">
-                        <span className="exercise-kicker">{exercise.kicker}</span>
-                        <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
-                          {exercise.difficulty}
-                        </span>
-                      </div>
-
-                      <div className="exercise-topline">
-                        <div>
-                          <h3>{exercise.title}</h3>
-                          <p>{exercise.prompt}</p>
+                    return (
+                      <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
+                        <div className="exercise-glow" />
+                        <div className="exercise-head">
+                          <span className="exercise-kicker">{exercise.kicker}</span>
+                          <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
+                            {exercise.difficulty}
+                          </span>
                         </div>
-                        <img src={exercise.art} alt={exercise.artAlt} className="exercise-art" />
-                      </div>
 
-                      {exercise.id === 'q3' && (
-                        <div className="audio-player">
-                          <button className="play-circle" aria-label="Tocar áudio">
-                            <Play size={18} fill="currentColor" />
-                          </button>
-                          <div className="wave-bar">
-                            <div className="wave-lines" />
+                        <div className="exercise-topline">
+                          <div>
+                            <h3>{exercise.title}</h3>
+                            <p>{exercise.prompt}</p>
                           </div>
-                          <span>0:05</span>
+                          <img src={exercise.art} alt={exercise.artAlt} className="exercise-art" />
                         </div>
-                      )}
 
-                      <div className="options-column">
-                        {exercise.options.map((option, index) => {
-                          const letter = String.fromCharCode(65 + index)
-                          const showCorrect = selected !== null && option === exercise.correct
-                          const showWrong = selected === option && option !== exercise.correct
-
-                          return (
-                            <button
-                              key={option}
-                              className={`option-card${showCorrect ? ' is-correct' : ''}${showWrong ? ' is-wrong' : ''}${selected === option ? ' is-selected' : ''}`}
-                              onClick={() => handleChoiceSelect(exercise.id, option)}
-                            >
-                              <span className="option-letter">{letter}</span>
-                              <span className="option-copy">{option}</span>
-                              {showCorrect && <span className="option-state">✓</span>}
-                              {showWrong && <span className="option-state">✕</span>}
+                        {exercise.id === 'q3' && (
+                          <div className="audio-player">
+                            <button className="play-circle" aria-label="Tocar áudio">
+                              <Play size={18} fill="currentColor" />
                             </button>
-                          )
-                        })}
-                      </div>
+                            <div className="wave-bar">
+                              <div className="wave-lines" />
+                            </div>
+                            <span>0:05</span>
+                          </div>
+                        )}
 
-                      <div className={`feedback-strip${isCorrect ? ' success' : ''}${isWrong ? ' error' : ''}`}>
-                        <span>{isCorrect ? exercise.explanation : isWrong ? `Quase. ${exercise.explanation}` : 'Dica'}</span>
-                        <div className="feedback-actions">
+                        <div className="options-column">
+                          {exercise.options.map((option, index) => {
+                            const letter = String.fromCharCode(65 + index)
+                            const showCorrect = selected !== null && option === exercise.correct
+                            const showWrong = selected === option && option !== exercise.correct
+
+                            return (
+                              <button
+                                key={option}
+                                className={`option-card${showCorrect ? ' is-correct' : ''}${showWrong ? ' is-wrong' : ''}${selected === option ? ' is-selected' : ''}`}
+                                onClick={() => handleChoiceSelect(exercise.id, option)}
+                              >
+                                <span className="option-letter">{letter}</span>
+                                <span className="option-copy">{option}</span>
+                                {showCorrect && <span className="option-state">✓</span>}
+                                {showWrong && <span className="option-state">✕</span>}
+                              </button>
+                            )
+                          })}
+                        </div>
+
+                        <div className={`feedback-strip${isCorrect ? ' success' : ''}${isWrong ? ' error' : ''}`}>
+                          <span>{isCorrect ? exercise.explanation : isWrong ? `Quase. ${exercise.explanation}` : 'Dica'}</span>
+                          <div className="feedback-actions">
+                            <strong>⚡ {exercise.reward} XP</strong>
+                            {isWrong && (
+                              <button className="retry-link" onClick={() => resetChoice(exercise.id)}>
+                                Tentar de novo
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </article>
+                    )
+                  }
+
+                  if (exercise.kind === 'drag-fill') {
+                    const isCorrect = dragFillAnswer === exercise.correct
+                    const isWrong = dragFillAnswer !== null && dragFillAnswer !== exercise.correct
+
+                    return (
+                      <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
+                        <div className="exercise-glow" />
+                        <div className="exercise-head">
+                          <span className="exercise-kicker">{exercise.kicker}</span>
+                          <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
+                            {exercise.difficulty}
+                          </span>
+                        </div>
+
+                        <div className="exercise-topline">
+                          <div>
+                            <h3>{exercise.title}</h3>
+                            <p>{exercise.prompt}</p>
+                          </div>
+                          <img src={exercise.art} alt={exercise.artAlt} className="exercise-art" />
+                        </div>
+
+                        <DndContext sensors={sensors} onDragEnd={handleDragFillEnd}>
+                          <div className="sentence-card">
+                            <span>{exercise.sentenceBefore}</span>
+                            <DropSlot
+                              id="drag-fill-slot"
+                              value={dragFillAnswer}
+                              isCorrect={isCorrect}
+                              isWrong={isWrong}
+                              onClear={() => setDragFillAnswer(null)}
+                            />
+                            <span>{exercise.sentenceAfter}</span>
+                          </div>
+
+                          <div className="token-bank">
+                            {exercise.options.map((option) => (
+                              <DraggableToken key={option} id={option} disabled={dragFillAnswer === option} label={option} />
+                            ))}
+                          </div>
+                        </DndContext>
+
+                        <div className={`feedback-strip${isCorrect ? ' success' : ''}${isWrong ? ' error' : ''}`}>
+                          <span>
+                            {isCorrect
+                              ? exercise.explanation
+                              : isWrong
+                                ? `A palavra certa é "${exercise.correct}". ${exercise.explanation}`
+                                : 'Arraste uma opção para a lacuna.'}
+                          </span>
                           <strong>⚡ {exercise.reward} XP</strong>
-                          {isWrong && (
-                            <button className="retry-link" onClick={() => resetChoice(exercise.id)}>
-                              Tentar de novo
-                            </button>
-                          )}
                         </div>
-                      </div>
-                    </article>
-                  )
-                }
+                      </article>
+                    )
+                  }
 
-                if (exercise.kind === 'drag-fill') {
-                  const isCorrect = dragFillAnswer === exercise.correct
-                  const isWrong = dragFillAnswer !== null && dragFillAnswer !== exercise.correct
+                  const isOrdered = orderWords.join('|') === exercise.solution.join('|')
 
                   return (
                     <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
@@ -595,140 +708,87 @@ function App() {
                         <img src={exercise.art} alt={exercise.artAlt} className="exercise-art" />
                       </div>
 
-                      <DndContext sensors={sensors} onDragEnd={handleDragFillEnd}>
-                        <div className="sentence-card">
-                          <span>{exercise.sentenceBefore}</span>
-                          <DropSlot
-                            id="drag-fill-slot"
-                            value={dragFillAnswer}
-                            isCorrect={isCorrect}
-                            isWrong={isWrong}
-                            onClear={() => setDragFillAnswer(null)}
-                          />
-                          <span>{exercise.sentenceAfter}</span>
-                        </div>
-
-                        <div className="token-bank">
-                          {exercise.options.map((option) => (
-                            <DraggableToken key={option} id={option} disabled={dragFillAnswer === option} label={option} />
-                          ))}
-                        </div>
+                      <DndContext sensors={sensors} onDragEnd={handleOrderingEnd}>
+                        <SortableContext items={orderWords} strategy={horizontalListSortingStrategy}>
+                          <div className="ordering-lane">
+                            {orderWords.map((word) => (
+                              <SortableWord key={word} id={word} />
+                            ))}
+                          </div>
+                        </SortableContext>
                       </DndContext>
 
-                      <div className={`feedback-strip${isCorrect ? ' success' : ''}${isWrong ? ' error' : ''}`}>
-                        <span>
-                          {isCorrect
-                            ? exercise.explanation
-                            : isWrong
-                              ? `A palavra certa é "${exercise.correct}". ${exercise.explanation}`
-                              : 'Arraste uma opção para a lacuna.'}
-                        </span>
-                        <strong>⚡ {exercise.reward} XP</strong>
+                      <div className={`feedback-strip${isOrdered ? ' success' : ''}`}>
+                        <span>{isOrdered ? `Perfeito: ${exercise.solution.join(' ')}` : exercise.explanation}</span>
+                        <div className="feedback-actions">
+                          <strong>⚡ {exercise.reward} XP</strong>
+                          <button className="retry-link" onClick={() => setOrderWords([...exercise.scrambled])}>
+                            <RotateCcw size={14} />
+                            Resetar
+                          </button>
+                        </div>
                       </div>
                     </article>
                   )
-                }
-
-                const isOrdered = orderWords.join('|') === exercise.solution.join('|')
-
-                return (
-                  <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
-                    <div className="exercise-glow" />
-                    <div className="exercise-head">
-                      <span className="exercise-kicker">{exercise.kicker}</span>
-                      <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
-                        {exercise.difficulty}
-                      </span>
-                    </div>
-
-                    <div className="exercise-topline">
-                      <div>
-                        <h3>{exercise.title}</h3>
-                        <p>{exercise.prompt}</p>
-                      </div>
-                      <img src={exercise.art} alt={exercise.artAlt} className="exercise-art" />
-                    </div>
-
-                    <DndContext sensors={sensors} onDragEnd={handleOrderingEnd}>
-                      <SortableContext items={orderWords} strategy={horizontalListSortingStrategy}>
-                        <div className="ordering-lane">
-                          {orderWords.map((word) => (
-                            <SortableWord key={word} id={word} />
-                          ))}
-                        </div>
-                      </SortableContext>
-                    </DndContext>
-
-                    <div className={`feedback-strip${isOrdered ? ' success' : ''}`}>
-                      <span>{isOrdered ? `Perfeito: ${exercise.solution.join(' ')}` : exercise.explanation}</span>
-                      <div className="feedback-actions">
-                        <strong>⚡ {exercise.reward} XP</strong>
-                        <button className="retry-link" onClick={() => setOrderWords([...exercise.scrambled])}>
-                          <RotateCcw size={14} />
-                          Resetar
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                )
-              })}
+                })}
+              </div>
             </div>
-          </div>
 
-          <aside className="dashboard-rail">
-            <article className="rail-card progress-card">
-              <h3>Seu progresso</h3>
-              <div className="progress-ring">
-                <div className="ring-core">
-                  <strong>65%</strong>
-                  <span>do nível 7</span>
+            <aside className="dashboard-rail">
+              <article className="rail-card progress-card">
+                <h3>Seu progresso</h3>
+                <div className="progress-ring">
+                  <div className="ring-core">
+                    <strong>65%</strong>
+                    <span>do nível 7</span>
+                  </div>
                 </div>
-              </div>
-              <p>Faltam 300 XP para o próximo nível</p>
-              <button>Ver progresso</button>
-            </article>
+                <p>Faltam 300 XP para o próximo nível</p>
+                <button>Ver progresso</button>
+              </article>
 
-            <article className="rail-card streak-rail">
-              <Flame size={44} />
-              <strong>12</strong>
-              <span>dias</span>
-              <small>Incrível</small>
-            </article>
+              <article className="rail-card streak-rail">
+                <Flame size={44} />
+                <strong>12</strong>
+                <span>dias</span>
+                <small>Incrível</small>
+              </article>
 
-            <article className="rail-card ranking-card">
-              <h3>Ranking semanal</h3>
-              <ul>
-                {leaderboard.map((player, index) => (
-                  <li key={player.name} className={player.highlighted ? 'is-you' : ''}>
-                    <span>{index + 1}. {player.name}</span>
-                    <strong>{player.xp}</strong>
-                  </li>
-                ))}
-              </ul>
-            </article>
+              <article className="rail-card ranking-card">
+                <h3>Ranking semanal</h3>
+                <ul>
+                  {leaderboard.map((player, index) => (
+                    <li key={player.name} className={player.highlighted ? 'is-you' : ''}>
+                      <span>{index + 1}. {player.name}</span>
+                      <strong>{player.xp}</strong>
+                    </li>
+                  ))}
+                </ul>
+              </article>
 
-            <article className="rail-card badges-card">
-              <h3>Conquistas recentes</h3>
-              <div className="badge-row">
-                <span className="badge"><Headphones size={22} /></span>
-                <span className="badge"><Star size={22} /></span>
-                <span className="badge"><Target size={22} /></span>
-              </div>
-              <small>{completedCount} de {exercises.length} desafios concluídos</small>
-            </article>
+              <article className="rail-card badges-card">
+                <h3>Conquistas recentes</h3>
+                <div className="badge-row">
+                  <span className="badge"><Headphones size={22} /></span>
+                  <span className="badge"><Star size={22} /></span>
+                  <span className="badge"><Target size={22} /></span>
+                </div>
+                <small>{completedCount} de {exercises.length} desafios concluídos</small>
+              </article>
 
-            <article className="challenge-card">
-              <div className="challenge-head">
-                <Trophy size={28} />
-                <span>Desafio especial</span>
-              </div>
-              <strong>Complete 5 quizzes esta semana e ganhe 100 gemas!</strong>
-              <div className="track dark">
-                <div className="track-fill gold" style={{ width: '40%' }} />
-              </div>
-              <button>Quero ganhar!</button>
-            </article>
-          </aside>
+              <article className="challenge-card">
+                <div className="challenge-head">
+                  <Trophy size={28} />
+                  <span>Desafio especial</span>
+                </div>
+                <strong>Complete 5 quizzes esta semana e ganhe 100 gemas!</strong>
+                <div className="track dark">
+                  <div className="track-fill gold" style={{ width: '40%' }} />
+                </div>
+                <button>Quero ganhar!</button>
+              </article>
+            </aside>
+          </div>
         </section>
 
         <section className="stats-footer">
