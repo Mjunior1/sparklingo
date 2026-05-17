@@ -122,42 +122,25 @@
 
 .sidebar-creature {
   position: relative;
-  width: 116px;
-  height: 116px;
+  width: 132px;
+  height: 132px;
   margin: 18px auto;
-  border-radius: 30px;
-  background: radial-gradient(circle at 30% 20%, #74f39b, #25cc87 62%, #149461 100%);
-  box-shadow: inset 0 -14px 25px rgba(9, 99, 57, 0.24), 0 18px 28px rgba(9, 99, 57, 0.18);
+  border-radius: 36px;
+  background:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.32), transparent 32%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 18px 28px rgba(62, 27, 169, 0.2);
+  overflow: hidden;
   animation: float-soft 3.8s ease-in-out infinite;
 }
 
-.sidebar-creature .eye {
-  position: absolute;
-  top: 38px;
-  width: 14px;
-  height: 18px;
-  background: #fff;
-  border-radius: 999px;
-}
-
-.sidebar-creature .eye.left {
-  left: 30px;
-}
-
-.sidebar-creature .eye.right {
-  right: 30px;
-}
-
-.sidebar-creature .mouth {
-  position: absolute;
-  left: 50%;
-  bottom: 30px;
-  width: 36px;
-  height: 18px;
-  border: 5px solid #14333d;
-  border-top: 0;
-  border-radius: 0 0 999px 999px;
-  transform: translateX(-50%);
+.sidebar-mascot-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transform: scale(1.08) translateY(4px);
+  filter: drop-shadow(0 18px 28px rgba(46, 18, 132, 0.22));
 }
 
 .sidebar-streak button,
@@ -526,18 +509,19 @@
   filter: blur(8px);
 }
 
-.hero-scene img,
+.hero-mascot-image,
 .hero-stat-card,
 .hero-speech {
   position: absolute;
   z-index: 1;
 }
 
-.hero-scene img {
-  right: 38px;
-  bottom: -8px;
-  width: min(92%, 520px);
-  height: auto;
+.hero-mascot-image {
+  right: 22px;
+  bottom: 6px;
+  width: min(98%, 620px);
+  height: min(88%, 560px);
+  object-fit: contain;
   filter: drop-shadow(0 34px 54px rgba(94, 65, 214, 0.32));
   animation: float-soft 4.6s ease-in-out infinite;
 }
@@ -1818,10 +1802,11 @@
     bottom: 86px;
   }
 
-  .hero-scene img {
+  .hero-mascot-image {
     right: 8px;
     bottom: -4px;
     width: min(92%, 360px);
+    height: auto;
   }
 
   .hero-stat-card {
