@@ -16,7 +16,7 @@ const assets = [
   {
     filename: 'hero-scene.png',
     prompt:
-      `adorable purple mascot holding a giant pencil, character on the right side, empty breathing room on the left for interface overlays, soft floor shadow, ${styles.heroScene}`,
+      `editorial hero illustration for a premium english learning game, adorable purple mascot holding a giant pencil, full scene already integrated, character on the right side, generous quiet space on the left for interface overlays, soft lavender floor, subtle spotlight, playful depth, dreamy sparkles, no separate frame inside the image, no text, no border, ${styles.heroScene}`,
   },
   {
     filename: 'hero-mascot.png',

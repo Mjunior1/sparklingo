@@ -534,7 +534,7 @@
 
 .hero-scene-panel {
   position: relative;
-  min-height: 372px;
+  min-height: 388px;
   border-radius: 36px;
   overflow: hidden;
   background:
@@ -548,113 +548,46 @@
 .hero-scene-panel::before {
   content: '';
   position: absolute;
-  inset: 34px 24px 24px;
+  inset: 22px 18px 18px;
   border-radius: 34px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08));
-  border: 1px solid rgba(255, 255, 255, 0.26);
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.06));
+  border: 1px solid rgba(255, 255, 255, 0.22);
 }
 
 .hero-scene-panel::after {
   content: '';
   position: absolute;
-  inset: auto 46px 24px 46px;
-  height: 112px;
+  inset: auto 34px 18px 34px;
+  height: 88px;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(112, 74, 241, 0.28), rgba(112, 74, 241, 0) 72%);
+  background: radial-gradient(circle, rgba(112, 74, 241, 0.18), rgba(112, 74, 241, 0) 72%);
   filter: blur(12px);
 }
 
-.hero-sidekick-badge,
-.hero-mascot-stage,
-.hero-mascot-image,
+.hero-scene-image-wrap,
+.hero-scene-image,
 .hero-stat-card,
 .hero-speech {
   position: absolute;
   z-index: 1;
 }
 
-.hero-sidekick-badge {
-  left: 30px;
-  top: 128px;
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
-  width: min(40%, 172px);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.58);
-  border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 14px 30px rgba(111, 94, 187, 0.08);
-  backdrop-filter: blur(10px);
-  z-index: 4;
-}
-
-.hero-sidekick-badge strong,
-.hero-sidekick-badge span {
-  display: block;
-}
-
-.hero-sidekick-badge strong {
-  color: #35295f;
-  font-size: 0.9rem;
-}
-
-.hero-sidekick-badge span {
-  margin-top: 2px;
-  color: #7a6cab;
-  font-size: 0.76rem;
-}
-
-.hero-sidekick-image {
-  width: 42px;
-  height: 42px;
-  object-fit: contain;
-  flex: 0 0 auto;
-  filter: drop-shadow(0 8px 16px rgba(97, 63, 202, 0.12));
-}
-
-.hero-mascot-stage {
-  right: 20px;
-  bottom: 14px;
-  width: min(72%, 350px);
-  aspect-ratio: 1 / 1;
-  overflow: visible;
+.hero-scene-image-wrap {
+  inset: 30px 18px 18px 18px;
+  border-radius: 30px;
+  overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
   z-index: 2;
 }
 
-.hero-mascot-stage::before,
-.hero-mascot-stage::after {
-  content: '';
-  position: absolute;
-}
-
-.hero-mascot-stage::before {
-  inset: auto 8% 5% 12%;
-  height: 18%;
-  border-radius: 999px;
-  background: radial-gradient(circle, rgba(80, 48, 190, 0.22), rgba(80, 48, 190, 0) 74%);
-  filter: blur(14px);
-}
-
-.hero-mascot-stage::after {
-  display: none;
-}
-
-.hero-mascot-image {
-  position: absolute;
+.hero-scene-image {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
-  object-position: bottom right;
-  transform: translateY(2%);
-  filter:
-    saturate(1.04)
-    contrast(1.01)
-    drop-shadow(0 22px 34px rgba(94, 65, 214, 0.16));
-  animation: float-soft 4.6s ease-in-out infinite;
-  z-index: 2;
+  object-fit: cover;
+  object-position: center;
+  filter: saturate(1.02) contrast(1.01);
 }
 
 .hero-orb {
@@ -694,11 +627,6 @@
   top: 28px;
 }
 
-.hero-speech-bottom {
-  left: 30px;
-  bottom: 100px;
-}
-
 .hero-stat-card {
   display: flex;
   align-items: center;
@@ -729,11 +657,6 @@
 .hero-stat-card-top {
   right: 18px;
   top: 22px;
-}
-
-.hero-stat-card-bottom {
-  left: 30px;
-  bottom: 24px;
 }
 
 .hero-scene-footer {
@@ -1952,12 +1875,6 @@
     min-height: 320px;
   }
 
-  .hero-sidekick-badge {
-    left: 18px;
-    top: 84px;
-    width: min(52%, 168px);
-  }
-
   .hero-scene-panel::before {
     inset: 32px 16px 20px;
   }
@@ -1970,26 +1887,6 @@
   .hero-speech-top {
     left: 16px;
     top: 18px;
-  }
-
-  .hero-speech-bottom {
-    left: 16px;
-    bottom: 74px;
-  }
-
-  .hero-mascot-stage {
-    right: 10px;
-    bottom: 10px;
-    width: min(84%, 316px);
-  }
-
-  .hero-mascot-image {
-    width: 108%;
-    height: 108%;
-  }
-
-  .hero-sidekick-badge {
-    padding: 10px 12px;
   }
 
   .hero-stat-card {

@@ -455,29 +455,14 @@ function App() {
               <div className="hero-orb hero-orb-left" />
               <div className="hero-orb hero-orb-right" />
               <div className="hero-speech hero-speech-top">Let&apos;s learn!</div>
-              <div className="hero-speech hero-speech-bottom">Level up!</div>
-              <div className="hero-sidekick-badge">
-                <img src="/pollinations/hero-sidekick.png" alt="Mascote auxiliar do SparkLingo" className="hero-sidekick-image" />
-                <div>
-                  <strong>Mini coach</strong>
-                  <span>Dica ao vivo</span>
-                </div>
-              </div>
-              <div className="hero-mascot-stage">
-                <img src="/pollinations/hero-mascot.png" alt="Spark em uma cena principal do SparkLingo" className="hero-mascot-image" />
+              <div className="hero-scene-image-wrap">
+                <img src="/pollinations/hero-scene.png" alt="Cena principal do SparkLingo com mascote em palco lilás" className="hero-scene-image" />
               </div>
               <div className="hero-stat-card hero-stat-card-top">
                 <Zap size={16} />
                 <div>
                   <strong>+120 XP</strong>
                   <span>Semana passada</span>
-                </div>
-              </div>
-              <div className="hero-stat-card hero-stat-card-bottom">
-                <Trophy size={16} />
-                <div>
-                  <strong>Top 2</strong>
-                  <span>No ranking da turma</span>
                 </div>
               </div>
             </div>
