@@ -293,6 +293,50 @@
   max-width: 430px;
 }
 
+.hero-quick-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.hero-quick-card {
+  padding: 14px 16px;
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.64), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(245, 241, 255, 0.92));
+  border: 1px solid rgba(129, 106, 222, 0.14);
+  box-shadow: 0 14px 28px rgba(116, 96, 191, 0.08);
+  min-width: 0;
+}
+
+.hero-quick-card span,
+.hero-quick-card strong,
+.hero-quick-card small {
+  display: block;
+}
+
+.hero-quick-card span {
+  color: #7d70ac;
+  font-size: 0.74rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.hero-quick-card strong {
+  margin-top: 8px;
+  color: #2a2054;
+  font-size: 1.1rem;
+  line-height: 1.15;
+}
+
+.hero-quick-card small {
+  margin-top: 6px;
+  color: #665c91;
+  line-height: 1.4;
+}
+
 .status-pill,
 .avatar-pill,
 .icon-chip,
@@ -1733,6 +1777,7 @@
 @media (max-width: 860px) {
   .hero-highlight-row,
   .hero-scene-footer,
+  .hero-quick-grid,
   .lesson-showcase,
   .exercise-grid,
   .mission-grid,
@@ -1854,6 +1899,10 @@
   .hero-badges {
     flex-direction: column;
     align-items: stretch;
+  }
+
+  .hero-quick-card {
+    padding: 13px 14px;
   }
 
   .hero-actions {

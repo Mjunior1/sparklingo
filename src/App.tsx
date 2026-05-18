@@ -376,6 +376,24 @@ function App() {
               <div className="avatar-pill"><UserRound size={18} /></div>
             </div>
 
+            <div className="hero-quick-grid">
+              <article className="hero-quick-card">
+                <span>Foco de hoje</span>
+                <strong>Airport pack</strong>
+                <small>1 aula visual + 2 desafios curtos</small>
+              </article>
+              <article className="hero-quick-card">
+                <span>Próxima recompensa</span>
+                <strong>+80 XP</strong>
+                <small>Faltam 2 atividades para o bônus</small>
+              </article>
+              <article className="hero-quick-card">
+                <span>Streak</span>
+                <strong>12 dias</strong>
+                <small>Sua melhor sequência nesta semana</small>
+              </article>
+            </div>
+
             <div className="hero-progress-row">
               <div className="level-chip">
                 <span>Nível</span>
