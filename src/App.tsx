@@ -454,6 +454,33 @@ function App() {
             <div className="hero-scene-panel">
               <div className="hero-orb hero-orb-left" />
               <div className="hero-orb hero-orb-right" />
+              <div className="hero-scene-companion">
+                <span className="hero-companion-kicker">Trilha viva</span>
+                <strong>Seu mapa de hoje</strong>
+                <div className="hero-companion-steps">
+                  <div className="hero-companion-step is-active">
+                    <Star size={16} />
+                    <div>
+                      <b>Warm-up</b>
+                      <small>1 desafio rápido</small>
+                    </div>
+                  </div>
+                  <div className="hero-companion-step">
+                    <Gift size={16} />
+                    <div>
+                      <b>Reward</b>
+                      <small>Bônus após 2 acertos</small>
+                    </div>
+                  </div>
+                  <div className="hero-companion-step">
+                    <Trophy size={16} />
+                    <div>
+                      <b>Goal</b>
+                      <small>Fechar streak no topo</small>
+                    </div>
+                  </div>
+                </div>
+              </div>
               <div className="hero-speech hero-speech-top">Let&apos;s learn!</div>
               <div className="hero-speech hero-speech-bottom">Level up!</div>
               <div className="hero-mascot-stage">

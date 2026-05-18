@@ -567,16 +567,97 @@
 
 .hero-mascot-stage,
 .hero-mascot-image,
+.hero-scene-companion,
 .hero-stat-card,
 .hero-speech {
   position: absolute;
   z-index: 1;
 }
 
+.hero-scene-companion {
+  left: 24px;
+  top: 84px;
+  width: min(38%, 210px);
+  padding: 16px;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.46), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.74), rgba(245, 241, 255, 0.6));
+  border: 1px solid rgba(145, 119, 230, 0.16);
+  box-shadow: 0 16px 30px rgba(108, 88, 184, 0.1);
+  backdrop-filter: blur(10px);
+  z-index: 2;
+}
+
+.hero-companion-kicker,
+.hero-companion-step small {
+  color: #766aa6;
+}
+
+.hero-companion-kicker {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.hero-scene-companion strong {
+  display: block;
+  color: #2a2054;
+  font-size: 1.16rem;
+  line-height: 1.15;
+}
+
+.hero-companion-steps {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.hero-companion-step {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  padding: 10px 0;
+  border-top: 1px solid rgba(127, 103, 205, 0.12);
+}
+
+.hero-companion-step:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.hero-companion-step svg {
+  margin-top: 2px;
+  color: #7b57ef;
+}
+
+.hero-companion-step b,
+.hero-companion-step small {
+  display: block;
+}
+
+.hero-companion-step b {
+  color: #30265b;
+  font-size: 0.94rem;
+}
+
+.hero-companion-step small {
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
+.hero-companion-step.is-active b {
+  color: #5d38d9;
+}
+
 .hero-mascot-stage {
   right: 22px;
   bottom: 22px;
-  width: min(62%, 280px);
+  width: min(56%, 248px);
   aspect-ratio: 1 / 1;
   border-radius: 42px;
   overflow: hidden;
@@ -1927,6 +2008,10 @@
     height: 80px;
   }
 
+  .hero-scene-companion {
+    display: none;
+  }
+
   .hero-speech-top {
     left: 16px;
     top: 18px;
@@ -1940,7 +2025,7 @@
   .hero-mascot-stage {
     right: 10px;
     bottom: 10px;
-    width: min(78%, 300px);
+    width: min(78%, 280px);
   }
 
   .hero-mascot-image {
