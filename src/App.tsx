@@ -1,5 +1,5 @@
 import './App.css'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Bell,
   BookOpen,
@@ -98,6 +98,12 @@ type OrderingExercise = {
 }
 
 type Exercise = MultipleChoiceExercise | DragFillExercise | OrderingExercise
+type MascotMood = 'guide' | 'cheer' | 'oops' | 'streak'
+type ActiveReaction = {
+  exerciseId: Exercise['id']
+  kind: 'success' | 'error'
+  label: string
+}
 
 const navItems: NavItem[] = [
   { label: 'Início', icon: Home, active: true },
@@ -254,6 +260,20 @@ const formatSentence = (words: string[]) => {
   return sentence.charAt(0).toUpperCase() + sentence.slice(1)
 }
 
+const mascotTitles: Record<MascotMood, string> = {
+  guide: 'Spark está guiando sua run',
+  cheer: 'Spark curtiu esse acerto',
+  oops: 'Spark viu espaço para ajustar',
+  streak: 'Spark entrou no modo combo',
+}
+
+const getExerciseMode = (exercise: Exercise) => {
+  if (exercise.kind === 'drag-fill') return 'Drag challenge'
+  if (exercise.kind === 'ordering') return 'Word shuffle'
+  if (exercise.tag === 'Listening') return 'Audio sprint'
+  return 'XP rush'
+}
+
 function App() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
   const [activeFilter, setActiveFilter] = useState<FilterKey>('Todos')
@@ -265,6 +285,11 @@ function App() {
   })
   const [dragFillAnswer, setDragFillAnswer] = useState<string | null>(null)
   const [orderWords, setOrderWords] = useState<string[]>(['you', 'Where', 'are', 'from', '?'])
+  const [sessionStreak, setSessionStreak] = useState(0)
+  const [mascotMood, setMascotMood] = useState<MascotMood>('guide')
+  const [mascotLine, setMascotLine] = useState('Escolha um mini desafio e deixa comigo o ritmo da jornada.')
+  const [activeReaction, setActiveReaction] = useState<ActiveReaction | null>(null)
+  const previousOrderingSolved = useRef(false)
 
   const orderingSolved = useMemo(() => {
     const orderingExercise = exercises.find((exercise): exercise is OrderingExercise => exercise.kind === 'ordering')
@@ -294,8 +319,96 @@ function App() {
     return xp
   }, [choiceAnswers, dragFillAnswer, orderingSolved])
 
+  const totalAvailableXp = useMemo(() => exercises.reduce((sum, exercise) => sum + exercise.reward, 0), [])
+  const heroXp = Math.min(650, 350 + totalXp)
+  const heroXpWidth = `${(heroXp / 650) * 100}%`
+  const questFlow = [
+    { label: 'Warm-up', done: completedCount >= 1 },
+    { label: 'Flow', done: completedCount >= 3 },
+    { label: 'Boss', done: completedCount >= 5 },
+  ]
+  const playTitle = completedCount === 0 ? 'Play agora' : completedCount < 3 ? 'Continuar run' : 'Fechar streak'
+  const playCaption = completedCount === 0 ? '5 min de aventura guiada' : completedCount < 3 ? 'Você já engatou o ritmo' : 'Últimos desafios do combo'
+  const sessionIntensity = Math.min(100, Math.round((totalXp / totalAvailableXp) * 100))
+
+  const triggerMoment = ({
+    exerciseId,
+    correct,
+    reward,
+    successLine,
+    errorLine,
+  }: {
+    exerciseId: Exercise['id']
+    correct: boolean
+    reward: number
+    successLine: string
+    errorLine: string
+  }) => {
+    if (correct) {
+      let nextStreak = 0
+      setSessionStreak((current) => {
+        nextStreak = current + 1
+        return nextStreak
+      })
+      setMascotMood(nextStreak >= 3 ? 'streak' : 'cheer')
+      setMascotLine(nextStreak >= 3 ? `Combo x${nextStreak} ativo. Não perde esse embalo.` : successLine)
+      setActiveReaction({
+        exerciseId,
+        kind: 'success',
+        label: nextStreak >= 3 ? `Combo x${nextStreak}` : `+${reward} XP`,
+      })
+      return
+    }
+
+    setSessionStreak(0)
+    setMascotMood('oops')
+    setMascotLine(errorLine)
+    setActiveReaction({
+      exerciseId,
+      kind: 'error',
+      label: 'Try again',
+    })
+  }
+
+  useEffect(() => {
+    if (!activeReaction) return
+    const timeout = window.setTimeout(() => setActiveReaction(null), 1650)
+    return () => window.clearTimeout(timeout)
+  }, [activeReaction])
+
+  useEffect(() => {
+    const exercise = exercises.find((item): item is OrderingExercise => item.kind === 'ordering')
+    const justSolved = orderingSolved && !previousOrderingSolved.current
+
+    if (exercise && justSolved) {
+      triggerMoment({
+        exerciseId: exercise.id,
+        correct: true,
+        reward: exercise.reward,
+        successLine: 'A frase encaixou perfeita. Bora para a próxima etapa.',
+        errorLine: '',
+      })
+    }
+
+    previousOrderingSolved.current = orderingSolved
+  }, [orderingSolved])
+
   const handleChoiceSelect = (id: MultipleChoiceExercise['id'], option: string) => {
+    const exercise = exercises.find((item): item is MultipleChoiceExercise => item.id === id && item.kind === 'multiple-choice')
+    if (!exercise) return
+
+    const previous = choiceAnswers[id]
+    if (previous === option) return
+
+    const isCorrect = option === exercise.correct
     setChoiceAnswers((current) => ({ ...current, [id]: option }))
+    triggerMoment({
+      exerciseId: id,
+      correct: isCorrect,
+      reward: exercise.reward,
+      successLine: 'Boa. Esse acerto abriu mais energia para a run.',
+      errorLine: 'Quase. Ajusta rápido e mantém o ritmo.',
+    })
   }
 
   const resetChoice = (id: MultipleChoiceExercise['id']) => {
@@ -304,7 +417,20 @@ function App() {
 
   const handleDragFillEnd = (event: DragEndEvent) => {
     const draggedWord = String(event.active.id)
-    if (event.over?.id === 'drag-fill-slot') setDragFillAnswer(draggedWord)
+    if (event.over?.id !== 'drag-fill-slot' || dragFillAnswer === draggedWord) return
+
+    const exercise = exercises.find((item): item is DragFillExercise => item.kind === 'drag-fill')
+    if (!exercise) return
+
+    const isCorrect = draggedWord === exercise.correct
+    setDragFillAnswer(draggedWord)
+    triggerMoment({
+      exerciseId: exercise.id,
+      correct: isCorrect,
+      reward: exercise.reward,
+      successLine: 'Acertou no encaixe. O combo segue vivo.',
+      errorLine: 'Essa peça não encaixou. Solta outra e continua.',
+    })
   }
 
   const handleOrderingEnd = (event: DragEndEvent) => {
@@ -403,10 +529,10 @@ function App() {
               <div className="hero-progress-panel">
                 <div className="hero-progress-head">
                   <span>XP</span>
-                  <span>350 / 650</span>
+                  <span>{heroXp} / 650</span>
                 </div>
                 <div className="track">
-                  <div className="track-fill" style={{ width: '54%' }} />
+                  <div className="track-fill track-fill-hero" style={{ width: heroXpWidth }} />
                 </div>
               </div>
 
@@ -431,8 +557,41 @@ function App() {
             </div>
 
             <div className="hero-actions">
-              <button className="hero-primary">Começar agora</button>
+              <button className="hero-primary hero-primary-play">
+                <Play size={18} fill="currentColor" />
+                <span>
+                  <strong>{playTitle}</strong>
+                  <small>{playCaption}</small>
+                </span>
+              </button>
               <button className="hero-secondary">Ver trilha</button>
+            </div>
+
+            <div className={`mascot-console mascot-console-${mascotMood}`}>
+              <div className="mascot-console-avatar">
+                <img src="/pollinations/sidebar-mascot.png" alt="Spark reagindo à sua sessão" className="mascot-console-image" />
+              </div>
+              <div className="mascot-console-copy">
+                <span>Spark ao vivo</span>
+                <strong>{mascotTitles[mascotMood]}</strong>
+                <p>{mascotLine}</p>
+              </div>
+              <div className="mascot-console-stats">
+                <span>Combo</span>
+                <strong>x{Math.max(sessionStreak, 1)}</strong>
+              </div>
+            </div>
+
+            <div className="quest-rail">
+              {questFlow.map((step, index) => (
+                <div key={step.label} className={`quest-node${step.done ? ' done' : ''}${index === completedCount % questFlow.length ? ' live' : ''}`}>
+                  <div className="quest-node-dot">{index + 1}</div>
+                  <div className="quest-node-copy">
+                    <strong>{step.label}</strong>
+                    <span>{step.done ? 'Concluído' : 'Próximo passo'}</span>
+                  </div>
+                </div>
+              ))}
             </div>
 
             <div className="hero-highlight-row">
@@ -563,6 +722,30 @@ function App() {
 
           <div className="dashboard-layout">
             <div className="dashboard-main">
+              <div className="run-state-bar">
+                <div className="run-stat run-stat-primary">
+                  <Play size={16} fill="currentColor" />
+                  <span>Run ativa</span>
+                  <strong>{completedCount}/{exercises.length}</strong>
+                </div>
+                <div className="run-stat">
+                  <Flame size={16} />
+                  <span>Combo</span>
+                  <strong>x{Math.max(sessionStreak, 1)}</strong>
+                </div>
+                <div className="run-stat">
+                  <Zap size={16} />
+                  <span>XP sessão</span>
+                  <strong>{totalXp}</strong>
+                </div>
+                <div className="run-energy">
+                  <span>Energia da run</span>
+                  <div className="track soft">
+                    <div className="track-fill" style={{ width: `${sessionIntensity}%` }} />
+                  </div>
+                </div>
+              </div>
+
               <div className="filter-row">
                 {filters.map((filter) => (
                   <button
@@ -590,6 +773,9 @@ function App() {
                     return (
                       <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
                         <div className="exercise-glow" />
+                        {activeReaction?.exerciseId === exercise.id && (
+                          <div className={`exercise-burst exercise-burst-${activeReaction.kind}`}>{activeReaction.label}</div>
+                        )}
                         <div className="exercise-head">
                           <span className="exercise-kicker">{exercise.kicker}</span>
                           <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
@@ -603,6 +789,11 @@ function App() {
                             <p>{exercise.prompt}</p>
                           </div>
                           <img src={exercise.art} alt={exercise.artAlt} className="exercise-art" />
+                        </div>
+
+                        <div className="mini-game-strip">
+                          <span><Zap size={14} /> {getExerciseMode(exercise)}</span>
+                          <span><Flame size={14} /> combo x{Math.max(sessionStreak, 1)}</span>
                         </div>
 
                         {exercise.id === 'q3' && (
@@ -660,6 +851,9 @@ function App() {
                     return (
                       <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
                         <div className="exercise-glow" />
+                        {activeReaction?.exerciseId === exercise.id && (
+                          <div className={`exercise-burst exercise-burst-${activeReaction.kind}`}>{activeReaction.label}</div>
+                        )}
                         <div className="exercise-head">
                           <span className="exercise-kicker">{exercise.kicker}</span>
                           <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
@@ -673,6 +867,11 @@ function App() {
                             <p>{exercise.prompt}</p>
                           </div>
                           <img src={exercise.art} alt={exercise.artAlt} className="exercise-art" />
+                        </div>
+
+                        <div className="mini-game-strip">
+                          <span><Grip size={14} /> {getExerciseMode(exercise)}</span>
+                          <span><Target size={14} /> acerto instantâneo</span>
                         </div>
 
                         <DndContext sensors={sensors} onDragEnd={handleDragFillEnd}>
@@ -714,6 +913,9 @@ function App() {
                   return (
                     <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
                       <div className="exercise-glow" />
+                      {activeReaction?.exerciseId === exercise.id && (
+                        <div className={`exercise-burst exercise-burst-${activeReaction.kind}`}>{activeReaction.label}</div>
+                      )}
                       <div className="exercise-head">
                         <span className="exercise-kicker">{exercise.kicker}</span>
                         <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
@@ -727,6 +929,11 @@ function App() {
                           <p>{exercise.prompt}</p>
                         </div>
                         <img src={exercise.art} alt={exercise.artAlt} className="exercise-art" />
+                      </div>
+
+                      <div className="mini-game-strip">
+                        <span><Sparkles size={14} /> {getExerciseMode(exercise)}</span>
+                        <span><Zap size={14} /> ordem perfeita rende bônus</span>
                       </div>
 
                       <DndContext sensors={sensors} onDragEnd={handleOrderingEnd}>
