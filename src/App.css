@@ -534,7 +534,7 @@
 
 .hero-scene-panel {
   position: relative;
-  min-height: 340px;
+  min-height: 360px;
   border-radius: 36px;
   overflow: hidden;
   background:
@@ -548,7 +548,7 @@
 .hero-scene-panel::before {
   content: '';
   position: absolute;
-  inset: 38px 26px 26px;
+  inset: 34px 24px 24px;
   border-radius: 34px;
   background:
     linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.08));
@@ -565,6 +565,7 @@
   filter: blur(8px);
 }
 
+.hero-sidekick-badge,
 .hero-mascot-stage,
 .hero-mascot-image,
 .hero-stat-card,
@@ -573,13 +574,53 @@
   z-index: 1;
 }
 
+.hero-sidekick-badge {
+  left: 26px;
+  top: 110px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  width: min(44%, 190px);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.66);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 18px 34px rgba(111, 94, 187, 0.1);
+  backdrop-filter: blur(12px);
+  z-index: 4;
+}
+
+.hero-sidekick-badge strong,
+.hero-sidekick-badge span {
+  display: block;
+}
+
+.hero-sidekick-badge strong {
+  color: #35295f;
+  font-size: 0.95rem;
+}
+
+.hero-sidekick-badge span {
+  margin-top: 2px;
+  color: #7a6cab;
+  font-size: 0.8rem;
+}
+
+.hero-sidekick-image {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+  flex: 0 0 auto;
+  filter: drop-shadow(0 10px 18px rgba(97, 63, 202, 0.16));
+}
+
 .hero-mascot-stage {
-  right: 8px;
-  bottom: 8px;
-  width: min(74%, 360px);
+  right: 18px;
+  bottom: 10px;
+  width: min(68%, 330px);
   aspect-ratio: 1 / 1;
   overflow: visible;
-  z-index: 1;
+  z-index: 2;
 }
 
 .hero-mascot-stage::before,
@@ -607,10 +648,10 @@
   height: 100%;
   object-fit: contain;
   object-position: bottom right;
-  transform: none;
+  transform: translateY(3%);
   filter:
-    saturate(1.03)
-    drop-shadow(0 18px 32px rgba(94, 65, 214, 0.18));
+    saturate(1.05)
+    drop-shadow(0 22px 34px rgba(94, 65, 214, 0.2));
   animation: float-soft 4.6s ease-in-out infinite;
   z-index: 2;
 }
@@ -654,7 +695,7 @@
 
 .hero-speech-bottom {
   left: 26px;
-  bottom: 74px;
+  bottom: 92px;
 }
 
 .hero-stat-card {
@@ -713,7 +754,10 @@
   display: block;
 }
 
-.scene-mini-card span {
+.scene-mini-kicker {
+  display: inline-flex !important;
+  align-items: center;
+  gap: 8px;
   color: #7e71ad;
   font-size: 0.78rem;
   text-transform: uppercase;
@@ -1907,6 +1951,12 @@
     min-height: 320px;
   }
 
+  .hero-sidekick-badge {
+    left: 18px;
+    top: 84px;
+    width: min(52%, 180px);
+  }
+
   .hero-scene-panel::before {
     inset: 32px 16px 20px;
   }
@@ -1935,6 +1985,10 @@
   .hero-mascot-image {
     width: 112%;
     height: 112%;
+  }
+
+  .hero-sidekick-badge {
+    padding: 10px 12px;
   }
 
   .hero-stat-card {

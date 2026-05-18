@@ -456,6 +456,13 @@ function App() {
               <div className="hero-orb hero-orb-right" />
               <div className="hero-speech hero-speech-top">Let&apos;s learn!</div>
               <div className="hero-speech hero-speech-bottom">Level up!</div>
+              <div className="hero-sidekick-badge">
+                <img src="/pollinations/hero-sidekick.png" alt="Mascote auxiliar do SparkLingo" className="hero-sidekick-image" />
+                <div>
+                  <strong>Mini coach</strong>
+                  <span>Dica ao vivo</span>
+                </div>
+              </div>
               <div className="hero-mascot-stage">
                 <img src="/pollinations/hero-mascot.png" alt="Spark em uma cena principal do SparkLingo" className="hero-mascot-image" />
               </div>
@@ -476,11 +483,11 @@ function App() {
             </div>
             <div className="hero-scene-footer">
               <article className="scene-mini-card">
-                <span>⭐ Destaque</span>
+                <span className="scene-mini-kicker"><Star size={14} /> Destaque</span>
                 <strong>Sessão com streak viva</strong>
               </article>
               <article className="scene-mini-card">
-                <span>🎯 Meta</span>
+                <span className="scene-mini-kicker"><Target size={14} /> Meta</span>
                 <strong>Missões do dia em progresso</strong>
               </article>
             </div>

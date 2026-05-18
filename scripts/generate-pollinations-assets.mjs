@@ -3,23 +3,37 @@ import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { join, parse } from 'node:path'
 
 const outputDir = join(process.cwd(), 'public', 'pollinations')
+const styles = {
+  heroScene:
+    'premium educational game hero scene, glossy 3d toy-like render, high relief, cinematic depth, whimsical sparkles, harmonious lavender and lilac environment, no text, no frame, no border',
+  isolatedMascot:
+    'premium educational game art, glossy 3d toy render, isolated character only, centered composition, clean silhouette, no floor, no scene, no frame, no border, plain light background for easy background removal',
+  supportBuddy:
+    'premium educational game art, glossy 3d toy render, tiny helper character, clean silhouette, centered composition, no floor, no scene, no frame, no border, plain light background for easy background removal',
+}
 
 const assets = [
   {
     filename: 'hero-scene.png',
     prompt:
-      'premium educational game hero scene, adorable purple mascot holding a giant pencil, glossy 3d toy-like render, high relief, character on the right side, empty breathing room on the left for interface overlays, harmonious lavender and lilac environment, soft floor shadow, cinematic depth, whimsical sparkles, no text, no frame, no border',
+      `adorable purple mascot holding a giant pencil, character on the right side, empty breathing room on the left for interface overlays, soft floor shadow, ${styles.heroScene}`,
   },
   {
     filename: 'hero-mascot.png',
     prompt:
-      'adorable purple mascot holding a giant pencil, full body, premium educational game art, glossy 3d toy render, isolated character only, centered composition, clean silhouette, no floor, no scene, no frame, no border, plain light background for easy background removal',
+      `adorable purple mascot holding a giant pencil, full body, joyful expression, slightly dynamic pose leaning forward, ${styles.isolatedMascot}`,
+    removeBackground: true,
+  },
+  {
+    filename: 'hero-sidekick.png',
+    prompt:
+      `small floating star companion in the same SparkLingo universe, soft purple and golden accents, expressive eyes, supportive sidekick energy, ${styles.supportBuddy}`,
     removeBackground: true,
   },
   {
     filename: 'sidebar-mascot.png',
     prompt:
-      'adorable purple mascot holding a giant pencil, full body, glossy 3d toy-like render, cute expressive eyes, premium children learning game art, centered composition, plain light background, no floor, no scene, no text, no frame, no border',
+      `adorable purple mascot holding a giant pencil, full body, cute expressive eyes, waving, ${styles.isolatedMascot}`,
     removeBackground: true,
   },
   {
