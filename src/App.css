@@ -181,8 +181,8 @@
 
 .hero-card {
   display: grid;
-  grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
-  gap: 22px;
+  grid-template-columns: minmax(0, 1.34fr) minmax(280px, 0.66fr);
+  gap: 20px;
   padding: 26px;
   border-radius: 38px;
   overflow: hidden;
@@ -259,9 +259,9 @@
 .quiz-zone-hero h2 {
   margin: 0;
   color: #2a2054;
-  font-size: clamp(2.1rem, 3.4vw, 3.8rem);
-  line-height: 0.96;
-  max-width: 11ch;
+  font-size: clamp(1.95rem, 3vw, 3.35rem);
+  line-height: 0.98;
+  max-width: 13ch;
 }
 
 .hero-subtitle,
@@ -283,13 +283,14 @@
 .hero-intro {
   display: grid;
   gap: 10px;
-  max-width: 44rem;
+  max-width: 48rem;
 }
 
 .hero-status {
   flex-wrap: wrap;
   justify-content: flex-start;
   gap: 10px;
+  max-width: 430px;
 }
 
 .status-pill,
@@ -471,7 +472,7 @@
 .hero-scene {
   display: grid;
   grid-template-rows: auto 1fr auto;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
 }
 
@@ -489,7 +490,7 @@
 
 .hero-scene-panel {
   position: relative;
-  min-height: 390px;
+  min-height: 340px;
   border-radius: 36px;
   overflow: hidden;
   background:
@@ -531,7 +532,7 @@
 .hero-mascot-stage {
   right: 22px;
   bottom: 22px;
-  width: min(68%, 340px);
+  width: min(62%, 280px);
   aspect-ratio: 1 / 1;
   border-radius: 42px;
   overflow: hidden;
@@ -628,7 +629,7 @@
   align-items: center;
   gap: 10px;
   padding: 12px 14px;
-  min-width: 132px;
+  min-width: 118px;
   border-radius: 18px;
   background: rgba(255, 255, 255, 0.94);
   border: 1px solid rgba(124, 96, 227, 0.12);
@@ -705,9 +706,9 @@
 .section-heading-row,
 .quiz-zone-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
   align-items: end;
-  gap: 16px;
+  gap: 14px;
   margin-bottom: 18px;
 }
 
@@ -717,8 +718,8 @@
 }
 
 .journey-meta-pill {
-  max-width: 290px;
-  justify-self: end;
+  max-width: 280px;
+  justify-self: start;
 }
 
 .lesson-showcase {
@@ -1011,8 +1012,8 @@
 }
 
 .quiz-zone-hero h2 {
-  font-size: clamp(1.9rem, 2.9vw, 2.9rem);
-  max-width: 11ch;
+  font-size: clamp(1.75rem, 2.6vw, 2.55rem);
+  max-width: 13ch;
 }
 
 .quiz-zone-copy {
@@ -1021,8 +1022,8 @@
 }
 
 .quiz-zone-chip {
-  max-width: 290px;
-  justify-self: end;
+  max-width: 280px;
+  justify-self: start;
   align-self: end;
 }
 
