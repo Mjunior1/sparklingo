@@ -1,6 +1,6 @@
 import './App.css'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { AuthScreen } from './auth/AuthScreen'
+import { AuthEntry } from './auth/AuthEntry'
 import { useAuth } from './auth/AuthProvider'
 import {
   Bell,
@@ -525,7 +525,7 @@ function App() {
   }
 
   if (!user) {
-    return <AuthScreen />
+    return <AuthEntry />
   }
 
   return (
