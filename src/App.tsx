@@ -2,6 +2,8 @@ import './App.css'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AuthEntry } from './auth/AuthEntry'
 import { useAuth } from './auth/AuthProvider'
+import { OnboardingScreen } from './auth/OnboardingScreen'
+import { getUserProgress, saveUserProgress, type UserProgress } from './services/progress'
 import {
   Bell,
   BookOpen,
@@ -277,7 +279,7 @@ const getExerciseMode = (exercise: Exercise) => {
 }
 
 function App() {
-  const { status, user, profile, signOut, platformConfig } = useAuth()
+  const { status, user, profile, signOut, platformConfig, patchProfile } = useAuth()
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
   const [activeFilter, setActiveFilter] = useState<FilterKey>('Todos')
   const [choiceAnswers, setChoiceAnswers] = useState<Record<string, string | null>>({
@@ -292,6 +294,8 @@ function App() {
   const [mascotMood, setMascotMood] = useState<MascotMood>('guide')
   const [mascotLine, setMascotLine] = useState('Escolha um mini desafio e deixa comigo o ritmo da jornada.')
   const [activeReaction, setActiveReaction] = useState<ActiveReaction | null>(null)
+  const [progressHydrated, setProgressHydrated] = useState(false)
+  const [progressSnapshot, setProgressSnapshot] = useState<UserProgress | null>(null)
   const previousOrderingSolved = useRef(false)
   const audioContextRef = useRef<AudioContext | null>(null)
 
@@ -324,7 +328,10 @@ function App() {
   }, [choiceAnswers, dragFillAnswer, orderingSolved])
 
   const totalAvailableXp = useMemo(() => exercises.reduce((sum, exercise) => sum + exercise.reward, 0), [])
-  const heroXp = Math.min(650, 350 + totalXp)
+  const profileXp = progressSnapshot?.totalXp ?? profile?.xp ?? totalXp
+  const streakDays = progressSnapshot?.streakDays ?? profile?.streak ?? 0
+  const profileLevel = progressSnapshot?.level ?? profile?.level ?? 1
+  const heroXp = Math.min(650, 350 + profileXp)
   const heroXpWidth = `${(heroXp / 650) * 100}%`
   const questFlow = [
     { label: 'Warm-up', done: completedCount >= 1 },
@@ -429,6 +436,31 @@ function App() {
   }, [activeReaction])
 
   useEffect(() => {
+    if (!user) return
+
+    let cancelled = false
+    setProgressHydrated(false)
+
+    getUserProgress(user.uid)
+      .then((nextProgress) => {
+        if (cancelled) return
+        setChoiceAnswers((current) => ({ ...current, ...nextProgress.choiceAnswers }))
+        setDragFillAnswer(nextProgress.dragFillAnswer)
+        setOrderWords(nextProgress.orderWords)
+        setProgressSnapshot(nextProgress)
+        setProgressHydrated(true)
+      })
+      .catch(() => {
+        if (cancelled) return
+        setProgressHydrated(true)
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [user])
+
+  useEffect(() => {
     const exercise = exercises.find((item): item is OrderingExercise => item.kind === 'ordering')
     const justSolved = orderingSolved && !previousOrderingSolved.current
 
@@ -444,6 +476,63 @@ function App() {
 
     previousOrderingSolved.current = orderingSolved
   }, [orderingSolved, triggerMoment])
+
+  useEffect(() => {
+    if (!user || !progressHydrated) return
+
+    const completedExerciseIds = exercises
+      .filter((exercise) => {
+        if (exercise.kind === 'multiple-choice') return choiceAnswers[exercise.id] === exercise.correct
+        if (exercise.kind === 'drag-fill') return dragFillAnswer === exercise.correct
+        return orderingSolved
+      })
+      .map((exercise) => exercise.id)
+
+    const timeout = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const nextProgress = await saveUserProgress(user.uid, {
+            totalXp,
+            completedExerciseIds,
+            choiceAnswers,
+            dragFillAnswer,
+            orderWords,
+          })
+
+          setProgressSnapshot(nextProgress)
+
+          if (
+            profile &&
+            (
+              profile.xp !== nextProgress.totalXp ||
+              profile.streak !== nextProgress.streakDays ||
+              profile.level !== nextProgress.level
+            )
+          ) {
+            await patchProfile({
+              xp: nextProgress.totalXp,
+              streak: nextProgress.streakDays,
+              level: nextProgress.level,
+            })
+          }
+        } catch {
+          // keep the session responsive even if persistence fails temporarily
+        }
+      })()
+    }, 420)
+
+    return () => window.clearTimeout(timeout)
+  }, [
+    user,
+    progressHydrated,
+    totalXp,
+    choiceAnswers,
+    dragFillAnswer,
+    orderWords,
+    orderingSolved,
+    patchProfile,
+    profile,
+  ])
 
   const handleChoiceSelect = (id: MultipleChoiceExercise['id'], option: string) => {
     const exercise = exercises.find((item): item is MultipleChoiceExercise => item.id === id && item.kind === 'multiple-choice')
@@ -528,6 +617,17 @@ function App() {
     return <AuthEntry />
   }
 
+  if (profile && platformConfig?.onboardingEnabled && !profile.onboardingCompleted) {
+    return (
+      <OnboardingScreen
+        profile={profile}
+        onComplete={async (payload) => {
+          await patchProfile(payload)
+        }}
+      />
+    )
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -558,7 +658,7 @@ function App() {
             <Flame size={16} />
             Sequência
           </p>
-          <strong>12 dias!</strong>
+          <strong>{streakDays} dias!</strong>
           <div className="sidebar-creature">
             <img src="/pollinations/sidebar-mascot.png" alt="Spark, mascote do SparkLingo" className="sidebar-mascot-image" />
           </div>
@@ -595,8 +695,8 @@ function App() {
             <div className="hero-quick-grid">
               <article className="hero-quick-card">
                 <span>Foco de hoje</span>
-                <strong>Airport pack</strong>
-                <small>1 aula visual + 2 desafios curtos</small>
+                <strong>{profile?.focusSkill ?? 'Listening'} pack</strong>
+                <small>{profile?.learningGoal ?? '1 aula visual + 2 desafios curtos'}</small>
               </article>
               <article className="hero-quick-card">
                 <span>Próxima recompensa</span>
@@ -605,7 +705,7 @@ function App() {
               </article>
               <article className="hero-quick-card">
                 <span>Streak</span>
-                <strong>12 dias</strong>
+                <strong>{streakDays} dias</strong>
                 <small>Sua melhor sequência nesta semana</small>
               </article>
             </div>
@@ -613,7 +713,7 @@ function App() {
             <div className="hero-progress-row">
               <div className="level-chip">
                 <span>Nível</span>
-                <strong>7</strong>
+                <strong>{profileLevel}</strong>
               </div>
 
               <div className="hero-progress-panel">
@@ -634,7 +734,7 @@ function App() {
             <div className="hero-badges">
               <div className="hero-badge">
                 <Star size={16} />
-                <span>7 dias seguidos</span>
+                <span>{streakDays} dias seguidos</span>
               </div>
               <div className="hero-badge">
                 <Sparkles size={16} />
@@ -692,7 +792,7 @@ function App() {
               </article>
               <article className="hero-highlight hero-highlight-soft">
                 <p>Modo rápido</p>
-                <strong>5 minutos por sessão</strong>
+                <strong>{profile?.dailyMinutes ?? 5} minutos por sessão</strong>
                 <span>Perfeito para estudar entre tarefas sem perder o ritmo.</span>
               </article>
             </div>
@@ -1060,17 +1160,17 @@ function App() {
                 <h3>Seu progresso</h3>
                 <div className="progress-ring">
                   <div className="ring-core">
-                    <strong>65%</strong>
-                    <span>do nível 7</span>
+                    <strong>{Math.min(100, Math.round((profileXp / 650) * 100))}%</strong>
+                    <span>do nível {profileLevel}</span>
                   </div>
                 </div>
-                <p>Faltam 300 XP para o próximo nível</p>
+                <p>XP persistido no Firestore e sincronizado com sua conta.</p>
                 <button>Ver progresso</button>
               </article>
 
               <article className="rail-card streak-rail">
                 <Flame size={44} />
-                <strong>12</strong>
+                <strong>{streakDays}</strong>
                 <span>dias</span>
                 <small>Incrível</small>
               </article>
@@ -1134,7 +1234,7 @@ function App() {
           </article>
           <article className="footer-card">
             <p>Streak</p>
-            <strong>7 dias seguidos</strong>
+            <strong>{streakDays} dias seguidos</strong>
             <div className="mini-pills">
               <span>Mon</span>
               <span>Tue</span>

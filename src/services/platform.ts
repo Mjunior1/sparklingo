@@ -1,4 +1,4 @@
-import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
+import { doc, getDoc } from 'firebase/firestore'
 import { requireFirebase } from '../lib/firebase'
 
 export type PlatformConfig = {
@@ -26,25 +26,16 @@ const platformDocRef = () => {
   return doc(db, 'platform', 'runtime')
 }
 
-export const ensurePlatformConfig = async () => {
-  const snapshot = await getDoc(platformDocRef())
-  if (snapshot.exists()) return snapshot.data() as PlatformConfig
-
-  await setDoc(platformDocRef(), {
-    ...defaultPlatformConfig,
-    createdAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  })
-
-  return defaultPlatformConfig
-}
-
 export const getPlatformConfig = async () => {
-  const snapshot = await getDoc(platformDocRef())
-  if (!snapshot.exists()) return ensurePlatformConfig()
+  try {
+    const snapshot = await getDoc(platformDocRef())
+    if (!snapshot.exists()) return defaultPlatformConfig
 
-  return {
-    ...defaultPlatformConfig,
-    ...(snapshot.data() as Partial<PlatformConfig>),
+    return {
+      ...defaultPlatformConfig,
+      ...(snapshot.data() as Partial<PlatformConfig>),
+    }
+  } catch {
+    return defaultPlatformConfig
   }
 }

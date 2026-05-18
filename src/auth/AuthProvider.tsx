@@ -19,7 +19,7 @@ import {
 } from 'firebase/auth'
 import { auth, googleProvider, isFirebaseConfigured, requireFirebase } from '../lib/firebase'
 import { getPlatformConfig, type PlatformConfig } from '../services/platform'
-import { ensureUserProfile, type UserProfile } from '../services/profiles'
+import { ensureUserProfile, updateUserProfile, type UserProfile, type UserProfileUpdate } from '../services/profiles'
 
 type AuthMode = 'login' | 'signup'
 type AuthStatus = 'loading' | 'signed_out' | 'signed_in'
@@ -36,6 +36,7 @@ type AuthContextValue = {
   signInWithPassword: (email: string, password: string) => Promise<void>
   signUpWithPassword: (name: string, email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  patchProfile: (updates: UserProfileUpdate) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null)
@@ -126,6 +127,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus('signed_out')
   }, [])
 
+  const patchProfile = useCallback(async (updates: UserProfileUpdate) => {
+    if (!user) return
+    await updateUserProfile(user.uid, updates)
+    setProfile((current) => current ? { ...current, ...updates } : current)
+  }, [user])
+
   const value = useMemo<AuthContextValue>(() => ({
     status,
     user,
@@ -138,8 +145,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     signInWithPassword,
     signUpWithPassword,
     signOut,
+    patchProfile,
   }), [
     authMode,
+    patchProfile,
     platformConfig,
     profile,
     signInWithGoogle,
