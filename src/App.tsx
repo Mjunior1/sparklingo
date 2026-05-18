@@ -1,5 +1,5 @@
 import './App.css'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Bell,
   BookOpen,
@@ -290,6 +290,7 @@ function App() {
   const [mascotLine, setMascotLine] = useState('Escolha um mini desafio e deixa comigo o ritmo da jornada.')
   const [activeReaction, setActiveReaction] = useState<ActiveReaction | null>(null)
   const previousOrderingSolved = useRef(false)
+  const audioContextRef = useRef<AudioContext | null>(null)
 
   const orderingSolved = useMemo(() => {
     const orderingExercise = exercises.find((exercise): exercise is OrderingExercise => exercise.kind === 'ordering')
@@ -331,7 +332,52 @@ function App() {
   const playCaption = completedCount === 0 ? '5 min de aventura guiada' : completedCount < 3 ? 'Você já engatou o ritmo' : 'Últimos desafios do combo'
   const sessionIntensity = Math.min(100, Math.round((totalXp / totalAvailableXp) * 100))
 
-  const triggerMoment = ({
+  const playUiSound = useCallback((kind: 'success' | 'error' | 'combo' | 'play' | 'click') => {
+    if (typeof window === 'undefined') return
+
+    const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!AudioCtx) return
+
+    const context = audioContextRef.current ?? new AudioCtx()
+    audioContextRef.current = context
+    if (context.state === 'suspended') context.resume().catch(() => {})
+
+    const presetMap: Record<typeof kind, Array<{ freq: number; duration: number; gain: number; type?: OscillatorType }>> = {
+      click: [{ freq: 420, duration: 0.05, gain: 0.018, type: 'triangle' }],
+      play: [
+        { freq: 392, duration: 0.07, gain: 0.018, type: 'triangle' },
+        { freq: 523.25, duration: 0.1, gain: 0.022, type: 'sine' },
+      ],
+      success: [
+        { freq: 523.25, duration: 0.08, gain: 0.02, type: 'triangle' },
+        { freq: 659.25, duration: 0.12, gain: 0.024, type: 'sine' },
+      ],
+      combo: [
+        { freq: 523.25, duration: 0.06, gain: 0.02, type: 'triangle' },
+        { freq: 659.25, duration: 0.08, gain: 0.024, type: 'triangle' },
+        { freq: 783.99, duration: 0.12, gain: 0.028, type: 'sine' },
+      ],
+      error: [{ freq: 240, duration: 0.12, gain: 0.02, type: 'sine' }],
+    }
+
+    const start = context.currentTime + 0.01
+    presetMap[kind].forEach((tone, index) => {
+      const oscillator = context.createOscillator()
+      const gain = context.createGain()
+      const toneStart = start + index * 0.075
+      oscillator.type = tone.type ?? 'sine'
+      oscillator.frequency.setValueAtTime(tone.freq, toneStart)
+      gain.gain.setValueAtTime(0.0001, toneStart)
+      gain.gain.exponentialRampToValueAtTime(tone.gain, toneStart + 0.02)
+      gain.gain.exponentialRampToValueAtTime(0.0001, toneStart + tone.duration)
+      oscillator.connect(gain)
+      gain.connect(context.destination)
+      oscillator.start(toneStart)
+      oscillator.stop(toneStart + tone.duration + 0.03)
+    })
+  }, [])
+
+  const triggerMoment = useCallback(({
     exerciseId,
     correct,
     reward,
@@ -357,6 +403,7 @@ function App() {
         kind: 'success',
         label: nextStreak >= 3 ? `Combo x${nextStreak}` : `+${reward} XP`,
       })
+      playUiSound(nextStreak >= 3 ? 'combo' : 'success')
       return
     }
 
@@ -368,7 +415,8 @@ function App() {
       kind: 'error',
       label: 'Try again',
     })
-  }
+    playUiSound('error')
+  }, [playUiSound])
 
   useEffect(() => {
     if (!activeReaction) return
@@ -391,7 +439,7 @@ function App() {
     }
 
     previousOrderingSolved.current = orderingSolved
-  }, [orderingSolved])
+  }, [orderingSolved, triggerMoment])
 
   const handleChoiceSelect = (id: MultipleChoiceExercise['id'], option: string) => {
     const exercise = exercises.find((item): item is MultipleChoiceExercise => item.id === id && item.kind === 'multiple-choice')
@@ -413,6 +461,9 @@ function App() {
 
   const resetChoice = (id: MultipleChoiceExercise['id']) => {
     setChoiceAnswers((current) => ({ ...current, [id]: null }))
+    setMascotMood('guide')
+    setMascotLine('Boa. Respira e tenta de novo com calma.')
+    playUiSound('click')
   }
 
   const handleDragFillEnd = (event: DragEndEvent) => {
@@ -442,6 +493,12 @@ function App() {
       const newIndex = current.indexOf(String(over.id))
       return arrayMove(current, oldIndex, newIndex)
     })
+  }
+
+  const launchRun = () => {
+    setMascotMood('guide')
+    setMascotLine('A aventura começou. Fecha um warm-up e eu acelero o combo.')
+    playUiSound('play')
   }
 
   return (
@@ -557,14 +614,14 @@ function App() {
             </div>
 
             <div className="hero-actions">
-              <button className="hero-primary hero-primary-play">
+              <button className="hero-primary hero-primary-play" onClick={launchRun}>
                 <Play size={18} fill="currentColor" />
                 <span>
                   <strong>{playTitle}</strong>
                   <small>{playCaption}</small>
                 </span>
               </button>
-              <button className="hero-secondary">Ver trilha</button>
+              <button className="hero-secondary" onClick={() => playUiSound('click')}>Ver trilha</button>
             </div>
 
             <div className={`mascot-console mascot-console-${mascotMood}`}>
@@ -751,12 +808,15 @@ function App() {
                   <button
                     key={filter}
                     className={`filter-chip${filter === activeFilter ? ' active' : ''}`}
-                    onClick={() => setActiveFilter(filter)}
+                    onClick={() => {
+                      setActiveFilter(filter)
+                      playUiSound('click')
+                    }}
                   >
                     {filter}
                   </button>
                 ))}
-                <button className="icon-chip" aria-label="Pesquisa">
+                <button className="icon-chip" aria-label="Pesquisa" onClick={() => playUiSound('click')}>
                   <Search size={16} />
                 </button>
               </div>
@@ -1052,11 +1112,11 @@ function App() {
         </section>
 
         <footer className="bottom-dock">
-          <button><Map size={16} /> Mapa</button>
-          <button><Search size={16} /> Review</button>
-          <button className="dock-primary"><Play size={16} /> Play</button>
-          <button><Store size={16} /> Store</button>
-          <button><CalendarDays size={16} /> Eventos</button>
+          <button onClick={() => playUiSound('click')}><Map size={16} /> Mapa</button>
+          <button onClick={() => playUiSound('click')}><Search size={16} /> Review</button>
+          <button className="dock-primary" onClick={launchRun}><Play size={16} /> Play</button>
+          <button onClick={() => playUiSound('click')}><Store size={16} /> Store</button>
+          <button onClick={() => playUiSound('click')}><CalendarDays size={16} /> Eventos</button>
         </footer>
       </main>
     </div>
