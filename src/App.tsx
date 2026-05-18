@@ -457,7 +457,7 @@ function App() {
               <div className="hero-speech hero-speech-top">Let&apos;s learn!</div>
               <div className="hero-speech hero-speech-bottom">Level up!</div>
               <div className="hero-mascot-stage">
-                <img src="/pollinations/hero-scene.png" alt="Spark em uma cena principal do SparkLingo" className="hero-mascot-image" />
+                <img src="/pollinations/hero-mascot-transparent-attempt-removebg-preview.png" alt="Spark em uma cena principal do SparkLingo" className="hero-mascot-image" />
               </div>
               <div className="hero-stat-card hero-stat-card-top">
                 <Zap size={16} />
