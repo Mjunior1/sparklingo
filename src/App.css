@@ -534,7 +534,7 @@
 
 .hero-scene-panel {
   position: relative;
-  min-height: 360px;
+  min-height: 372px;
   border-radius: 36px;
   overflow: hidden;
   background:
@@ -558,11 +558,11 @@
 .hero-scene-panel::after {
   content: '';
   position: absolute;
-  inset: auto 52px 32px 52px;
-  height: 92px;
+  inset: auto 46px 24px 46px;
+  height: 112px;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(112, 74, 241, 0.26), rgba(112, 74, 241, 0) 70%);
-  filter: blur(8px);
+  background: radial-gradient(circle, rgba(112, 74, 241, 0.28), rgba(112, 74, 241, 0) 72%);
+  filter: blur(12px);
 }
 
 .hero-sidekick-badge,
@@ -575,18 +575,18 @@
 }
 
 .hero-sidekick-badge {
-  left: 26px;
-  top: 110px;
+  left: 30px;
+  top: 128px;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  width: min(44%, 190px);
-  border-radius: 22px;
-  background: rgba(255, 255, 255, 0.66);
+  gap: 10px;
+  padding: 10px 12px;
+  width: min(40%, 172px);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.58);
   border: 1px solid rgba(255, 255, 255, 0.5);
-  box-shadow: 0 18px 34px rgba(111, 94, 187, 0.1);
-  backdrop-filter: blur(12px);
+  box-shadow: 0 14px 30px rgba(111, 94, 187, 0.08);
+  backdrop-filter: blur(10px);
   z-index: 4;
 }
 
@@ -597,27 +597,27 @@
 
 .hero-sidekick-badge strong {
   color: #35295f;
-  font-size: 0.95rem;
+  font-size: 0.9rem;
 }
 
 .hero-sidekick-badge span {
   margin-top: 2px;
   color: #7a6cab;
-  font-size: 0.8rem;
+  font-size: 0.76rem;
 }
 
 .hero-sidekick-image {
-  width: 54px;
-  height: 54px;
+  width: 42px;
+  height: 42px;
   object-fit: contain;
   flex: 0 0 auto;
-  filter: drop-shadow(0 10px 18px rgba(97, 63, 202, 0.16));
+  filter: drop-shadow(0 8px 16px rgba(97, 63, 202, 0.12));
 }
 
 .hero-mascot-stage {
-  right: 18px;
-  bottom: 10px;
-  width: min(68%, 330px);
+  right: 20px;
+  bottom: 14px;
+  width: min(72%, 350px);
   aspect-ratio: 1 / 1;
   overflow: visible;
   z-index: 2;
@@ -630,11 +630,11 @@
 }
 
 .hero-mascot-stage::before {
-  inset: auto 10% 6% 14%;
-  height: 16%;
+  inset: auto 8% 5% 12%;
+  height: 18%;
   border-radius: 999px;
-  background: radial-gradient(circle, rgba(80, 48, 190, 0.24), rgba(80, 48, 190, 0) 72%);
-  filter: blur(10px);
+  background: radial-gradient(circle, rgba(80, 48, 190, 0.22), rgba(80, 48, 190, 0) 74%);
+  filter: blur(14px);
 }
 
 .hero-mascot-stage::after {
@@ -648,10 +648,11 @@
   height: 100%;
   object-fit: contain;
   object-position: bottom right;
-  transform: translateY(3%);
+  transform: translateY(2%);
   filter:
-    saturate(1.05)
-    drop-shadow(0 22px 34px rgba(94, 65, 214, 0.2));
+    saturate(1.04)
+    contrast(1.01)
+    drop-shadow(0 22px 34px rgba(94, 65, 214, 0.16));
   animation: float-soft 4.6s ease-in-out infinite;
   z-index: 2;
 }
@@ -694,8 +695,8 @@
 }
 
 .hero-speech-bottom {
-  left: 26px;
-  bottom: 92px;
+  left: 30px;
+  bottom: 100px;
 }
 
 .hero-stat-card {
@@ -731,8 +732,8 @@
 }
 
 .hero-stat-card-bottom {
-  left: 26px;
-  bottom: 16px;
+  left: 30px;
+  bottom: 24px;
 }
 
 .hero-scene-footer {
@@ -1954,7 +1955,7 @@
   .hero-sidekick-badge {
     left: 18px;
     top: 84px;
-    width: min(52%, 180px);
+    width: min(52%, 168px);
   }
 
   .hero-scene-panel::before {
@@ -1979,12 +1980,12 @@
   .hero-mascot-stage {
     right: 10px;
     bottom: 10px;
-    width: min(86%, 320px);
+    width: min(84%, 316px);
   }
 
   .hero-mascot-image {
-    width: 112%;
-    height: 112%;
+    width: 108%;
+    height: 108%;
   }
 
   .hero-sidekick-badge {
