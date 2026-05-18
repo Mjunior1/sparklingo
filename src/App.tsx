@@ -219,7 +219,7 @@ const exercises: Exercise[] = [
     prompt: 'Put the words in the correct order.',
     art: '/pollinations/grammar-card.png',
     artAlt: 'Caderno e lápis estilizados',
-    scrambled: ['you', 'where', 'are', 'from', '?'],
+    scrambled: ['you', 'Where', 'are', 'from', '?'],
     solution: ['Where', 'are', 'you', 'from', '?'],
     explanation: 'Em perguntas com o verbo to be, a ordem correta é interrogativo + verbo + sujeito.',
     reward: 40,
@@ -248,6 +248,12 @@ const leaderboard = [
   { name: 'Sam', xp: '690 XP' },
 ]
 
+const normalizeTokenOrder = (words: string[]) => words.map((word) => word.toLowerCase()).join('|')
+const formatSentence = (words: string[]) => {
+  const sentence = words.join(' ').replace(/\s([?.!,;:])/g, '$1')
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1)
+}
+
 function App() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
   const [activeFilter, setActiveFilter] = useState<FilterKey>('Todos')
@@ -258,7 +264,12 @@ function App() {
     q6: null,
   })
   const [dragFillAnswer, setDragFillAnswer] = useState<string | null>(null)
-  const [orderWords, setOrderWords] = useState<string[]>(['you', 'where', 'are', 'from', '?'])
+  const [orderWords, setOrderWords] = useState<string[]>(['you', 'Where', 'are', 'from', '?'])
+
+  const orderingSolved = useMemo(() => {
+    const orderingExercise = exercises.find((exercise): exercise is OrderingExercise => exercise.kind === 'ordering')
+    return orderingExercise ? normalizeTokenOrder(orderWords) === normalizeTokenOrder(orderingExercise.solution) : false
+  }, [orderWords])
 
   const visibleExercises = useMemo(() => {
     if (activeFilter === 'Todos') return exercises
@@ -269,19 +280,19 @@ function App() {
     return exercises.filter((exercise) => {
       if (exercise.kind === 'multiple-choice') return choiceAnswers[exercise.id] === exercise.correct
       if (exercise.kind === 'drag-fill') return dragFillAnswer === exercise.correct
-      return orderWords.join('|') === exercise.solution.join('|')
+      return orderingSolved
     }).length
-  }, [choiceAnswers, dragFillAnswer, orderWords])
+  }, [choiceAnswers, dragFillAnswer, orderingSolved])
 
   const totalXp = useMemo(() => {
     let xp = 0
     exercises.forEach((exercise) => {
       if (exercise.kind === 'multiple-choice' && choiceAnswers[exercise.id] === exercise.correct) xp += exercise.reward
       if (exercise.kind === 'drag-fill' && dragFillAnswer === exercise.correct) xp += exercise.reward
-      if (exercise.kind === 'ordering' && orderWords.join('|') === exercise.solution.join('|')) xp += exercise.reward
+      if (exercise.kind === 'ordering' && orderingSolved) xp += exercise.reward
     })
     return xp
-  }, [choiceAnswers, dragFillAnswer, orderWords])
+  }, [choiceAnswers, dragFillAnswer, orderingSolved])
 
   const handleChoiceSelect = (id: MultipleChoiceExercise['id'], option: string) => {
     setChoiceAnswers((current) => ({ ...current, [id]: option }))
@@ -349,20 +360,20 @@ function App() {
         <section className="hero-card">
           <div className="hero-copy">
             <div className="hero-topbar">
-              <div>
+              <div className="hero-intro">
                 <p className="micro-label">Hey, learner!</p>
-                <h1>Vamos turbinar seu inglês hoje?</h1>
+                <h1>Vamos turbinar seu ingl?s hoje?</h1>
                 <p className="hero-subtitle">
-                  Missões curtas, exercícios vivos e uma trilha com energia de jogo, não de dashboard.
+                  Miss?es curtas, exerc?cios vivos e uma trilha com energia de jogo, n?o de dashboard.
                 </p>
               </div>
+            </div>
 
-              <div className="hero-status">
-                <div className="status-pill"><Flame size={16} /> 25</div>
-                <div className="status-pill"><Gem size={16} /> 340</div>
-                <div className="status-pill"><Bell size={16} /> 1</div>
-                <div className="avatar-pill"><UserRound size={18} /></div>
-              </div>
+            <div className="hero-status">
+              <div className="status-pill"><Flame size={16} /> 25</div>
+              <div className="status-pill"><Gem size={16} /> 340</div>
+              <div className="status-pill"><Bell size={16} /> 1</div>
+              <div className="avatar-pill"><UserRound size={18} /></div>
             </div>
 
             <div className="hero-progress-row">
@@ -460,7 +471,7 @@ function App() {
 
         <section className="journey-section">
           <div className="section-heading-row">
-            <div>
+            <div className="section-heading-copy">
               <p className="micro-label">Sua trilha</p>
               <h2>Continue sua jornada</h2>
             </div>
@@ -526,7 +537,7 @@ function App() {
 
         <section className="quiz-zone">
           <div className="quiz-zone-hero">
-            <div>
+            <div className="quiz-zone-copy-block">
               <p className="micro-label">Escolha seu quiz</p>
               <h2>Aprender com cara de jogo, não de formulário</h2>
               <p className="quiz-zone-copy">
@@ -688,7 +699,7 @@ function App() {
                     )
                   }
 
-                  const isOrdered = orderWords.join('|') === exercise.solution.join('|')
+                  const isOrdered = normalizeTokenOrder(orderWords) === normalizeTokenOrder(exercise.solution)
 
                   return (
                     <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
@@ -719,7 +730,7 @@ function App() {
                       </DndContext>
 
                       <div className={`feedback-strip${isOrdered ? ' success' : ''}`}>
-                        <span>{isOrdered ? `Perfeito: ${exercise.solution.join(' ')}` : exercise.explanation}</span>
+                        <span>{isOrdered ? `Perfeito: ${formatSentence(exercise.solution)}` : exercise.explanation}</span>
                         <div className="feedback-actions">
                           <strong>⚡ {exercise.reward} XP</strong>
                           <button className="retry-link" onClick={() => setOrderWords([...exercise.scrambled])}>
