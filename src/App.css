@@ -181,7 +181,7 @@
 
 .hero-card {
   display: grid;
-  grid-template-columns: minmax(0, 1.05fr) minmax(340px, 0.95fr);
+  grid-template-columns: minmax(0, 1.18fr) minmax(320px, 0.82fr);
   gap: 22px;
   padding: 26px;
   border-radius: 38px;
@@ -261,7 +261,7 @@
   color: #2a2054;
   font-size: clamp(2.1rem, 3.4vw, 3.8rem);
   line-height: 0.96;
-  max-width: 8ch;
+  max-width: 11ch;
 }
 
 .hero-subtitle,
@@ -273,7 +273,7 @@
 }
 
 .hero-subtitle {
-  max-width: 40ch;
+  max-width: 52ch;
 }
 
 .hero-topbar {
@@ -283,7 +283,7 @@
 .hero-intro {
   display: grid;
   gap: 10px;
-  max-width: 36rem;
+  max-width: 44rem;
 }
 
 .hero-status {
@@ -489,7 +489,7 @@
 
 .hero-scene-panel {
   position: relative;
-  min-height: 430px;
+  min-height: 390px;
   border-radius: 36px;
   overflow: hidden;
   background:
@@ -531,7 +531,7 @@
 .hero-mascot-stage {
   right: 22px;
   bottom: 22px;
-  width: min(74%, 410px);
+  width: min(68%, 340px);
   aspect-ratio: 1 / 1;
   border-radius: 42px;
   overflow: hidden;
@@ -866,9 +866,6 @@
   height: 13px;
 }
 
-.lesson-card.is-mid {
-  transform: none;
-}
 
 .mission-band {
   border-radius: 34px;

@@ -362,9 +362,9 @@ function App() {
             <div className="hero-topbar">
               <div className="hero-intro">
                 <p className="micro-label">Hey, learner!</p>
-                <h1>Vamos turbinar seu ingl?s hoje?</h1>
+                <h1>Vamos turbinar seu inglês hoje?</h1>
                 <p className="hero-subtitle">
-                  Miss?es curtas, exerc?cios vivos e uma trilha com energia de jogo, n?o de dashboard.
+                  Missões curtas, exercícios vivos e uma trilha com energia de jogo, não de dashboard.
                 </p>
               </div>
             </div>
