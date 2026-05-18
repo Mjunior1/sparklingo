@@ -1,5 +1,7 @@
 import './App.css'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AuthScreen } from './auth/AuthScreen'
+import { useAuth } from './auth/AuthProvider'
 import {
   Bell,
   BookOpen,
@@ -275,6 +277,7 @@ const getExerciseMode = (exercise: Exercise) => {
 }
 
 function App() {
+  const { status, user, profile, signOut, platformConfig } = useAuth()
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
   const [activeFilter, setActiveFilter] = useState<FilterKey>('Todos')
   const [choiceAnswers, setChoiceAnswers] = useState<Record<string, string | null>>({
@@ -331,6 +334,7 @@ function App() {
   const playTitle = completedCount === 0 ? 'Play agora' : completedCount < 3 ? 'Continuar run' : 'Fechar streak'
   const playCaption = completedCount === 0 ? '5 min de aventura guiada' : completedCount < 3 ? 'Você já engatou o ritmo' : 'Últimos desafios do combo'
   const sessionIntensity = Math.min(100, Math.round((totalXp / totalAvailableXp) * 100))
+  const firstName = profile?.displayName?.split(' ')[0] ?? user?.displayName?.split(' ')[0] ?? 'learner'
 
   const playUiSound = useCallback((kind: 'success' | 'error' | 'combo' | 'play' | 'click') => {
     if (typeof window === 'undefined') return
@@ -501,6 +505,29 @@ function App() {
     playUiSound('play')
   }
 
+  if (status === 'loading') {
+    return (
+      <div className="app-shell app-shell-loading">
+        <main className="main-panel">
+          <section className="hero-card auth-loading-card">
+            <div className="auth-loading-copy">
+              <p className="micro-label">SparkLingo</p>
+              <h1>Conectando sua jornada...</h1>
+              <p className="hero-subtitle">
+                Estamos preparando seu perfil, progresso e configurações da plataforma.
+              </p>
+              <div className="auth-loading-pulse" />
+            </div>
+          </section>
+        </main>
+      </div>
+    )
+  }
+
+  if (!user) {
+    return <AuthScreen />
+  }
+
   return (
     <div className="app-shell">
       <aside className="sidebar">
@@ -544,10 +571,10 @@ function App() {
           <div className="hero-copy">
             <div className="hero-topbar">
               <div className="hero-intro">
-                <p className="micro-label">Hey, learner!</p>
-                <h1>Vamos turbinar seu inglês hoje?</h1>
+                <p className="micro-label">Hey, {firstName}!</p>
+                <h1>{platformConfig?.heroHeadline ?? 'Vamos turbinar seu inglês hoje?'}</h1>
                 <p className="hero-subtitle">
-                  Missões curtas, exercícios vivos e uma trilha com energia de jogo, não de dashboard.
+                  {platformConfig?.heroSubtitle ?? 'Missões curtas, exercícios vivos e uma trilha com energia de jogo, não de dashboard.'}
                 </p>
               </div>
             </div>
@@ -556,7 +583,13 @@ function App() {
               <div className="status-pill"><Flame size={16} /> 25</div>
               <div className="status-pill"><Gem size={16} /> 340</div>
               <div className="status-pill"><Bell size={16} /> 1</div>
-              <div className="avatar-pill"><UserRound size={18} /></div>
+              <button className="avatar-pill avatar-action" onClick={() => signOut()} title="Sair" type="button">
+                {profile?.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt={profile.displayName} className="avatar-image" />
+                ) : (
+                  <UserRound size={18} />
+                )}
+              </button>
             </div>
 
             <div className="hero-quick-grid">
