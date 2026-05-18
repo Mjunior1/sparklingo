@@ -1,5 +1,6 @@
-import { mkdir, writeFile } from 'node:fs/promises'
-import { join } from 'node:path'
+import { spawnSync } from 'node:child_process'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
+import { join, parse } from 'node:path'
 
 const outputDir = join(process.cwd(), 'public', 'pollinations')
 
@@ -10,9 +11,16 @@ const assets = [
       'premium educational game hero scene, adorable purple mascot holding a giant pencil, glossy 3d toy-like render, high relief, character on the right side, empty breathing room on the left for interface overlays, harmonious lavender and lilac environment, soft floor shadow, cinematic depth, whimsical sparkles, no text, no frame, no border',
   },
   {
+    filename: 'hero-mascot.png',
+    prompt:
+      'adorable purple mascot holding a giant pencil, full body, premium educational game art, glossy 3d toy render, isolated character only, centered composition, clean silhouette, no floor, no scene, no frame, no border, plain light background for easy background removal',
+    removeBackground: true,
+  },
+  {
     filename: 'sidebar-mascot.png',
     prompt:
-      'adorable purple mascot holding a giant pencil, full body, glossy 3d toy-like render, cute expressive eyes, premium children learning game art, centered composition, soft purple gradient background, subtle floor shadow, no text, no frame, no border',
+      'adorable purple mascot holding a giant pencil, full body, glossy 3d toy-like render, cute expressive eyes, premium children learning game art, centered composition, plain light background, no floor, no scene, no text, no frame, no border',
+    removeBackground: true,
   },
   {
     filename: 'airport-card.png',
@@ -78,5 +86,25 @@ for (const asset of assets) {
   const bytes = Buffer.from(await response.arrayBuffer())
   await writeFile(join(outputDir, asset.filename), bytes)
   console.log(`saved ${asset.filename}`)
+
+  if (asset.removeBackground) {
+    const { name } = parse(asset.filename)
+    const tempInput = join(outputDir, `${name}.source.jpg`)
+    const outputFile = join(outputDir, asset.filename)
+    await writeFile(tempInput, bytes)
+
+    const result = spawnSync(
+      'python',
+      ['scripts/remove_background.py', tempInput, outputFile],
+      { cwd: process.cwd(), stdio: 'inherit' },
+    )
+
+    if (result.status !== 0) {
+      throw new Error(`rembg failed for ${asset.filename}`)
+    }
+
+    await rm(tempInput, { force: true })
+  }
+
   await sleep(6000)
 }
