@@ -250,6 +250,10 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.84), 0 16px 24px rgba(111, 92, 176, 0.08);
 }
 
+.auth-social-button svg {
+  flex: 0 0 auto;
+}
+
 .auth-submit-button {
   background: linear-gradient(90deg, #7f57ff, #a362ff);
   color: #fff;
@@ -327,10 +331,26 @@
   background: rgba(255, 246, 208, 0.82);
   border: 1px solid rgba(255, 208, 102, 0.32);
   color: #6a4a14;
+  display: grid;
+  gap: 10px;
+}
+
+.auth-setup-head {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #5b3368;
+}
+
+.auth-setup-box p {
+  margin: 0;
 }
 
 .auth-setup-box code {
+  display: inline-block;
   font-size: 0.86rem;
+  line-height: 1.7;
+  word-break: break-word;
 }
 
 .auth-secondary-note {

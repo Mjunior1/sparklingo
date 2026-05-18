@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Flame, Globe2, Play, ShieldCheck, Sparkles, Zap } from 'lucide-react'
+import { AlertCircle, Flame, Play, ShieldCheck, Sparkles, Zap } from 'lucide-react'
 import { useAuth } from './AuthProvider'
 import './AuthScreen.css'
 
@@ -11,6 +11,29 @@ const firebaseEnvVars = [
   'VITE_FIREBASE_MESSAGING_SENDER_ID',
   'VITE_FIREBASE_APP_ID',
 ]
+
+function GoogleMark() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" width="18" height="18">
+      <path
+        fill="#EA4335"
+        d="M12 10.2v3.9h5.4c-.2 1.2-.9 2.2-1.9 2.9l3.1 2.4c1.8-1.7 2.9-4.2 2.9-7.1 0-.7-.1-1.4-.2-2H12z"
+      />
+      <path
+        fill="#34A853"
+        d="M12 22c2.6 0 4.9-.9 6.5-2.5l-3.1-2.4c-.9.6-2 .9-3.4.9-2.6 0-4.8-1.8-5.6-4.2l-3.2 2.5C4.8 19.6 8.1 22 12 22z"
+      />
+      <path
+        fill="#4A90E2"
+        d="M6.4 13.8c-.2-.6-.4-1.2-.4-1.8s.1-1.3.4-1.8L3.2 7.7C2.4 9.1 2 10.5 2 12s.4 2.9 1.2 4.3l3.2-2.5z"
+      />
+      <path
+        fill="#FBBC05"
+        d="M12 6c1.4 0 2.6.5 3.6 1.4l2.7-2.7C16.8 3.1 14.6 2 12 2 8.1 2 4.8 4.4 3.2 7.7l3.2 2.5C7.2 7.8 9.4 6 12 6z"
+      />
+    </svg>
+  )
+}
 
 const prettifyAuthError = (message: string) => {
   if (message.includes('auth/invalid-credential')) return 'Credenciais inválidas. Verifique o e-mail e a senha.'
@@ -141,15 +164,20 @@ export function AuthScreen() {
 
           {!firebaseReady && (
             <div className="auth-setup-box">
-              Configure o Firebase no front criando um arquivo <code>.env.local</code> com:
-              <br />
+              <div className="auth-setup-head">
+                <AlertCircle size={18} />
+                <strong>Firebase não configurado nesta execução</strong>
+              </div>
+              <p>
+                Localmente, use <code>.env.local</code>. No Railway, cadastre as variáveis de ambiente do front.
+              </p>
               <code>{firebaseEnvVars.join(', ')}</code>
             </div>
           )}
 
           {platformConfig?.allowGoogleAuth !== false && (
             <button className="auth-social-button" disabled={!firebaseReady || submitting} onClick={handleGoogle} type="button">
-              <Globe2 size={18} />
+              <GoogleMark />
               Continuar com Google
             </button>
           )}
