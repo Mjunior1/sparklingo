@@ -3,6 +3,14 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { AuthEntry } from './auth/AuthEntry'
 import { useAuth } from './auth/AuthProvider'
 import { OnboardingScreen } from './auth/OnboardingScreen'
+import {
+  getAchievementCatalog,
+  getLessonsCatalog,
+  getQuizCatalog,
+  type AchievementCatalogItem,
+  type LessonCatalogItem,
+} from './services/catalog'
+import { getLessonProgressMap, saveLessonProgressMap, type LessonProgressMap } from './services/lessonProgress'
 import { getUserProgress, saveUserProgress, type UserProgress } from './services/progress'
 import {
   Bell,
@@ -40,15 +48,6 @@ type NavItem = {
   label: string
   icon: typeof Home
   active?: boolean
-}
-
-type LessonCard = {
-  category: string
-  title: string
-  progress: number
-  image: string
-  tone: 'sky' | 'violet' | 'mint'
-  blurb: string
 }
 
 type MultipleChoiceExercise = {
@@ -127,10 +126,11 @@ const dailyMissions = [
   { title: 'Complete 1 quiz', progress: '0/1', xp: 50, progressValue: 8, icon: Sparkles },
 ]
 
-const lessonCards: LessonCard[] = [
+const lessonCards: LessonCatalogItem[] = [
   {
     category: 'Vocabulário',
     title: 'At the Airport',
+    id: 'lesson-airport',
     progress: 60,
     image: '/pollinations/airport-card.png',
     tone: 'sky',
@@ -139,6 +139,7 @@ const lessonCards: LessonCard[] = [
   {
     category: 'Gramática',
     title: 'Present Simple',
+    id: 'lesson-present-simple',
     progress: 40,
     image: '/pollinations/grammar-card.png',
     tone: 'violet',
@@ -147,6 +148,7 @@ const lessonCards: LessonCard[] = [
   {
     category: 'Listening',
     title: 'Daily Routines',
+    id: 'lesson-daily-routines',
     progress: 20,
     image: '/pollinations/listening-card.png',
     tone: 'mint',
@@ -296,6 +298,9 @@ function App() {
   const [activeReaction, setActiveReaction] = useState<ActiveReaction | null>(null)
   const [progressHydrated, setProgressHydrated] = useState(false)
   const [progressSnapshot, setProgressSnapshot] = useState<UserProgress | null>(null)
+  const [lessonsCatalog, setLessonsCatalog] = useState<LessonCatalogItem[]>(lessonCards)
+  const [quizCatalogCount, setQuizCatalogCount] = useState(exercises.length)
+  const [achievementCatalog, setAchievementCatalog] = useState<AchievementCatalogItem[]>([])
   const previousOrderingSolved = useRef(false)
   const audioContextRef = useRef<AudioContext | null>(null)
 
@@ -441,13 +446,25 @@ function App() {
     let cancelled = false
     setProgressHydrated(false)
 
-    getUserProgress(user.uid)
-      .then((nextProgress) => {
+    Promise.all([
+      getUserProgress(user.uid),
+      getLessonProgressMap(user.uid),
+      getLessonsCatalog(),
+      getQuizCatalog(),
+      getAchievementCatalog(),
+    ])
+      .then(([nextProgress, nextLessonProgress, nextLessonsCatalog, nextQuizCatalog, nextAchievementCatalog]) => {
         if (cancelled) return
         setChoiceAnswers((current) => ({ ...current, ...nextProgress.choiceAnswers }))
         setDragFillAnswer(nextProgress.dragFillAnswer)
         setOrderWords(nextProgress.orderWords)
         setProgressSnapshot(nextProgress)
+        setLessonsCatalog(nextLessonsCatalog.map((lesson) => ({
+          ...lesson,
+          progress: nextLessonProgress[lesson.id] ?? lesson.progress,
+        })))
+        setQuizCatalogCount(nextQuizCatalog.length)
+        setAchievementCatalog(nextAchievementCatalog)
         setProgressHydrated(true)
       })
       .catch(() => {
@@ -533,6 +550,33 @@ function App() {
     patchProfile,
     profile,
   ])
+
+  useEffect(() => {
+    if (!user || !progressHydrated) return
+
+    const vocabularySolved = Number(choiceAnswers.q6 === 'Feliz') + Number(dragFillAnswer === 'swimming')
+    const grammarSolved = Number(choiceAnswers.q1 === 'goes') + Number(choiceAnswers.q4 === 'will stay') + Number(orderingSolved)
+    const listeningSolved = Number(choiceAnswers.q3 === 'It is a dog.')
+
+    const nextLessonProgress: LessonProgressMap = {
+      'lesson-airport': Math.round((vocabularySolved / 2) * 100),
+      'lesson-present-simple': Math.round((grammarSolved / 3) * 100),
+      'lesson-daily-routines': Math.round((listeningSolved / 1) * 100),
+    }
+
+    const timeout = window.setTimeout(() => {
+      void saveLessonProgressMap(user.uid, nextLessonProgress)
+        .then(() => {
+          setLessonsCatalog((current) => current.map((lesson) => ({
+            ...lesson,
+            progress: nextLessonProgress[lesson.id] ?? lesson.progress,
+          })))
+        })
+        .catch(() => {})
+    }, 460)
+
+    return () => window.clearTimeout(timeout)
+  }, [user, progressHydrated, choiceAnswers, dragFillAnswer, orderingSolved])
 
   const handleChoiceSelect = (id: MultipleChoiceExercise['id'], option: string) => {
     const exercise = exercises.find((item): item is MultipleChoiceExercise => item.id === id && item.kind === 'multiple-choice')
@@ -738,7 +782,7 @@ function App() {
               </div>
               <div className="hero-badge">
                 <Sparkles size={16} />
-                <span>6 tipos de desafio</span>
+                <span>{quizCatalogCount} desafios no catálogo</span>
               </div>
               <div className="hero-badge">
                 <Medal size={16} />
@@ -841,7 +885,7 @@ function App() {
           </div>
 
           <div className="lesson-showcase">
-            {lessonCards.map((lesson, index) => (
+            {lessonsCatalog.map((lesson, index) => (
               <article
                 key={lesson.title}
                 className={`lesson-card lesson-tone-${lesson.tone}${index === 0 ? ' is-featured' : ''}${index === 1 ? ' is-mid' : ''}`}
@@ -1190,9 +1234,13 @@ function App() {
               <article className="rail-card badges-card">
                 <h3>Conquistas recentes</h3>
                 <div className="badge-row">
-                  <span className="badge"><Headphones size={22} /></span>
-                  <span className="badge"><Star size={22} /></span>
-                  <span className="badge"><Target size={22} /></span>
+                  {achievementCatalog.slice(0, 3).map((achievement) => (
+                    <span key={achievement.id} className="badge" title={achievement.title}>
+                      {achievement.icon === 'headphones' && <Headphones size={22} />}
+                      {achievement.icon === 'star' && <Star size={22} />}
+                      {achievement.icon === 'target' && <Target size={22} />}
+                    </span>
+                  ))}
                 </div>
                 <small>{completedCount} de {exercises.length} desafios concluídos</small>
               </article>
@@ -1202,7 +1250,7 @@ function App() {
                   <Trophy size={28} />
                   <span>Desafio especial</span>
                 </div>
-                <strong>Complete 5 quizzes esta semana e ganhe 100 gemas!</strong>
+                <strong>Complete {Math.min(5, Math.max(3, quizCatalogCount))} quizzes esta semana e ganhe 100 gemas!</strong>
                 <div className="track dark">
                   <div className="track-fill gold" style={{ width: '40%' }} />
                 </div>
