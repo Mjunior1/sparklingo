@@ -108,6 +108,8 @@ type ActiveReaction = {
   label: string
 }
 
+type SyncState = 'idle' | 'saving' | 'saved' | 'error'
+
 const navItems: NavItem[] = [
   { label: 'Início', icon: Home, active: true },
   { label: 'Missões', icon: Target },
@@ -301,6 +303,8 @@ function App() {
   const [lessonsCatalog, setLessonsCatalog] = useState<LessonCatalogItem[]>(lessonCards)
   const [quizCatalogCount, setQuizCatalogCount] = useState(exercises.length)
   const [achievementCatalog, setAchievementCatalog] = useState<AchievementCatalogItem[]>([])
+  const [syncState, setSyncState] = useState<SyncState>('idle')
+  const [syncMessage, setSyncMessage] = useState('Progresso local pronto para sincronizar.')
   const previousOrderingSolved = useRef(false)
   const audioContextRef = useRef<AudioContext | null>(null)
 
@@ -465,10 +469,14 @@ function App() {
         })))
         setQuizCatalogCount(nextQuizCatalog.length)
         setAchievementCatalog(nextAchievementCatalog)
+        setSyncState('saved')
+        setSyncMessage('Progresso carregado do Firestore.')
         setProgressHydrated(true)
       })
       .catch(() => {
         if (cancelled) return
+        setSyncState('error')
+        setSyncMessage('Não foi possível carregar o progresso do Firestore.')
         setProgressHydrated(true)
       })
 
@@ -506,6 +514,8 @@ function App() {
       .map((exercise) => exercise.id)
 
     const timeout = window.setTimeout(() => {
+      setSyncState('saving')
+      setSyncMessage('Salvando progresso da sessão...')
       void (async () => {
         try {
           const nextProgress = await saveUserProgress(user.uid, {
@@ -532,8 +542,11 @@ function App() {
               level: nextProgress.level,
             })
           }
+          setSyncState('saved')
+          setSyncMessage('Progresso salvo no Firestore.')
         } catch {
-          // keep the session responsive even if persistence fails temporarily
+          setSyncState('error')
+          setSyncMessage('Falha ao salvar no Firestore. Verifique bloqueadores/extensões ou rules.')
         }
       })()
     }, 420)
@@ -565,14 +578,21 @@ function App() {
     }
 
     const timeout = window.setTimeout(() => {
+      setSyncState('saving')
+      setSyncMessage('Atualizando progresso das aulas...')
       void saveLessonProgressMap(user.uid, nextLessonProgress)
         .then(() => {
           setLessonsCatalog((current) => current.map((lesson) => ({
             ...lesson,
             progress: nextLessonProgress[lesson.id] ?? lesson.progress,
           })))
+          setSyncState('saved')
+          setSyncMessage('Aulas sincronizadas com o Firestore.')
         })
-        .catch(() => {})
+        .catch(() => {
+          setSyncState('error')
+          setSyncMessage('Falha ao sincronizar progresso das aulas.')
+        })
     }, 460)
 
     return () => window.clearTimeout(timeout)
@@ -727,6 +747,10 @@ function App() {
               <div className="status-pill"><Flame size={16} /> 25</div>
               <div className="status-pill"><Gem size={16} /> 340</div>
               <div className="status-pill"><Bell size={16} /> 1</div>
+              <div className={`status-pill sync-pill sync-pill-${syncState}`}>
+                <Zap size={16} />
+                {syncState === 'saving' ? 'salvando' : syncState === 'saved' ? 'sincronizado' : syncState === 'error' ? 'erro' : 'local'}
+              </div>
               <button className="avatar-pill avatar-action" onClick={() => signOut()} title="Sair" type="button">
                 {profile?.avatarUrl ? (
                   <img src={profile.avatarUrl} alt={profile.displayName} className="avatar-image" />
@@ -735,6 +759,8 @@ function App() {
                 )}
               </button>
             </div>
+
+            <p className={`sync-caption sync-caption-${syncState}`}>{syncMessage}</p>
 
             <div className="hero-quick-grid">
               <article className="hero-quick-card">

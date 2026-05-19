@@ -1350,6 +1350,43 @@
   gap: 8px;
 }
 
+.sync-pill-saving {
+  color: #6a4f08;
+  background: rgba(255, 244, 208, 0.94);
+}
+
+.sync-pill-saved {
+  color: #1f7a55;
+  background: rgba(223, 255, 238, 0.94);
+}
+
+.sync-pill-error {
+  color: #8a2444;
+  background: rgba(255, 224, 232, 0.94);
+}
+
+.sync-caption {
+  margin: -6px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.sync-caption-idle {
+  color: #766da0;
+}
+
+.sync-caption-saving {
+  color: #7c6516;
+}
+
+.sync-caption-saved {
+  color: #2f7c5a;
+}
+
+.sync-caption-error {
+  color: #9a3656;
+}
+
 .run-energy span {
   color: #7266a0;
   font-size: 0.8rem;
