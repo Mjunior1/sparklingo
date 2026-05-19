@@ -329,6 +329,7 @@ function App() {
   const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null)
   const previousOrderingSolved = useRef(false)
   const audioContextRef = useRef<AudioContext | null>(null)
+  const audioUnlockedRef = useRef(false)
 
   const orderingSolved = useMemo(() => {
     const orderingExercise = exercises.find((exercise): exercise is OrderingExercise => exercise.kind === 'ordering')
@@ -399,6 +400,7 @@ function App() {
 
   const playUiSound = useCallback((kind: 'success' | 'error' | 'combo' | 'play' | 'click') => {
     if (typeof window === 'undefined') return
+    if (!audioUnlockedRef.current) return
 
     const AudioCtx = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
     if (!AudioCtx) return
@@ -524,6 +526,28 @@ function App() {
       provider: profile?.provider ?? 'unknown',
     })
   }, [profile?.provider, user])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const unlockAudio = () => {
+      audioUnlockedRef.current = true
+      const context = audioContextRef.current
+      if (context && context.state === 'suspended') {
+        void context.resume().catch(() => {})
+      }
+      window.removeEventListener('pointerdown', unlockAudio)
+      window.removeEventListener('keydown', unlockAudio)
+    }
+
+    window.addEventListener('pointerdown', unlockAudio, { once: true })
+    window.addEventListener('keydown', unlockAudio, { once: true })
+
+    return () => {
+      window.removeEventListener('pointerdown', unlockAudio)
+      window.removeEventListener('keydown', unlockAudio)
+    }
+  }, [])
 
   useEffect(() => {
     const exercise = exercises.find((item): item is OrderingExercise => item.kind === 'ordering')
@@ -884,7 +908,7 @@ function App() {
 
   if (isAdmin && view === 'admin') {
     return (
-      <div className="app-shell">
+      <div className="app-shell app-shell-admin">
         <main className="main-panel">
           <AdminScreen
             lessons={lessonsCatalog}
@@ -899,6 +923,7 @@ function App() {
               order: 1,
               active: question.active,
             }))}
+            questions={quizQuestionCatalog}
             platformConfig={platformConfig}
             onBack={() => setView('home')}
             onRefresh={refreshBackendCatalog}

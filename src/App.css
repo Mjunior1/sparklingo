@@ -13,6 +13,10 @@
     linear-gradient(180deg, #fbf8ff 0%, #f3f5ff 54%, #ffffff 100%);
 }
 
+.app-shell-admin {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 .sidebar {
   position: sticky;
   top: 18px;
@@ -181,7 +185,7 @@
 
 .hero-card {
   display: grid;
-  grid-template-columns: minmax(0, 1.34fr) minmax(280px, 0.66fr);
+  grid-template-columns: minmax(0, 1.48fr) minmax(360px, 0.78fr);
   gap: 20px;
   padding: 26px;
   border-radius: 38px;
@@ -261,7 +265,7 @@
   color: #2a2054;
   font-size: clamp(1.95rem, 3vw, 3.35rem);
   line-height: 0.98;
-  max-width: 13ch;
+  max-width: 15ch;
 }
 
 .hero-subtitle,
@@ -273,7 +277,7 @@
 }
 
 .hero-subtitle {
-  max-width: 52ch;
+  max-width: 60ch;
 }
 
 .hero-topbar {
@@ -947,9 +951,9 @@
 .section-heading-row,
 .quiz-zone-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
-  align-items: end;
-  gap: 14px;
+  grid-template-columns: minmax(0, 1.2fr) auto;
+  align-items: start;
+  gap: 22px;
   margin-bottom: 18px;
 }
 
@@ -959,8 +963,9 @@
 }
 
 .journey-meta-pill {
-  max-width: 280px;
-  justify-self: start;
+  max-width: 320px;
+  justify-self: end;
+  align-self: center;
 }
 
 .lesson-showcase {
@@ -1268,18 +1273,22 @@
 
 .quiz-zone-hero h2 {
   font-size: clamp(1.75rem, 2.6vw, 2.55rem);
-  max-width: 13ch;
+  max-width: 16ch;
 }
 
 .quiz-zone-copy {
-  max-width: 48ch;
+  max-width: 62ch;
   margin-top: 10px;
 }
 
 .quiz-zone-chip {
-  max-width: 280px;
-  justify-self: start;
-  align-self: end;
+  max-width: 320px;
+  justify-self: end;
+  align-self: center;
+}
+
+.quiz-zone-copy-block {
+  max-width: 60rem;
 }
 
 .dashboard-layout {
