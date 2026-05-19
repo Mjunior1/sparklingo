@@ -8,6 +8,7 @@ export type UserProfile = {
   displayName: string
   avatarUrl: string
   provider: string
+  role: 'learner' | 'admin'
   xp: number
   streak: number
   level: number
@@ -22,7 +23,7 @@ export type UserProfile = {
 
 export type UserProfileUpdate = Partial<Pick<
   UserProfile,
-  'displayName' | 'avatarUrl' | 'xp' | 'streak' | 'level' | 'onboardingCompleted' | 'learningGoal' | 'focusSkill' | 'dailyMinutes'
+  'displayName' | 'avatarUrl' | 'role' | 'xp' | 'streak' | 'level' | 'onboardingCompleted' | 'learningGoal' | 'focusSkill' | 'dailyMinutes'
 >>
 
 const userProfileRef = (uid: string) => {
@@ -41,6 +42,7 @@ const buildBaseProfile = (user: User): UserProfile => ({
   displayName: fallbackDisplayName(user),
   avatarUrl: user.photoURL ?? '',
   provider: user.providerData[0]?.providerId ?? 'password',
+  role: 'learner',
   xp: 0,
   streak: 0,
   level: 1,

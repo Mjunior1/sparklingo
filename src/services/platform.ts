@@ -1,4 +1,4 @@
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
 import { requireFirebase } from '../lib/firebase'
 
 export type PlatformConfig = {
@@ -38,4 +38,12 @@ export const getPlatformConfig = async () => {
   } catch {
     return defaultPlatformConfig
   }
+}
+
+export const savePlatformConfig = async (config: PlatformConfig) => {
+  const { db } = requireFirebase()
+  await setDoc(doc(db, 'platform', 'runtime'), {
+    ...config,
+    updatedAt: serverTimestamp(),
+  }, { merge: true })
 }

@@ -1,5 +1,6 @@
 import './App.css'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { AdminScreen } from './admin/AdminScreen'
 import { AuthEntry } from './auth/AuthEntry'
 import { useAuth } from './auth/AuthProvider'
 import { OnboardingScreen } from './auth/OnboardingScreen'
@@ -7,15 +8,23 @@ import {
   getAchievementCatalog,
   getLessonsCatalog,
   getQuizCatalog,
+  getQuizQuestions,
   type AchievementCatalogItem,
+  type QuizQuestionItem,
   type LessonCatalogItem,
 } from './services/catalog'
+import { trackProductEvent } from './services/events'
 import { getLessonProgressMap, saveLessonProgressMap, type LessonProgressMap } from './services/lessonProgress'
+import { saveQuizProgress } from './services/quizProgress'
+import { getWeeklyRanking, type LeaderboardEntry } from './services/ranking'
 import { getUserProgress, saveUserProgress, type UserProgress } from './services/progress'
+import { saveSkillProgress } from './services/skillProgress'
+import { completeStudySession, startStudySession } from './services/studySessions'
 import {
   Bell,
   BookOpen,
   CalendarDays,
+  Crown,
   Flame,
   Gamepad2,
   Gem,
@@ -255,17 +264,25 @@ const exercises: Exercise[] = [
   },
 ]
 
-const leaderboard = [
+const normalizeTokenOrder = (words: string[]) => words.map((word) => word.toLowerCase()).join('|')
+const formatSentence = (words: string[]) => {
+  const sentence = words.join(' ').replace(/\s([?.!,;:])/g, '$1')
+  return sentence.charAt(0).toUpperCase() + sentence.slice(1)
+}
+
+const fallbackLeaderboard: LeaderboardEntry[] = [
   { name: 'Kate', xp: '1250 XP' },
   { name: 'You', xp: '980 XP', highlighted: true },
   { name: 'Mark', xp: '870 XP' },
   { name: 'Sam', xp: '690 XP' },
 ]
 
-const normalizeTokenOrder = (words: string[]) => words.map((word) => word.toLowerCase()).join('|')
-const formatSentence = (words: string[]) => {
-  const sentence = words.join(' ').replace(/\s([?.!,;:])/g, '$1')
-  return sentence.charAt(0).toUpperCase() + sentence.slice(1)
+const skillByTag: Record<Exclude<FilterKey, 'Todos'>, string> = {
+  'Gramática': 'grammar',
+  'Vocabulário': 'vocabulary',
+  Listening: 'listening',
+  Reading: 'reading',
+  Speaking: 'speaking',
 }
 
 const mascotTitles: Record<MascotMood, string> = {
@@ -303,8 +320,13 @@ function App() {
   const [lessonsCatalog, setLessonsCatalog] = useState<LessonCatalogItem[]>(lessonCards)
   const [quizCatalogCount, setQuizCatalogCount] = useState(exercises.length)
   const [achievementCatalog, setAchievementCatalog] = useState<AchievementCatalogItem[]>([])
+  const [quizQuestionCatalog, setQuizQuestionCatalog] = useState<QuizQuestionItem[]>([])
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(fallbackLeaderboard)
   const [syncState, setSyncState] = useState<SyncState>('idle')
   const [syncMessage, setSyncMessage] = useState('Progresso local pronto para sincronizar.')
+  const [view, setView] = useState<'home' | 'admin'>('home')
+  const [sessionId, setSessionId] = useState<string | null>(null)
+  const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null)
   const previousOrderingSolved = useRef(false)
   const audioContextRef = useRef<AudioContext | null>(null)
 
@@ -351,6 +373,29 @@ function App() {
   const playCaption = completedCount === 0 ? '5 min de aventura guiada' : completedCount < 3 ? 'Você já engatou o ritmo' : 'Últimos desafios do combo'
   const sessionIntensity = Math.min(100, Math.round((totalXp / totalAvailableXp) * 100))
   const firstName = profile?.displayName?.split(' ')[0] ?? user?.displayName?.split(' ')[0] ?? 'learner'
+  const isAdmin = profile?.role === 'admin'
+
+  const refreshBackendCatalog = useCallback(async () => {
+    if (!user) return
+
+    const [nextLessonProgress, nextLessonsCatalog, nextQuizCatalog, nextAchievementCatalog, nextQuizQuestions, nextLeaderboard] = await Promise.all([
+      getLessonProgressMap(user.uid),
+      getLessonsCatalog(),
+      getQuizCatalog(),
+      getAchievementCatalog(),
+      getQuizQuestions(),
+      getWeeklyRanking(user.uid),
+    ])
+
+    setLessonsCatalog(nextLessonsCatalog.map((lesson) => ({
+      ...lesson,
+      progress: nextLessonProgress[lesson.id] ?? lesson.progress,
+    })))
+    setQuizCatalogCount(nextQuizCatalog.length)
+    setAchievementCatalog(nextAchievementCatalog)
+    setQuizQuestionCatalog(nextQuizQuestions)
+    setLeaderboard(nextLeaderboard.length ? nextLeaderboard : fallbackLeaderboard)
+  }, [user])
 
   const playUiSound = useCallback((kind: 'success' | 'error' | 'combo' | 'play' | 'click') => {
     if (typeof window === 'undefined') return
@@ -450,25 +495,13 @@ function App() {
     let cancelled = false
     setProgressHydrated(false)
 
-    Promise.all([
-      getUserProgress(user.uid),
-      getLessonProgressMap(user.uid),
-      getLessonsCatalog(),
-      getQuizCatalog(),
-      getAchievementCatalog(),
-    ])
-      .then(([nextProgress, nextLessonProgress, nextLessonsCatalog, nextQuizCatalog, nextAchievementCatalog]) => {
+    Promise.all([getUserProgress(user.uid), refreshBackendCatalog()])
+      .then(([nextProgress]) => {
         if (cancelled) return
         setChoiceAnswers((current) => ({ ...current, ...nextProgress.choiceAnswers }))
         setDragFillAnswer(nextProgress.dragFillAnswer)
         setOrderWords(nextProgress.orderWords)
         setProgressSnapshot(nextProgress)
-        setLessonsCatalog(nextLessonsCatalog.map((lesson) => ({
-          ...lesson,
-          progress: nextLessonProgress[lesson.id] ?? lesson.progress,
-        })))
-        setQuizCatalogCount(nextQuizCatalog.length)
-        setAchievementCatalog(nextAchievementCatalog)
         setSyncState('saved')
         setSyncMessage('Progresso carregado do Firestore.')
         setProgressHydrated(true)
@@ -483,13 +516,26 @@ function App() {
     return () => {
       cancelled = true
     }
-  }, [user])
+  }, [refreshBackendCatalog, user])
+
+  useEffect(() => {
+    if (!user) return
+    void trackProductEvent(user.uid, 'login', {
+      provider: profile?.provider ?? 'unknown',
+    })
+  }, [profile?.provider, user])
 
   useEffect(() => {
     const exercise = exercises.find((item): item is OrderingExercise => item.kind === 'ordering')
     const justSolved = orderingSolved && !previousOrderingSolved.current
 
     if (exercise && justSolved) {
+      if (user) {
+        void trackProductEvent(user.uid, 'quiz_completed', {
+          quizId: exercise.id,
+          ordered: true,
+        })
+      }
       triggerMoment({
         exerciseId: exercise.id,
         correct: true,
@@ -500,7 +546,7 @@ function App() {
     }
 
     previousOrderingSolved.current = orderingSolved
-  }, [orderingSolved, triggerMoment])
+  }, [orderingSolved, triggerMoment, user])
 
   useEffect(() => {
     if (!user || !progressHydrated) return
@@ -598,6 +644,127 @@ function App() {
     return () => window.clearTimeout(timeout)
   }, [user, progressHydrated, choiceAnswers, dragFillAnswer, orderingSolved])
 
+  useEffect(() => {
+    if (!user || !progressHydrated) return
+
+    const timeout = window.setTimeout(() => {
+      const quizWrites = exercises.map((exercise) => {
+        const completed =
+          exercise.kind === 'multiple-choice'
+            ? choiceAnswers[exercise.id] === exercise.correct
+            : exercise.kind === 'drag-fill'
+              ? dragFillAnswer === exercise.correct
+              : orderingSolved
+
+        const correct =
+          exercise.kind === 'multiple-choice'
+            ? choiceAnswers[exercise.id] === exercise.correct
+            : exercise.kind === 'drag-fill'
+              ? dragFillAnswer === exercise.correct
+              : orderingSolved
+
+        const attempts =
+          exercise.kind === 'multiple-choice'
+            ? Number(choiceAnswers[exercise.id] !== null)
+            : exercise.kind === 'drag-fill'
+              ? Number(dragFillAnswer !== null)
+              : Number(orderWords.length > 0)
+
+        return saveQuizProgress(user.uid, {
+          quizId: exercise.id,
+          lessonId:
+            exercise.id === 'q2' || exercise.id === 'q6'
+              ? 'lesson-airport'
+              : exercise.id === 'q3'
+                ? 'lesson-daily-routines'
+                : 'lesson-present-simple',
+          skillId: skillByTag[exercise.tag as Exclude<FilterKey, 'Todos'>],
+          completed,
+          attempts,
+          correct,
+          xpEarned: correct ? exercise.reward : 0,
+        })
+      })
+
+      const skillWrites = [
+        saveSkillProgress(user.uid, {
+          skillId: 'vocabulary',
+          xpEarned:
+            (choiceAnswers.q6 === 'Feliz' ? 30 : 0) +
+            (dragFillAnswer === 'swimming' ? 35 : 0),
+          completedQuizzes: Number(choiceAnswers.q6 === 'Feliz') + Number(dragFillAnswer === 'swimming'),
+          accuracy:
+            ((Number(choiceAnswers.q6 === 'Feliz') + Number(dragFillAnswer === 'swimming')) / 2) * 100,
+        }),
+        saveSkillProgress(user.uid, {
+          skillId: 'grammar',
+          xpEarned:
+            (choiceAnswers.q1 === 'goes' ? 25 : 0) +
+            (choiceAnswers.q4 === 'will stay' ? 35 : 0) +
+            (orderingSolved ? 40 : 0),
+          completedQuizzes:
+            Number(choiceAnswers.q1 === 'goes') + Number(choiceAnswers.q4 === 'will stay') + Number(orderingSolved),
+          accuracy:
+            ((Number(choiceAnswers.q1 === 'goes') + Number(choiceAnswers.q4 === 'will stay') + Number(orderingSolved)) / 3) * 100,
+        }),
+        saveSkillProgress(user.uid, {
+          skillId: 'listening',
+          xpEarned: choiceAnswers.q3 === 'It is a dog.' ? 30 : 0,
+          completedQuizzes: Number(choiceAnswers.q3 === 'It is a dog.'),
+          accuracy: Number(choiceAnswers.q3 === 'It is a dog.') * 100,
+        }),
+      ]
+
+      void Promise.all([...quizWrites, ...skillWrites])
+    }, 520)
+
+    return () => window.clearTimeout(timeout)
+  }, [user, progressHydrated, choiceAnswers, dragFillAnswer, orderWords.length, orderingSolved])
+
+  useEffect(() => {
+    if (!user || !sessionId || sessionStartedAt === null) return
+
+    const timeout = window.setTimeout(() => {
+      void (async () => {
+        const endedAt = Date.now()
+        const wrongCount =
+          Number(choiceAnswers.q1 !== null && choiceAnswers.q1 !== 'goes') +
+          Number(choiceAnswers.q3 !== null && choiceAnswers.q3 !== 'It is a dog.') +
+          Number(choiceAnswers.q4 !== null && choiceAnswers.q4 !== 'will stay') +
+          Number(choiceAnswers.q6 !== null && choiceAnswers.q6 !== 'Feliz') +
+          Number(dragFillAnswer !== null && dragFillAnswer !== 'swimming')
+        const completedExerciseIds = exercises
+          .filter((exercise) => {
+            if (exercise.kind === 'multiple-choice') return choiceAnswers[exercise.id] === exercise.correct
+            if (exercise.kind === 'drag-fill') return dragFillAnswer === exercise.correct
+            return orderingSolved
+          })
+          .map((exercise) => exercise.id)
+
+        await completeStudySession(sessionId, {
+          uid: user.uid,
+          startedAt: sessionStartedAt,
+          endedAt,
+          xpEarned: totalXp,
+          correctCount: completedCount,
+          wrongCount,
+          comboMax: Math.max(sessionStreak, 1),
+          completedExerciseIds,
+        })
+
+        await trackProductEvent(user.uid, 'session_completed', {
+          sessionId,
+          endedAt,
+          xpEarned: totalXp,
+          correctCount: completedCount,
+          wrongCount,
+        })
+      })()
+    }, 720)
+
+    return () => window.clearTimeout(timeout)
+  }, [user, sessionId, sessionStartedAt, totalXp, completedCount, sessionStreak, choiceAnswers, dragFillAnswer, orderingSolved])
+
   const handleChoiceSelect = (id: MultipleChoiceExercise['id'], option: string) => {
     const exercise = exercises.find((item): item is MultipleChoiceExercise => item.id === id && item.kind === 'multiple-choice')
     if (!exercise) return
@@ -607,6 +774,12 @@ function App() {
 
     const isCorrect = option === exercise.correct
     setChoiceAnswers((current) => ({ ...current, [id]: option }))
+    if (user) {
+      void trackProductEvent(user.uid, isCorrect ? 'quiz_completed' : 'quiz_failed', {
+        quizId: id,
+        answer: option,
+      })
+    }
     triggerMoment({
       exerciseId: id,
       correct: isCorrect,
@@ -632,6 +805,12 @@ function App() {
 
     const isCorrect = draggedWord === exercise.correct
     setDragFillAnswer(draggedWord)
+    if (user) {
+      void trackProductEvent(user.uid, isCorrect ? 'quiz_completed' : 'quiz_failed', {
+        quizId: exercise.id,
+        answer: draggedWord,
+      })
+    }
     triggerMoment({
       exerciseId: exercise.id,
       correct: isCorrect,
@@ -656,6 +835,14 @@ function App() {
     setMascotMood('guide')
     setMascotLine('A aventura começou. Fecha um warm-up e eu acelero o combo.')
     playUiSound('play')
+    if (user) {
+      const startedAt = Date.now()
+      setSessionStartedAt(startedAt)
+      void startStudySession(user.uid)
+        .then((nextSessionId) => setSessionId(nextSessionId))
+        .catch(() => setSessionId(null))
+      void trackProductEvent(user.uid, 'session_started', { startedAt })
+    }
   }
 
   if (status === 'loading') {
@@ -687,8 +874,37 @@ function App() {
         profile={profile}
         onComplete={async (payload) => {
           await patchProfile(payload)
+          if (user) {
+            await trackProductEvent(user.uid, 'onboarding_completed', payload)
+          }
         }}
       />
+    )
+  }
+
+  if (isAdmin && view === 'admin') {
+    return (
+      <div className="app-shell">
+        <main className="main-panel">
+          <AdminScreen
+            lessons={lessonsCatalog}
+            quizzes={quizQuestionCatalog.map((question) => ({
+              id: question.id,
+              lessonId: question.lessonId,
+              tag: question.tag,
+              title: question.title,
+              difficulty: question.difficulty,
+              reward: question.reward,
+              kind: question.kind,
+              order: 1,
+              active: question.active,
+            }))}
+            platformConfig={platformConfig}
+            onBack={() => setView('home')}
+            onRefresh={refreshBackendCatalog}
+          />
+        </main>
+      </div>
     )
   }
 
@@ -715,6 +931,12 @@ function App() {
               </button>
             )
           })}
+          {isAdmin && (
+            <button className={`nav-pill${view === 'admin' ? ' active' : ''}`} onClick={() => setView('admin')}>
+              <Crown size={18} />
+              <span>Admin</span>
+            </button>
+          )}
         </nav>
 
         <div className="sidebar-streak">
