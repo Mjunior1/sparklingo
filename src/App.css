@@ -951,7 +951,7 @@
 .section-heading-row,
 .quiz-zone-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(250px, 280px);
   align-items: start;
   gap: 22px;
   margin-bottom: 18px;
@@ -1273,11 +1273,11 @@
 
 .quiz-zone-hero h2 {
   font-size: clamp(1.75rem, 2.6vw, 2.55rem);
-  max-width: 16ch;
+  max-width: 18ch;
 }
 
 .quiz-zone-copy {
-  max-width: 62ch;
+  max-width: 70ch;
   margin-top: 10px;
 }
 
@@ -1288,7 +1288,7 @@
 }
 
 .quiz-zone-copy-block {
-  max-width: 60rem;
+  max-width: 72rem;
 }
 
 .dashboard-layout {

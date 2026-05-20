@@ -10,8 +10,9 @@ import {
   getQuizCatalog,
   getQuizQuestions,
   type AchievementCatalogItem,
-  type QuizQuestionItem,
   type LessonCatalogItem,
+  type QuizCatalogItem,
+  type QuizQuestionItem,
 } from './services/catalog'
 import { trackProductEvent } from './services/events'
 import { getLessonProgressMap, saveLessonProgressMap, type LessonProgressMap } from './services/lessonProgress'
@@ -60,7 +61,7 @@ type NavItem = {
 }
 
 type MultipleChoiceExercise = {
-  id: 'q1' | 'q3' | 'q4' | 'q6'
+  id: string
   kind: 'multiple-choice'
   tag: FilterKey
   difficulty: Difficulty
@@ -76,7 +77,7 @@ type MultipleChoiceExercise = {
 }
 
 type DragFillExercise = {
-  id: 'q2'
+  id: string
   kind: 'drag-fill'
   tag: FilterKey
   difficulty: Difficulty
@@ -94,7 +95,7 @@ type DragFillExercise = {
 }
 
 type OrderingExercise = {
-  id: 'q5'
+  id: string
   kind: 'ordering'
   tag: FilterKey
   difficulty: Difficulty
@@ -285,6 +286,73 @@ const skillByTag: Record<Exclude<FilterKey, 'Todos'>, string> = {
   Speaking: 'speaking',
 }
 
+const toRuntimeExercises = (questions: QuizQuestionItem[]): Exercise[] => {
+  const mapped = questions
+    .filter((question) => question.active)
+    .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }))
+    .flatMap<Exercise>((question) => {
+      if (question.kind === 'multiple-choice' && question.options?.length && question.correct) {
+        return [{
+          id: question.id as MultipleChoiceExercise['id'],
+          kind: 'multiple-choice',
+          tag: question.tag,
+          difficulty: question.difficulty,
+          kicker: question.kicker,
+          title: question.title,
+          prompt: question.prompt,
+          art: question.art,
+          artAlt: question.artAlt,
+          options: question.options,
+          correct: question.correct,
+          explanation: question.explanation,
+          reward: question.reward,
+        }]
+      }
+
+      if (question.kind === 'drag-fill' && question.options?.length && question.correct) {
+        return [{
+          id: question.id as DragFillExercise['id'],
+          kind: 'drag-fill',
+          tag: question.tag,
+          difficulty: question.difficulty,
+          kicker: question.kicker,
+          title: question.title,
+          prompt: question.prompt,
+          sentenceBefore: question.sentenceBefore ?? '',
+          sentenceAfter: question.sentenceAfter ?? '',
+          art: question.art,
+          artAlt: question.artAlt,
+          options: question.options,
+          correct: question.correct,
+          explanation: question.explanation,
+          reward: question.reward,
+        }]
+      }
+
+      if (question.kind === 'ordering' && question.scrambled?.length && question.solution?.length) {
+        return [{
+          id: question.id as OrderingExercise['id'],
+          kind: 'ordering',
+          tag: question.tag,
+          difficulty: question.difficulty,
+          kicker: question.kicker,
+          title: question.title,
+          prompt: question.prompt,
+          art: question.art,
+          artAlt: question.artAlt,
+          scrambled: question.scrambled,
+          solution: question.solution,
+          explanation: question.explanation,
+          reward: question.reward,
+        }]
+      }
+
+      return []
+    })
+
+  return mapped.length ? mapped : exercises
+}
+
 const mascotTitles: Record<MascotMood, string> = {
   guide: 'Spark está guiando sua run',
   cheer: 'Spark curtiu esse acerto',
@@ -299,18 +367,35 @@ const getExerciseMode = (exercise: Exercise) => {
   return 'XP rush'
 }
 
+const isExerciseSolved = (
+  exercise: Exercise,
+  choiceAnswers: Record<string, string | null>,
+  dragFillAnswers: Record<string, string | null>,
+  orderWordMap: Record<string, string[]>,
+) => {
+  if (exercise.kind === 'multiple-choice') return choiceAnswers[exercise.id] === exercise.correct
+  if (exercise.kind === 'drag-fill') return dragFillAnswers[exercise.id] === exercise.correct
+  return normalizeTokenOrder(orderWordMap[exercise.id] ?? exercise.scrambled) === normalizeTokenOrder(exercise.solution)
+}
+
+const getExerciseAttempts = (
+  exercise: Exercise,
+  choiceAnswers: Record<string, string | null>,
+  dragFillAnswers: Record<string, string | null>,
+  orderWordMap: Record<string, string[]>,
+) => {
+  if (exercise.kind === 'multiple-choice') return Number(choiceAnswers[exercise.id] !== null)
+  if (exercise.kind === 'drag-fill') return Number((dragFillAnswers[exercise.id] ?? null) !== null)
+  return Number(normalizeTokenOrder(orderWordMap[exercise.id] ?? exercise.scrambled) !== normalizeTokenOrder(exercise.scrambled))
+}
+
 function App() {
   const { status, user, profile, signOut, platformConfig, patchProfile } = useAuth()
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
   const [activeFilter, setActiveFilter] = useState<FilterKey>('Todos')
-  const [choiceAnswers, setChoiceAnswers] = useState<Record<string, string | null>>({
-    q1: null,
-    q3: null,
-    q4: null,
-    q6: null,
-  })
-  const [dragFillAnswer, setDragFillAnswer] = useState<string | null>(null)
-  const [orderWords, setOrderWords] = useState<string[]>(['you', 'Where', 'are', 'from', '?'])
+  const [choiceAnswers, setChoiceAnswers] = useState<Record<string, string | null>>({})
+  const [dragFillAnswers, setDragFillAnswers] = useState<Record<string, string | null>>({})
+  const [orderWordMap, setOrderWordMap] = useState<Record<string, string[]>>({})
   const [sessionStreak, setSessionStreak] = useState(0)
   const [mascotMood, setMascotMood] = useState<MascotMood>('guide')
   const [mascotLine, setMascotLine] = useState('Escolha um mini desafio e deixa comigo o ritmo da jornada.')
@@ -318,7 +403,7 @@ function App() {
   const [progressHydrated, setProgressHydrated] = useState(false)
   const [progressSnapshot, setProgressSnapshot] = useState<UserProgress | null>(null)
   const [lessonsCatalog, setLessonsCatalog] = useState<LessonCatalogItem[]>(lessonCards)
-  const [quizCatalogCount, setQuizCatalogCount] = useState(exercises.length)
+  const [quizCatalog, setQuizCatalog] = useState<QuizCatalogItem[]>([])
   const [achievementCatalog, setAchievementCatalog] = useState<AchievementCatalogItem[]>([])
   const [quizQuestionCatalog, setQuizQuestionCatalog] = useState<QuizQuestionItem[]>([])
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(fallbackLeaderboard)
@@ -331,35 +416,33 @@ function App() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const audioUnlockedRef = useRef(false)
 
+  const runtimeExercises = useMemo(() => toRuntimeExercises(quizQuestionCatalog), [quizQuestionCatalog])
+  const quizCatalogCount = quizCatalog.length || runtimeExercises.length
+
   const orderingSolved = useMemo(() => {
-    const orderingExercise = exercises.find((exercise): exercise is OrderingExercise => exercise.kind === 'ordering')
-    return orderingExercise ? normalizeTokenOrder(orderWords) === normalizeTokenOrder(orderingExercise.solution) : false
-  }, [orderWords])
+    return runtimeExercises.some((exercise) => exercise.kind === 'ordering' && isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap))
+  }, [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises])
 
   const visibleExercises = useMemo(() => {
-    if (activeFilter === 'Todos') return exercises
-    return exercises.filter((exercise) => exercise.tag === activeFilter)
-  }, [activeFilter])
+    if (activeFilter === 'Todos') return runtimeExercises
+    return runtimeExercises.filter((exercise) => exercise.tag === activeFilter)
+  }, [activeFilter, runtimeExercises])
 
   const completedCount = useMemo(() => {
-    return exercises.filter((exercise) => {
-      if (exercise.kind === 'multiple-choice') return choiceAnswers[exercise.id] === exercise.correct
-      if (exercise.kind === 'drag-fill') return dragFillAnswer === exercise.correct
-      return orderingSolved
-    }).length
-  }, [choiceAnswers, dragFillAnswer, orderingSolved])
+    return runtimeExercises.filter((exercise) => isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap)).length
+  }, [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises])
 
   const totalXp = useMemo(() => {
     let xp = 0
-    exercises.forEach((exercise) => {
+    runtimeExercises.forEach((exercise) => {
       if (exercise.kind === 'multiple-choice' && choiceAnswers[exercise.id] === exercise.correct) xp += exercise.reward
-      if (exercise.kind === 'drag-fill' && dragFillAnswer === exercise.correct) xp += exercise.reward
-      if (exercise.kind === 'ordering' && orderingSolved) xp += exercise.reward
+      if (exercise.kind === 'drag-fill' && dragFillAnswers[exercise.id] === exercise.correct) xp += exercise.reward
+      if (exercise.kind === 'ordering' && isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap)) xp += exercise.reward
     })
     return xp
-  }, [choiceAnswers, dragFillAnswer, orderingSolved])
+  }, [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises])
 
-  const totalAvailableXp = useMemo(() => exercises.reduce((sum, exercise) => sum + exercise.reward, 0), [])
+  const totalAvailableXp = useMemo(() => runtimeExercises.reduce((sum, exercise) => sum + exercise.reward, 0), [runtimeExercises])
   const profileXp = progressSnapshot?.totalXp ?? profile?.xp ?? totalXp
   const streakDays = progressSnapshot?.streakDays ?? profile?.streak ?? 0
   const profileLevel = progressSnapshot?.level ?? profile?.level ?? 1
@@ -392,7 +475,7 @@ function App() {
       ...lesson,
       progress: nextLessonProgress[lesson.id] ?? lesson.progress,
     })))
-    setQuizCatalogCount(nextQuizCatalog.length)
+    setQuizCatalog(nextQuizCatalog)
     setAchievementCatalog(nextAchievementCatalog)
     setQuizQuestionCatalog(nextQuizQuestions)
     setLeaderboard(nextLeaderboard.length ? nextLeaderboard : fallbackLeaderboard)
@@ -492,6 +575,39 @@ function App() {
   }, [activeReaction])
 
   useEffect(() => {
+    if (!runtimeExercises.length) return
+
+    setOrderWordMap((current) => {
+      const next = { ...current }
+      let changed = false
+
+      runtimeExercises.forEach((exercise) => {
+        if (exercise.kind !== 'ordering') return
+        if (!next[exercise.id]?.length) {
+          next[exercise.id] = [...exercise.scrambled]
+          changed = true
+        }
+      })
+
+      return changed ? next : current
+    })
+  }, [runtimeExercises])
+
+  useEffect(() => {
+    if (!progressSnapshot || !runtimeExercises.length) return
+
+    const firstDragFill = runtimeExercises.find((exercise): exercise is DragFillExercise => exercise.kind === 'drag-fill')
+    if (firstDragFill && progressSnapshot.dragFillAnswer && !dragFillAnswers[firstDragFill.id]) {
+      setDragFillAnswers((current) => ({ ...current, [firstDragFill.id]: progressSnapshot.dragFillAnswer ?? null }))
+    }
+
+    const firstOrdering = runtimeExercises.find((exercise): exercise is OrderingExercise => exercise.kind === 'ordering')
+    if (firstOrdering && progressSnapshot.orderWords?.length && !(orderWordMap[firstOrdering.id]?.length)) {
+      setOrderWordMap((current) => ({ ...current, [firstOrdering.id]: progressSnapshot.orderWords ?? firstOrdering.scrambled }))
+    }
+  }, [dragFillAnswers, orderWordMap, progressSnapshot, runtimeExercises])
+
+  useEffect(() => {
     if (!user) return
 
     let cancelled = false
@@ -501,8 +617,8 @@ function App() {
       .then(([nextProgress]) => {
         if (cancelled) return
         setChoiceAnswers((current) => ({ ...current, ...nextProgress.choiceAnswers }))
-        setDragFillAnswer(nextProgress.dragFillAnswer)
-        setOrderWords(nextProgress.orderWords)
+        setDragFillAnswers(nextProgress.dragFillAnswers ?? {})
+        setOrderWordMap(nextProgress.orderWordMap ?? {})
         setProgressSnapshot(nextProgress)
         setSyncState('saved')
         setSyncMessage('Progresso carregado do Firestore.')
@@ -550,8 +666,8 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const exercise = exercises.find((item): item is OrderingExercise => item.kind === 'ordering')
-    const justSolved = orderingSolved && !previousOrderingSolved.current
+    const exercise = runtimeExercises.find((item): item is OrderingExercise => item.kind === 'ordering' && isExerciseSolved(item, choiceAnswers, dragFillAnswers, orderWordMap))
+    const justSolved = Boolean(exercise) && orderingSolved && !previousOrderingSolved.current
 
     if (exercise && justSolved) {
       if (user) {
@@ -570,17 +686,13 @@ function App() {
     }
 
     previousOrderingSolved.current = orderingSolved
-  }, [orderingSolved, triggerMoment, user])
+  }, [choiceAnswers, dragFillAnswers, orderWordMap, orderingSolved, runtimeExercises, triggerMoment, user])
 
   useEffect(() => {
     if (!user || !progressHydrated) return
 
-    const completedExerciseIds = exercises
-      .filter((exercise) => {
-        if (exercise.kind === 'multiple-choice') return choiceAnswers[exercise.id] === exercise.correct
-        if (exercise.kind === 'drag-fill') return dragFillAnswer === exercise.correct
-        return orderingSolved
-      })
+    const completedExerciseIds = runtimeExercises
+      .filter((exercise) => isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap))
       .map((exercise) => exercise.id)
 
     const timeout = window.setTimeout(() => {
@@ -592,8 +704,8 @@ function App() {
             totalXp,
             completedExerciseIds,
             choiceAnswers,
-            dragFillAnswer,
-            orderWords,
+            dragFillAnswers,
+            orderWordMap,
           })
 
           setProgressSnapshot(nextProgress)
@@ -627,25 +739,31 @@ function App() {
     progressHydrated,
     totalXp,
     choiceAnswers,
-    dragFillAnswer,
-    orderWords,
-    orderingSolved,
+    dragFillAnswers,
+    orderWordMap,
     patchProfile,
     profile,
+    runtimeExercises,
   ])
 
   useEffect(() => {
     if (!user || !progressHydrated) return
 
-    const vocabularySolved = Number(choiceAnswers.q6 === 'Feliz') + Number(dragFillAnswer === 'swimming')
-    const grammarSolved = Number(choiceAnswers.q1 === 'goes') + Number(choiceAnswers.q4 === 'will stay') + Number(orderingSolved)
-    const listeningSolved = Number(choiceAnswers.q3 === 'It is a dog.')
+    const nextLessonProgress: LessonProgressMap = {}
 
-    const nextLessonProgress: LessonProgressMap = {
-      'lesson-airport': Math.round((vocabularySolved / 2) * 100),
-      'lesson-present-simple': Math.round((grammarSolved / 3) * 100),
-      'lesson-daily-routines': Math.round((listeningSolved / 1) * 100),
-    }
+    const byLesson = runtimeExercises.reduce<Record<string, { total: number; solved: number }>>((acc, exercise) => {
+      const lessonId = quizQuestionCatalog.find((question) => question.id === exercise.id)?.lessonId
+      if (!lessonId) return acc
+      const current = acc[lessonId] ?? { total: 0, solved: 0 }
+      current.total += 1
+      current.solved += Number(isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap))
+      acc[lessonId] = current
+      return acc
+    }, {})
+
+    Object.entries(byLesson).forEach(([lessonId, stats]) => {
+      nextLessonProgress[lessonId] = stats.total ? Math.round((stats.solved / stats.total) * 100) : 0
+    })
 
     const timeout = window.setTimeout(() => {
       setSyncState('saving')
@@ -666,84 +784,51 @@ function App() {
     }, 460)
 
     return () => window.clearTimeout(timeout)
-  }, [user, progressHydrated, choiceAnswers, dragFillAnswer, orderingSolved])
+  }, [user, progressHydrated, choiceAnswers, dragFillAnswers, orderWordMap, quizQuestionCatalog, runtimeExercises])
 
   useEffect(() => {
     if (!user || !progressHydrated) return
 
     const timeout = window.setTimeout(() => {
-      const quizWrites = exercises.map((exercise) => {
-        const completed =
-          exercise.kind === 'multiple-choice'
-            ? choiceAnswers[exercise.id] === exercise.correct
-            : exercise.kind === 'drag-fill'
-              ? dragFillAnswer === exercise.correct
-              : orderingSolved
-
-        const correct =
-          exercise.kind === 'multiple-choice'
-            ? choiceAnswers[exercise.id] === exercise.correct
-            : exercise.kind === 'drag-fill'
-              ? dragFillAnswer === exercise.correct
-              : orderingSolved
-
-        const attempts =
-          exercise.kind === 'multiple-choice'
-            ? Number(choiceAnswers[exercise.id] !== null)
-            : exercise.kind === 'drag-fill'
-              ? Number(dragFillAnswer !== null)
-              : Number(orderWords.length > 0)
+      const quizWrites = runtimeExercises.map((exercise) => {
+        const questionSource = quizQuestionCatalog.find((question) => question.id === exercise.id)
+        const completed = isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap)
+        const attempts = getExerciseAttempts(exercise, choiceAnswers, dragFillAnswers, orderWordMap)
 
         return saveQuizProgress(user.uid, {
           quizId: exercise.id,
-          lessonId:
-            exercise.id === 'q2' || exercise.id === 'q6'
-              ? 'lesson-airport'
-              : exercise.id === 'q3'
-                ? 'lesson-daily-routines'
-                : 'lesson-present-simple',
+          lessonId: questionSource?.lessonId ?? '',
           skillId: skillByTag[exercise.tag as Exclude<FilterKey, 'Todos'>],
           completed,
           attempts,
-          correct,
-          xpEarned: correct ? exercise.reward : 0,
+          correct: completed,
+          xpEarned: completed ? exercise.reward : 0,
         })
       })
 
-      const skillWrites = [
-        saveSkillProgress(user.uid, {
-          skillId: 'vocabulary',
-          xpEarned:
-            (choiceAnswers.q6 === 'Feliz' ? 30 : 0) +
-            (dragFillAnswer === 'swimming' ? 35 : 0),
-          completedQuizzes: Number(choiceAnswers.q6 === 'Feliz') + Number(dragFillAnswer === 'swimming'),
-          accuracy:
-            ((Number(choiceAnswers.q6 === 'Feliz') + Number(dragFillAnswer === 'swimming')) / 2) * 100,
-        }),
-        saveSkillProgress(user.uid, {
-          skillId: 'grammar',
-          xpEarned:
-            (choiceAnswers.q1 === 'goes' ? 25 : 0) +
-            (choiceAnswers.q4 === 'will stay' ? 35 : 0) +
-            (orderingSolved ? 40 : 0),
-          completedQuizzes:
-            Number(choiceAnswers.q1 === 'goes') + Number(choiceAnswers.q4 === 'will stay') + Number(orderingSolved),
-          accuracy:
-            ((Number(choiceAnswers.q1 === 'goes') + Number(choiceAnswers.q4 === 'will stay') + Number(orderingSolved)) / 3) * 100,
-        }),
-        saveSkillProgress(user.uid, {
-          skillId: 'listening',
-          xpEarned: choiceAnswers.q3 === 'It is a dog.' ? 30 : 0,
-          completedQuizzes: Number(choiceAnswers.q3 === 'It is a dog.'),
-          accuracy: Number(choiceAnswers.q3 === 'It is a dog.') * 100,
-        }),
-      ]
+      const skillStats = runtimeExercises.reduce<Record<string, { total: number; solved: number; xp: number }>>((acc, exercise) => {
+        const skillId = skillByTag[exercise.tag as Exclude<FilterKey, 'Todos'>]
+        const solved = Number(isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap))
+        const current = acc[skillId] ?? { total: 0, solved: 0, xp: 0 }
+        current.total += 1
+        current.solved += solved
+        current.xp += solved ? exercise.reward : 0
+        acc[skillId] = current
+        return acc
+      }, {})
+
+      const skillWrites = Object.entries(skillStats).map(([skillId, stats]) => saveSkillProgress(user.uid, {
+        skillId,
+        xpEarned: stats.xp,
+        completedQuizzes: stats.solved,
+        accuracy: stats.total ? (stats.solved / stats.total) * 100 : 0,
+      }))
 
       void Promise.all([...quizWrites, ...skillWrites])
     }, 520)
 
     return () => window.clearTimeout(timeout)
-  }, [user, progressHydrated, choiceAnswers, dragFillAnswer, orderWords.length, orderingSolved])
+  }, [user, progressHydrated, choiceAnswers, dragFillAnswers, orderWordMap, quizQuestionCatalog, runtimeExercises])
 
   useEffect(() => {
     if (!user || !sessionId || sessionStartedAt === null) return
@@ -751,18 +836,20 @@ function App() {
     const timeout = window.setTimeout(() => {
       void (async () => {
         const endedAt = Date.now()
-        const wrongCount =
-          Number(choiceAnswers.q1 !== null && choiceAnswers.q1 !== 'goes') +
-          Number(choiceAnswers.q3 !== null && choiceAnswers.q3 !== 'It is a dog.') +
-          Number(choiceAnswers.q4 !== null && choiceAnswers.q4 !== 'will stay') +
-          Number(choiceAnswers.q6 !== null && choiceAnswers.q6 !== 'Feliz') +
-          Number(dragFillAnswer !== null && dragFillAnswer !== 'swimming')
-        const completedExerciseIds = exercises
-          .filter((exercise) => {
-            if (exercise.kind === 'multiple-choice') return choiceAnswers[exercise.id] === exercise.correct
-            if (exercise.kind === 'drag-fill') return dragFillAnswer === exercise.correct
-            return orderingSolved
-          })
+        const wrongCount = runtimeExercises.reduce((sum, exercise) => {
+          if (exercise.kind === 'multiple-choice') {
+            const answer = choiceAnswers[exercise.id]
+            return sum + Number(answer !== null && answer !== exercise.correct)
+          }
+          if (exercise.kind === 'drag-fill') {
+            const answer = dragFillAnswers[exercise.id] ?? null
+            return sum + Number(answer !== null && answer !== exercise.correct)
+          }
+          return sum + Number((orderWordMap[exercise.id]?.length ?? 0) > 0 && !isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap))
+        }, 0)
+
+        const completedExerciseIds = runtimeExercises
+          .filter((exercise) => isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap))
           .map((exercise) => exercise.id)
 
         await completeStudySession(sessionId, {
@@ -787,10 +874,10 @@ function App() {
     }, 720)
 
     return () => window.clearTimeout(timeout)
-  }, [user, sessionId, sessionStartedAt, totalXp, completedCount, sessionStreak, choiceAnswers, dragFillAnswer, orderingSolved])
+  }, [user, sessionId, sessionStartedAt, totalXp, completedCount, sessionStreak, choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises])
 
   const handleChoiceSelect = (id: MultipleChoiceExercise['id'], option: string) => {
-    const exercise = exercises.find((item): item is MultipleChoiceExercise => item.id === id && item.kind === 'multiple-choice')
+    const exercise = runtimeExercises.find((item): item is MultipleChoiceExercise => item.id === id && item.kind === 'multiple-choice')
     if (!exercise) return
 
     const previous = choiceAnswers[id]
@@ -820,15 +907,19 @@ function App() {
     playUiSound('click')
   }
 
-  const handleDragFillEnd = (event: DragEndEvent) => {
-    const draggedWord = String(event.active.id)
-    if (event.over?.id !== 'drag-fill-slot' || dragFillAnswer === draggedWord) return
+  const clearDragFill = (exerciseId: string) => {
+    setDragFillAnswers((current) => ({ ...current, [exerciseId]: null }))
+  }
 
-    const exercise = exercises.find((item): item is DragFillExercise => item.kind === 'drag-fill')
+  const handleDragFillEnd = (exerciseId: string, event: DragEndEvent) => {
+    const draggedWord = String(event.active.id)
+    if (event.over?.id !== `drag-fill-slot-${exerciseId}` || dragFillAnswers[exerciseId] === draggedWord) return
+
+    const exercise = runtimeExercises.find((item): item is DragFillExercise => item.id === exerciseId && item.kind === 'drag-fill')
     if (!exercise) return
 
     const isCorrect = draggedWord === exercise.correct
-    setDragFillAnswer(draggedWord)
+    setDragFillAnswers((current) => ({ ...current, [exerciseId]: draggedWord }))
     if (user) {
       void trackProductEvent(user.uid, isCorrect ? 'quiz_completed' : 'quiz_failed', {
         quizId: exercise.id,
@@ -844,15 +935,21 @@ function App() {
     })
   }
 
-  const handleOrderingEnd = (event: DragEndEvent) => {
+  const handleOrderingEnd = (exerciseId: string, event: DragEndEvent) => {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
-    setOrderWords((current) => {
-      const oldIndex = current.indexOf(String(active.id))
-      const newIndex = current.indexOf(String(over.id))
-      return arrayMove(current, oldIndex, newIndex)
+    setOrderWordMap((current) => {
+      const words = current[exerciseId] ?? []
+      const oldIndex = words.indexOf(String(active.id))
+      const newIndex = words.indexOf(String(over.id))
+      if (oldIndex < 0 || newIndex < 0) return current
+      return { ...current, [exerciseId]: arrayMove(words, oldIndex, newIndex) }
     })
+  }
+
+  const resetOrdering = (exercise: OrderingExercise) => {
+    setOrderWordMap((current) => ({ ...current, [exercise.id]: [...exercise.scrambled] }))
   }
 
   const launchRun = () => {
@@ -912,18 +1009,9 @@ function App() {
         <main className="main-panel">
           <AdminScreen
             lessons={lessonsCatalog}
-            quizzes={quizQuestionCatalog.map((question) => ({
-              id: question.id,
-              lessonId: question.lessonId,
-              tag: question.tag,
-              title: question.title,
-              difficulty: question.difficulty,
-              reward: question.reward,
-              kind: question.kind,
-              order: 1,
-              active: question.active,
-            }))}
+            quizzes={quizCatalog}
             questions={quizQuestionCatalog}
+            achievements={achievementCatalog}
             platformConfig={platformConfig}
             onBack={() => setView('home')}
             onRefresh={refreshBackendCatalog}
@@ -1233,7 +1321,7 @@ function App() {
                 <div className="run-stat run-stat-primary">
                   <Play size={16} fill="currentColor" />
                   <span>Run ativa</span>
-                  <strong>{completedCount}/{exercises.length}</strong>
+                  <strong>{completedCount}/{runtimeExercises.length}</strong>
                 </div>
                 <div className="run-stat">
                   <Flame size={16} />
@@ -1355,8 +1443,9 @@ function App() {
                   }
 
                   if (exercise.kind === 'drag-fill') {
-                    const isCorrect = dragFillAnswer === exercise.correct
-                    const isWrong = dragFillAnswer !== null && dragFillAnswer !== exercise.correct
+                    const currentDragAnswer = dragFillAnswers[exercise.id] ?? null
+                    const isCorrect = currentDragAnswer === exercise.correct
+                    const isWrong = currentDragAnswer !== null && currentDragAnswer !== exercise.correct
 
                     return (
                       <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
@@ -1384,22 +1473,22 @@ function App() {
                           <span><Target size={14} /> acerto instantâneo</span>
                         </div>
 
-                        <DndContext sensors={sensors} onDragEnd={handleDragFillEnd}>
+                        <DndContext sensors={sensors} onDragEnd={(event) => handleDragFillEnd(exercise.id, event)}>
                           <div className="sentence-card">
                             <span>{exercise.sentenceBefore}</span>
                             <DropSlot
-                              id="drag-fill-slot"
-                              value={dragFillAnswer}
+                              id={`drag-fill-slot-${exercise.id}`}
+                              value={currentDragAnswer}
                               isCorrect={isCorrect}
                               isWrong={isWrong}
-                              onClear={() => setDragFillAnswer(null)}
+                              onClear={() => clearDragFill(exercise.id)}
                             />
                             <span>{exercise.sentenceAfter}</span>
                           </div>
 
                           <div className="token-bank">
                             {exercise.options.map((option) => (
-                              <DraggableToken key={option} id={option} disabled={dragFillAnswer === option} label={option} />
+                              <DraggableToken key={option} id={option} disabled={currentDragAnswer === option} label={option} />
                             ))}
                           </div>
                         </DndContext>
@@ -1418,7 +1507,8 @@ function App() {
                     )
                   }
 
-                  const isOrdered = normalizeTokenOrder(orderWords) === normalizeTokenOrder(exercise.solution)
+                  const currentOrderWords = orderWordMap[exercise.id] ?? exercise.scrambled
+                  const isOrdered = normalizeTokenOrder(currentOrderWords) === normalizeTokenOrder(exercise.solution)
 
                   return (
                     <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
@@ -1446,10 +1536,10 @@ function App() {
                         <span><Zap size={14} /> ordem perfeita rende bônus</span>
                       </div>
 
-                      <DndContext sensors={sensors} onDragEnd={handleOrderingEnd}>
-                        <SortableContext items={orderWords} strategy={horizontalListSortingStrategy}>
+                      <DndContext sensors={sensors} onDragEnd={(event) => handleOrderingEnd(exercise.id, event)}>
+                        <SortableContext items={currentOrderWords} strategy={horizontalListSortingStrategy}>
                           <div className="ordering-lane">
-                            {orderWords.map((word) => (
+                            {currentOrderWords.map((word) => (
                               <SortableWord key={word} id={word} />
                             ))}
                           </div>
@@ -1460,7 +1550,7 @@ function App() {
                         <span>{isOrdered ? `Perfeito: ${formatSentence(exercise.solution)}` : exercise.explanation}</span>
                         <div className="feedback-actions">
                           <strong>⚡ {exercise.reward} XP</strong>
-                          <button className="retry-link" onClick={() => setOrderWords([...exercise.scrambled])}>
+                          <button className="retry-link" onClick={() => resetOrdering(exercise)}>
                             <RotateCcw size={14} />
                             Resetar
                           </button>
@@ -1515,7 +1605,7 @@ function App() {
                     </span>
                   ))}
                 </div>
-                <small>{completedCount} de {exercises.length} desafios concluídos</small>
+                <small>{completedCount} de {runtimeExercises.length} desafios concluídos</small>
               </article>
 
               <article className="challenge-card">

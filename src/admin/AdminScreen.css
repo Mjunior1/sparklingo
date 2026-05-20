@@ -1,5 +1,5 @@
 .admin-shell {
-  width: min(1440px, 100%);
+  width: min(1480px, 100%);
   margin: 0 auto;
   display: grid;
   gap: 24px;
@@ -8,9 +8,9 @@
 .admin-topbar,
 .admin-hero,
 .admin-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(245, 240, 255, 0.86));
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.94), rgba(246, 241, 255, 0.9));
   border: 1px solid rgba(145, 115, 255, 0.14);
-  border-radius: 28px;
+  border-radius: 30px;
   box-shadow: 0 28px 60px rgba(84, 54, 146, 0.08);
 }
 
@@ -18,12 +18,14 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 14px;
   padding: 18px 22px;
 }
 
 .admin-back,
 .admin-pill,
-.admin-primary {
+.admin-primary,
+.catalog-actions button {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -46,8 +48,8 @@
 
 .admin-hero {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
-  gap: 20px;
+  grid-template-columns: minmax(0, 1.15fr) minmax(420px, 0.85fr);
+  gap: 22px;
   padding: 28px;
 }
 
@@ -61,48 +63,58 @@
 }
 
 .admin-hero h1 {
-  margin: 0 0 10px;
-  font-size: clamp(2.2rem, 3vw, 3.8rem);
-  line-height: 0.96;
+  margin: 0 0 12px;
+  font-size: clamp(2.2rem, 3vw, 4rem);
+  line-height: 0.94;
   color: #2a2168;
   max-width: 12ch;
 }
 
-.admin-copy {
+.admin-copy,
+.admin-helper {
   margin: 0;
-  max-width: 56ch;
-  color: #625a8d;
+  color: #645c8c;
   line-height: 1.7;
 }
 
 .admin-summary-grid {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
 }
 
 .admin-summary-grid article,
 .admin-status,
-.question-preview-card {
+.question-preview-card,
+.catalog-panel,
+.admin-generated-id {
   border-radius: 22px;
   border: 1px solid rgba(145, 115, 255, 0.14);
-  background: rgba(255, 255, 255, 0.88);
+  background: rgba(255, 255, 255, 0.9);
 }
 
 .admin-summary-grid article {
   padding: 18px;
 }
 
-.admin-summary-grid span {
+.admin-summary-grid span,
+.catalog-panel-head span {
   display: block;
   margin-bottom: 8px;
   color: #756c9b;
-  font-size: 0.86rem;
+  font-size: 0.84rem;
 }
 
 .admin-summary-grid strong {
+  display: block;
   color: #2b2265;
-  font-size: 1.35rem;
+  font-size: 1.8rem;
+  margin-bottom: 6px;
+}
+
+.admin-summary-grid small {
+  color: #756c9b;
+  line-height: 1.5;
 }
 
 .admin-grid {
@@ -117,32 +129,54 @@
 
 .admin-card {
   display: grid;
-  gap: 16px;
+  gap: 18px;
   padding: 24px;
 }
 
 .admin-card-head {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  gap: 12px;
+  gap: 14px;
+}
+
+.admin-card-head h2,
+.catalog-panel-head h3 {
+  margin: 0;
+  color: #2a2168;
 }
 
 .admin-card-head h2 {
-  margin: 0;
-  color: #2a2168;
-  font-size: 1.2rem;
-}
-
-.admin-card-head span,
-.admin-card p {
-  color: #6c6495;
+  font-size: 1.22rem;
 }
 
 .admin-actions-row {
   display: flex;
   gap: 12px;
   flex-wrap: wrap;
+}
+
+.admin-generated-id {
+  padding: 14px 16px;
+}
+
+.admin-generated-id span,
+.admin-generated-id strong {
+  display: block;
+}
+
+.admin-generated-id span {
+  color: #7f74a8;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
+.admin-generated-id strong {
+  margin-top: 6px;
+  color: #2b2265;
+  font-size: 1rem;
 }
 
 .admin-form {
@@ -170,13 +204,18 @@
   padding: 14px 16px;
   border-radius: 16px;
   border: 1px solid rgba(145, 115, 255, 0.14);
-  background: rgba(255, 255, 255, 0.9);
+  background: rgba(255, 255, 255, 0.92);
   color: #2b2265;
   font: inherit;
 }
 
+.admin-form input[readonly] {
+  background: rgba(246, 243, 255, 0.92);
+  color: #6f6696;
+}
+
 .admin-form textarea {
-  min-height: 104px;
+  min-height: 100px;
   resize: vertical;
 }
 
@@ -197,7 +236,7 @@
 
 .question-builder-shell {
   display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(360px, 0.85fr);
   gap: 18px;
 }
 
@@ -241,7 +280,7 @@
 }
 
 .question-preview-stage {
-  min-height: 120px;
+  min-height: 140px;
   border-radius: 20px;
   border: 1px dashed rgba(145, 115, 255, 0.24);
   background: linear-gradient(180deg, rgba(244, 247, 255, 0.9), rgba(248, 243, 255, 0.9));
@@ -249,6 +288,86 @@
   color: #3c306f;
   font-weight: 700;
   line-height: 1.6;
+}
+
+.catalog-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.catalog-panel-wide {
+  grid-column: 1 / -1;
+}
+
+.catalog-panel {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
+
+.catalog-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.catalog-panel-head span {
+  margin: 0;
+}
+
+.catalog-list {
+  display: grid;
+  gap: 10px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.catalog-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(245, 241, 255, 0.72);
+  border: 1px solid rgba(145, 115, 255, 0.1);
+}
+
+.catalog-item strong,
+.catalog-item small {
+  display: block;
+}
+
+.catalog-item strong {
+  color: #2c2265;
+}
+
+.catalog-item small {
+  margin-top: 4px;
+  color: #7a719f;
+  line-height: 1.45;
+}
+
+.catalog-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.catalog-actions button {
+  padding: 10px 12px;
+  border: 1px solid rgba(145, 115, 255, 0.16);
+  background: #fff;
+  color: #3d316e;
+}
+
+.catalog-actions .danger {
+  color: #b2435b;
+  border-color: rgba(178, 67, 91, 0.18);
 }
 
 .admin-status {
@@ -259,7 +378,8 @@
 
 @media (max-width: 1280px) {
   .admin-hero,
-  .question-builder-shell {
+  .question-builder-shell,
+  .catalog-grid {
     grid-template-columns: 1fr;
   }
 
@@ -269,18 +389,20 @@
 }
 
 @media (max-width: 1100px) {
-  .admin-grid {
+  .admin-grid,
+  .admin-summary-grid {
     grid-template-columns: 1fr;
   }
 }
 
 @media (max-width: 720px) {
-  .admin-topbar {
+  .admin-topbar,
+  .catalog-item {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .admin-summary-grid {
-    grid-template-columns: 1fr;
+  .catalog-actions {
+    justify-content: stretch;
   }
 }

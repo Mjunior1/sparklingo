@@ -1,5 +1,6 @@
 import {
   collection,
+  deleteDoc,
   doc,
   getDocs,
   serverTimestamp,
@@ -267,6 +268,26 @@ export const upsertQuizQuestion = async (question: QuizQuestionItem) => {
 
 export const upsertAchievement = async (achievement: AchievementCatalogItem) => {
   await upsertCatalogDoc('achievements', achievement.id, achievement)
+}
+
+export const deleteLesson = async (lessonId: string) => {
+  const { db } = requireFirebase()
+  await deleteDoc(doc(db, 'lessons', lessonId))
+}
+
+export const deleteQuiz = async (quizId: string) => {
+  const { db } = requireFirebase()
+  await deleteDoc(doc(db, 'quizzes', quizId))
+}
+
+export const deleteQuizQuestion = async (questionId: string) => {
+  const { db } = requireFirebase()
+  await deleteDoc(doc(db, 'quizQuestions', questionId))
+}
+
+export const deleteAchievement = async (achievementId: string) => {
+  const { db } = requireFirebase()
+  await deleteDoc(doc(db, 'achievements', achievementId))
 }
 
 export const seedDefaultCatalog = async () => {

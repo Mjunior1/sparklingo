@@ -8,8 +8,10 @@ export type UserProgress = {
   level: number
   completedExerciseIds: string[]
   choiceAnswers: Record<string, string | null>
-  dragFillAnswer: string | null
-  orderWords: string[]
+  dragFillAnswers: Record<string, string | null>
+  orderWordMap: Record<string, string[]>
+  dragFillAnswer?: string | null
+  orderWords?: string[]
   activityDays: string[]
   updatedAt?: unknown
   lastCompletedAt?: unknown
@@ -17,7 +19,7 @@ export type UserProgress = {
 
 export type UserProgressPayload = Pick<
   UserProgress,
-  'totalXp' | 'completedExerciseIds' | 'choiceAnswers' | 'dragFillAnswer' | 'orderWords'
+  'totalXp' | 'completedExerciseIds' | 'choiceAnswers' | 'dragFillAnswers' | 'orderWordMap'
 >
 
 const defaultOrderWords = ['you', 'Where', 'are', 'from', '?']
@@ -28,12 +30,9 @@ export const defaultUserProgress = (uid: string): UserProgress => ({
   streakDays: 0,
   level: 1,
   completedExerciseIds: [],
-  choiceAnswers: {
-    q1: null,
-    q3: null,
-    q4: null,
-    q6: null,
-  },
+  choiceAnswers: {},
+  dragFillAnswers: {},
+  orderWordMap: {},
   dragFillAnswer: null,
   orderWords: defaultOrderWords,
   activityDays: [],
@@ -71,9 +70,12 @@ export const getUserProgress = async (uid: string) => {
   const snapshot = await getDoc(progressRef(uid))
   if (!snapshot.exists()) return defaultUserProgress(uid)
 
+  const data = snapshot.data() as Partial<UserProgress>
   return {
     ...defaultUserProgress(uid),
-    ...(snapshot.data() as Partial<UserProgress>),
+    ...data,
+    dragFillAnswers: data.dragFillAnswers ?? {},
+    orderWordMap: data.orderWordMap ?? {},
   }
 }
 
@@ -92,6 +94,8 @@ export const saveUserProgress = async (uid: string, payload: UserProgressPayload
     streakDays,
     level,
     activityDays: nextActivityDays,
+    dragFillAnswer: Object.values(payload.dragFillAnswers)[0] ?? null,
+    orderWords: Object.values(payload.orderWordMap)[0] ?? current.orderWords ?? defaultOrderWords,
   }
 
   await setDoc(progressRef(uid), {
