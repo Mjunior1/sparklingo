@@ -6,14 +6,13 @@ import {
   serverTimestamp,
   setDoc,
   writeBatch,
-  type DocumentData,
 } from 'firebase/firestore'
 import { requireFirebase } from '../lib/firebase'
 
 export type LessonTone = 'sky' | 'violet' | 'mint'
 export type FilterKey = 'Todos' | 'Gramática' | 'Vocabulário' | 'Listening' | 'Reading' | 'Speaking'
 export type Difficulty = 'Fácil' | 'Médio'
-export type ExerciseKind = 'multiple-choice' | 'drag-fill' | 'ordering'
+export type ExerciseKind = 'multiple-choice' | 'drag-fill' | 'ordering' | 'listening' | 'speaking'
 
 export type LessonCatalogItem = {
   id: string
@@ -101,7 +100,7 @@ export const defaultLessonsCatalog: LessonCatalogItem[] = [
 export const defaultQuizCatalog: QuizCatalogItem[] = [
   { id: 'q1', lessonId: 'lesson-present-simple', tag: 'Gramática', title: 'Forma correta', difficulty: 'Fácil', reward: 25, kind: 'multiple-choice', order: 1, active: true },
   { id: 'q2', lessonId: 'lesson-airport', tag: 'Vocabulário', title: 'Complete a frase', difficulty: 'Médio', reward: 35, kind: 'drag-fill', order: 2, active: true },
-  { id: 'q3', lessonId: 'lesson-daily-routines', tag: 'Listening', title: 'What did you hear?', difficulty: 'Fácil', reward: 30, kind: 'multiple-choice', order: 3, active: true },
+  { id: 'q3', lessonId: 'lesson-daily-routines', tag: 'Listening', title: 'What did you hear?', difficulty: 'Fácil', reward: 30, kind: 'listening', order: 3, active: true },
   { id: 'q4', lessonId: 'lesson-present-simple', tag: 'Reading', title: 'Futuro com if', difficulty: 'Médio', reward: 35, kind: 'multiple-choice', order: 4, active: true },
   { id: 'q5', lessonId: 'lesson-present-simple', tag: 'Speaking', title: 'Monte a frase', difficulty: 'Médio', reward: 40, kind: 'ordering', order: 5, active: true },
   { id: 'q6', lessonId: 'lesson-airport', tag: 'Vocabulário', title: 'Happy means...', difficulty: 'Fácil', reward: 30, kind: 'multiple-choice', order: 6, active: true },
@@ -151,7 +150,7 @@ export const defaultQuizQuestions: QuizQuestionItem[] = [
     quizId: 'q3',
     lessonId: 'lesson-daily-routines',
     tag: 'Listening',
-    kind: 'multiple-choice',
+    kind: 'listening',
     difficulty: 'Fácil',
     kicker: '3. Ouça e escolha',
     title: 'What did you hear?',
@@ -226,6 +225,68 @@ export const defaultAchievementCatalog: AchievementCatalogItem[] = [
   { id: 'achievement-target', title: 'Mission focus', icon: 'target', description: 'Conclua uma sessão inteira sem sair da run.', xpReward: 25 },
 ]
 
+const cleanString = (value: unknown, fallback = '') => typeof value === 'string' ? value : fallback
+const cleanNumber = (value: unknown, fallback = 0) => typeof value === 'number' && Number.isFinite(value) ? value : fallback
+const cleanBoolean = (value: unknown, fallback = false) => typeof value === 'boolean' ? value : fallback
+const cleanStringArray = (value: unknown) => Array.isArray(value) ? value.filter((item): item is string => typeof item === 'string').map((item) => item.trim()).filter(Boolean) : []
+
+const stripUndefined = <T extends Record<string, unknown>>(payload: T) => (
+  Object.fromEntries(Object.entries(payload).filter(([, value]) => value !== undefined)) as T
+)
+
+const sanitizeLesson = (lesson: LessonCatalogItem): LessonCatalogItem => ({
+  id: cleanString(lesson.id),
+  category: cleanString(lesson.category, 'Vocabulário'),
+  title: cleanString(lesson.title),
+  blurb: cleanString(lesson.blurb),
+  image: cleanString(lesson.image, '/pollinations/airport-card.png'),
+  tone: (['sky', 'violet', 'mint'].includes(lesson.tone) ? lesson.tone : 'sky') as LessonTone,
+  progress: cleanNumber(lesson.progress),
+})
+
+const sanitizeQuiz = (quiz: QuizCatalogItem): QuizCatalogItem => ({
+  id: cleanString(quiz.id),
+  lessonId: cleanString(quiz.lessonId),
+  tag: (['Gramática', 'Vocabulário', 'Listening', 'Reading', 'Speaking'].includes(quiz.tag) ? quiz.tag : 'Vocabulário') as FilterKey,
+  title: cleanString(quiz.title),
+  difficulty: (['Fácil', 'Médio'].includes(quiz.difficulty) ? quiz.difficulty : 'Fácil') as Difficulty,
+  reward: cleanNumber(quiz.reward, 25),
+  kind: (['multiple-choice', 'drag-fill', 'ordering', 'listening', 'speaking'].includes(quiz.kind) ? quiz.kind : 'multiple-choice') as ExerciseKind,
+  order: cleanNumber(quiz.order, 1),
+  active: cleanBoolean(quiz.active, true),
+})
+
+const sanitizeQuestion = (question: QuizQuestionItem): QuizQuestionItem => ({
+  id: cleanString(question.id),
+  quizId: cleanString(question.quizId),
+  lessonId: cleanString(question.lessonId),
+  tag: (['Gramática', 'Vocabulário', 'Listening', 'Reading', 'Speaking'].includes(question.tag) ? question.tag : 'Vocabulário') as FilterKey,
+  kind: (['multiple-choice', 'drag-fill', 'ordering', 'listening', 'speaking'].includes(question.kind) ? question.kind : 'multiple-choice') as ExerciseKind,
+  difficulty: (['Fácil', 'Médio'].includes(question.difficulty) ? question.difficulty : 'Fácil') as Difficulty,
+  kicker: cleanString(question.kicker, 'Novo desafio'),
+  title: cleanString(question.title),
+  prompt: cleanString(question.prompt),
+  art: cleanString(question.art, '/pollinations/airport-card.png'),
+  artAlt: cleanString(question.artAlt),
+  reward: cleanNumber(question.reward, 25),
+  active: cleanBoolean(question.active, true),
+  options: cleanStringArray(question.options),
+  correct: cleanString(question.correct),
+  explanation: cleanString(question.explanation),
+  sentenceBefore: cleanString(question.sentenceBefore),
+  sentenceAfter: cleanString(question.sentenceAfter),
+  scrambled: cleanStringArray(question.scrambled),
+  solution: cleanStringArray(question.solution),
+})
+
+const sanitizeAchievement = (achievement: AchievementCatalogItem): AchievementCatalogItem => ({
+  id: cleanString(achievement.id),
+  title: cleanString(achievement.title),
+  icon: (['headphones', 'star', 'target'].includes(achievement.icon) ? achievement.icon : 'star') as AchievementCatalogItem['icon'],
+  description: cleanString(achievement.description),
+  xpReward: cleanNumber(achievement.xpReward, 20),
+})
+
 const getCollectionDocs = async <T>(path: string, fallback: T[]) => {
   try {
     const { db } = requireFirebase()
@@ -241,12 +302,12 @@ const getCollectionDocs = async <T>(path: string, fallback: T[]) => {
   }
 }
 
-const upsertCatalogDoc = async (collectionName: string, id: string, payload: DocumentData) => {
+const upsertCatalogDoc = async (collectionName: string, id: string, payload: Record<string, unknown>) => {
   const { db } = requireFirebase()
-  await setDoc(doc(db, collectionName, id), {
+  await setDoc(doc(db, collectionName, id), stripUndefined({
     ...payload,
     updatedAt: serverTimestamp(),
-  }, { merge: true })
+  }), { merge: true })
 }
 
 export const getLessonsCatalog = () => getCollectionDocs<LessonCatalogItem>('lessons', defaultLessonsCatalog)
@@ -255,19 +316,30 @@ export const getQuizQuestions = () => getCollectionDocs<QuizQuestionItem>('quizQ
 export const getAchievementCatalog = () => getCollectionDocs<AchievementCatalogItem>('achievements', defaultAchievementCatalog)
 
 export const upsertLesson = async (lesson: LessonCatalogItem) => {
-  await upsertCatalogDoc('lessons', lesson.id, lesson)
+  await upsertCatalogDoc('lessons', lesson.id, sanitizeLesson(lesson))
 }
 
 export const upsertQuiz = async (quiz: QuizCatalogItem) => {
-  await upsertCatalogDoc('quizzes', quiz.id, quiz)
+  await upsertCatalogDoc('quizzes', quiz.id, sanitizeQuiz(quiz))
 }
 
 export const upsertQuizQuestion = async (question: QuizQuestionItem) => {
-  await upsertCatalogDoc('quizQuestions', question.id, question)
+  const clean = sanitizeQuestion(question)
+  const payload = stripUndefined({
+    ...clean,
+    options: clean.kind === 'multiple-choice' || clean.kind === 'drag-fill' || clean.kind === 'listening' ? clean.options ?? [] : [],
+    correct: clean.kind === 'ordering' ? '' : clean.correct ?? '',
+    sentenceBefore: clean.kind === 'drag-fill' ? clean.sentenceBefore ?? '' : '',
+    sentenceAfter: clean.kind === 'drag-fill' ? clean.sentenceAfter ?? '' : '',
+    scrambled: clean.kind === 'ordering' ? clean.scrambled ?? [] : [],
+    solution: clean.kind === 'ordering' ? clean.solution ?? [] : [],
+  })
+
+  await upsertCatalogDoc('quizQuestions', question.id, payload)
 }
 
 export const upsertAchievement = async (achievement: AchievementCatalogItem) => {
-  await upsertCatalogDoc('achievements', achievement.id, achievement)
+  await upsertCatalogDoc('achievements', achievement.id, sanitizeAchievement(achievement))
 }
 
 export const deleteLesson = async (lessonId: string) => {
@@ -295,16 +367,27 @@ export const seedDefaultCatalog = async () => {
   const batch = writeBatch(db)
 
   defaultLessonsCatalog.forEach((lesson) => {
-    batch.set(doc(db, 'lessons', lesson.id), { ...lesson, seededAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true })
+    batch.set(doc(db, 'lessons', lesson.id), stripUndefined({ ...sanitizeLesson(lesson), seededAt: serverTimestamp(), updatedAt: serverTimestamp() }), { merge: true })
   })
   defaultQuizCatalog.forEach((quiz) => {
-    batch.set(doc(db, 'quizzes', quiz.id), { ...quiz, seededAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true })
+    batch.set(doc(db, 'quizzes', quiz.id), stripUndefined({ ...sanitizeQuiz(quiz), seededAt: serverTimestamp(), updatedAt: serverTimestamp() }), { merge: true })
   })
   defaultQuizQuestions.forEach((question) => {
-    batch.set(doc(db, 'quizQuestions', question.id), { ...question, seededAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true })
+    const clean = sanitizeQuestion(question)
+    batch.set(doc(db, 'quizQuestions', question.id), stripUndefined({
+      ...clean,
+      options: clean.kind === 'multiple-choice' || clean.kind === 'drag-fill' || clean.kind === 'listening' ? clean.options ?? [] : [],
+      correct: clean.kind === 'ordering' ? '' : clean.correct ?? '',
+      sentenceBefore: clean.kind === 'drag-fill' ? clean.sentenceBefore ?? '' : '',
+      sentenceAfter: clean.kind === 'drag-fill' ? clean.sentenceAfter ?? '' : '',
+      scrambled: clean.kind === 'ordering' ? clean.scrambled ?? [] : [],
+      solution: clean.kind === 'ordering' ? clean.solution ?? [] : [],
+      seededAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }), { merge: true })
   })
   defaultAchievementCatalog.forEach((achievement) => {
-    batch.set(doc(db, 'achievements', achievement.id), { ...achievement, seededAt: serverTimestamp(), updatedAt: serverTimestamp() }, { merge: true })
+    batch.set(doc(db, 'achievements', achievement.id), stripUndefined({ ...sanitizeAchievement(achievement), seededAt: serverTimestamp(), updatedAt: serverTimestamp() }), { merge: true })
   })
 
   await batch.commit()
