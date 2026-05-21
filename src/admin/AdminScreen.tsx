@@ -1,9 +1,11 @@
 import './AdminScreen.css'
 import { useEffect, useMemo, useState } from 'react'
 import {
+  AlertCircle,
   ArrowLeft,
   BarChart3,
   BookOpen,
+  CheckCircle2,
   ChevronRight,
   Copy,
   Gamepad2,
@@ -20,6 +22,8 @@ import {
   Trash2,
   Trophy,
   Users,
+  Volume2,
+  Mic,
   WandSparkles,
   X,
 } from 'lucide-react'
@@ -72,7 +76,14 @@ type DrawerState =
   | { open: true; kind: DrawerKind; mode: DrawerMode }
 
 const tagOptions: Exclude<FilterKey, 'Todos'>[] = ['Gramática', 'Vocabulário', 'Listening', 'Reading', 'Speaking']
-const questionKinds: Array<QuizQuestionItem['kind']> = ['multiple-choice', 'drag-fill', 'ordering']
+type ToastState = {
+  tone: 'success' | 'error' | 'info'
+  message: string
+} | null
+
+type StatusFilter = 'all' | 'active' | 'inactive'
+
+const questionKinds: Array<QuizQuestionItem['kind']> = ['multiple-choice', 'drag-fill', 'ordering', 'listening', 'speaking']
 
 const navItems: Array<{ key: SectionKey; label: string; icon: typeof LayoutDashboard }> = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -151,13 +162,17 @@ const emptyAchievement: AchievementCatalogItem = {
 const formatQuestionKind = (kind: QuizQuestionItem['kind']) => {
   if (kind === 'multiple-choice') return 'Múltipla escolha'
   if (kind === 'drag-fill') return 'Drag & Drop'
-  return 'Listening / Speaking'
+  if (kind === 'ordering') return 'OrdenaÃ§Ã£o'
+  if (kind === 'listening') return 'Listening'
+  return 'Speaking'
 }
 
 const questionPrefixByKind: Record<QuizQuestionItem['kind'], string> = {
   'multiple-choice': 'QT-MC',
   'drag-fill': 'QT-DD',
   ordering: 'QT-OD',
+  listening: 'QT-LS',
+  speaking: 'QT-SP',
 }
 
 const padNumber = (value: number) => String(value).padStart(3, '0')
@@ -207,20 +222,43 @@ export function AdminScreen({
   const [activeSection, setActiveSection] = useState<SectionKey>('dashboard')
   const [drawer, setDrawer] = useState<DrawerState>({ open: false })
   const [status, setStatus] = useState('CMS conectado ao Firestore. Crie, edite e publique conteúdo real sem depender de deploy.')
+  const [toast, setToast] = useState<ToastState>(null)
   const [saving, setSaving] = useState(false)
-  const [search, setSearch] = useState('')
+  const [lessonSearch, setLessonSearch] = useState('')
+  const [lessonFilterTag, setLessonFilterTag] = useState<FilterKey | 'Todos'>('Todos')
+  const [quizSearch, setQuizSearch] = useState('')
+  const [quizFilterTag, setQuizFilterTag] = useState<FilterKey | 'Todos'>('Todos')
+  const [quizFilterStatus, setQuizFilterStatus] = useState<StatusFilter>('all')
+  const [questionSearch, setQuestionSearch] = useState('')
   const [filterTag, setFilterTag] = useState<FilterKey | 'Todos'>('Todos')
   const [filterKind, setFilterKind] = useState<QuizQuestionItem['kind'] | 'all'>('all')
   const [filterQuizId, setFilterQuizId] = useState<string>('all')
+  const [questionStatus, setQuestionStatus] = useState<StatusFilter>('all')
+  const [achievementSearch, setAchievementSearch] = useState('')
   const [lessonDraft, setLessonDraft] = useState<LessonCatalogItem>(emptyLesson)
   const [quizDraft, setQuizDraft] = useState<QuizCatalogItem>(emptyQuiz)
   const [questionDraft, setQuestionDraft] = useState<QuizQuestionItem>(emptyQuestion)
   const [achievementDraft, setAchievementDraft] = useState<AchievementCatalogItem>(emptyAchievement)
   const [platformDraft, setPlatformDraft] = useState<PlatformConfig>(platformConfig ?? defaultPlatformConfig)
+  const [mediaAiOpen, setMediaAiOpen] = useState(false)
+  const [mediaAiTarget, setMediaAiTarget] = useState<'lesson' | 'quiz' | 'question'>('lesson')
+  const [mediaAiTargetId, setMediaAiTargetId] = useState('')
+  const [mediaAiStyle, setMediaAiStyle] = useState<'cartoon' | '3D' | 'pastel' | 'kawaii' | 'cinematic'>('3D')
+
+  const debouncedLessonSearch = useDebouncedValue(lessonSearch)
+  const debouncedQuizSearch = useDebouncedValue(quizSearch)
+  const debouncedQuestionSearch = useDebouncedValue(questionSearch)
+  const debouncedAchievementSearch = useDebouncedValue(achievementSearch)
 
   useEffect(() => {
     setPlatformDraft(platformConfig ?? defaultPlatformConfig)
   }, [platformConfig])
+
+  useEffect(() => {
+    if (!toast) return
+    const timeout = window.setTimeout(() => setToast(null), 2600)
+    return () => window.clearTimeout(timeout)
+  }, [toast])
 
   useEffect(() => {
     if (!questionDraft.quizId) return
@@ -258,19 +296,50 @@ export function AdminScreen({
 
   const sortedLessons = useMemo(() => lessons.slice().sort((a, b) => a.title.localeCompare(b.title)), [lessons])
   const sortedQuizzes = useMemo(() => quizzes.slice().sort((a, b) => a.title.localeCompare(b.title)), [quizzes])
+  const filteredLessons = useMemo(() => {
+    return sortedLessons
+      .filter((lesson) => lessonFilterTag === 'Todos' || lesson.category === lessonFilterTag)
+      .filter((lesson) => {
+        if (!debouncedLessonSearch.trim()) return true
+        const haystack = `${lesson.id} ${lesson.title} ${lesson.category}`.toLowerCase()
+        return haystack.includes(debouncedLessonSearch.toLowerCase())
+      })
+  }, [debouncedLessonSearch, lessonFilterTag, sortedLessons])
+
+  const filteredQuizzes = useMemo(() => {
+    return sortedQuizzes
+      .filter((quiz) => quizFilterTag === 'Todos' || quiz.tag === quizFilterTag)
+      .filter((quiz) => quizFilterStatus === 'all' || (quizFilterStatus === 'active' ? quiz.active : !quiz.active))
+      .filter((quiz) => {
+        if (!debouncedQuizSearch.trim()) return true
+        const linkedLesson = lessons.find((lesson) => lesson.id === quiz.lessonId)
+        const haystack = `${quiz.id} ${quiz.title} ${quiz.tag} ${quiz.lessonId} ${linkedLesson?.title ?? ''}`.toLowerCase()
+        return haystack.includes(debouncedQuizSearch.toLowerCase())
+      })
+  }, [debouncedQuizSearch, lessons, quizFilterStatus, quizFilterTag, sortedQuizzes])
 
   const filteredQuestions = useMemo(() => {
     return questions
       .filter((question) => filterTag === 'Todos' || question.tag === filterTag)
       .filter((question) => filterKind === 'all' || question.kind === filterKind)
       .filter((question) => filterQuizId === 'all' || question.quizId === filterQuizId)
+      .filter((question) => questionStatus === 'all' || (questionStatus === 'active' ? question.active : !question.active))
       .filter((question) => {
-        if (!search.trim()) return true
+        if (!debouncedQuestionSearch.trim()) return true
         const haystack = `${question.id} ${question.title} ${question.prompt} ${question.quizId} ${question.lessonId}`.toLowerCase()
-        return haystack.includes(search.toLowerCase())
+        return haystack.includes(debouncedQuestionSearch.toLowerCase())
       })
       .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }))
-  }, [filterKind, filterQuizId, filterTag, questions, search])
+  }, [debouncedQuestionSearch, filterKind, filterQuizId, filterTag, questionStatus, questions])
+
+  const filteredAchievements = useMemo(() => {
+    const source = achievements.length ? achievements : defaultAchievementCatalog
+    return source.filter((achievement) => {
+      if (!debouncedAchievementSearch.trim()) return true
+      const haystack = `${achievement.id} ${achievement.title} ${achievement.description}`.toLowerCase()
+      return haystack.includes(debouncedAchievementSearch.toLowerCase())
+    })
+  }, [achievements, debouncedAchievementSearch])
 
   const dashboardStats = [
     { label: 'Lições', value: lessons.length, helper: 'trilhas vivas' },
@@ -281,6 +350,12 @@ export function AdminScreen({
 
   const currentQuestionQuiz = quizzes.find((quiz) => quiz.id === questionDraft.quizId)
   const currentQuestionLesson = lessons.find((lesson) => lesson.id === questionDraft.lessonId)
+  const mediaTargetOptions = mediaAiTarget === 'lesson'
+    ? sortedLessons.map((lesson) => ({ id: lesson.id, label: lesson.title }))
+    : mediaAiTarget === 'quiz'
+      ? sortedQuizzes.map((quiz) => ({ id: quiz.id, label: quiz.title }))
+      : filteredQuestions.map((question) => ({ id: question.id, label: question.title }))
+  const selectedMediaTarget = mediaTargetOptions.find((item) => item.id === mediaAiTargetId)
 
   const questionPreview = useMemo(() => {
     if (questionDraft.kind === 'drag-fill') {
@@ -294,8 +369,14 @@ export function AdminScreen({
     return (questionDraft.options ?? []).filter(Boolean).join(' • ') || 'go • goes • going • gone'
   }, [questionDraft])
 
+  const mediaPrompt = useMemo(() => {
+    const label = selectedMediaTarget?.label ?? 'conteúdo atual'
+    return `Crie uma ilustração ${mediaAiStyle} para ${mediaAiTarget === 'lesson' ? 'uma lição' : mediaAiTarget === 'quiz' ? 'um quiz' : 'uma questão'} do SparkLingo, tema "${label}", mantendo visual premium, lilás suave, educacional gamificado e leitura confortável.`
+  }, [mediaAiStyle, mediaAiTarget, selectedMediaTarget])
+
   const openDrawer = (kind: DrawerKind, mode: DrawerMode) => setDrawer({ open: true, kind, mode })
   const closeDrawer = () => setDrawer({ open: false })
+  const showToast = (tone: NonNullable<ToastState>['tone'], message: string) => setToast({ tone, message })
 
   const runAdminTask = async (loadingMessage: string, successMessage: string, task: () => Promise<void>) => {
     setSaving(true)
@@ -304,8 +385,11 @@ export function AdminScreen({
       await task()
       await onRefresh()
       setStatus(successMessage)
+      showToast('success', successMessage)
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : 'Não foi possível concluir a operação no Firestore.')
+      const message = error instanceof Error ? error.message : 'Não foi possível concluir a operação no Firestore.'
+      setStatus(message)
+      showToast('error', message)
     } finally {
       setSaving(false)
     }
@@ -338,11 +422,14 @@ export function AdminScreen({
       await upsertQuizQuestion({
         ...questionDraft,
         id: questionIdPreview,
-        options: questionDraft.kind === 'multiple-choice' || questionDraft.kind === 'drag-fill'
+        options: questionDraft.kind === 'multiple-choice' || questionDraft.kind === 'drag-fill' || questionDraft.kind === 'listening'
           ? (questionDraft.options ?? []).filter(Boolean)
-          : undefined,
-        scrambled: questionDraft.kind === 'ordering' ? (questionDraft.scrambled ?? []).filter(Boolean) : undefined,
-        solution: questionDraft.kind === 'ordering' ? (questionDraft.solution ?? []).filter(Boolean) : undefined,
+          : [],
+        correct: questionDraft.kind === 'ordering' ? '' : (questionDraft.correct ?? ''),
+        sentenceBefore: questionDraft.kind === 'drag-fill' ? (questionDraft.sentenceBefore ?? '') : '',
+        sentenceAfter: questionDraft.kind === 'drag-fill' ? (questionDraft.sentenceAfter ?? '') : '',
+        scrambled: questionDraft.kind === 'ordering' ? (questionDraft.scrambled ?? []).filter(Boolean) : [],
+        solution: questionDraft.kind === 'ordering' ? (questionDraft.solution ?? []).filter(Boolean) : [],
       })
       setQuestionDraft(emptyQuestion)
       closeDrawer()
@@ -390,7 +477,18 @@ export function AdminScreen({
   }
 
   const openQuestionEditor = (question?: QuizQuestionItem) => {
-    setQuestionDraft(question ?? emptyQuestion)
+    setQuestionDraft(question
+      ? {
+          ...emptyQuestion,
+          ...question,
+          options: question.options ?? ['', '', '', ''],
+          correct: question.correct ?? '',
+          sentenceBefore: question.sentenceBefore ?? '',
+          sentenceAfter: question.sentenceAfter ?? '',
+          scrambled: question.scrambled ?? [],
+          solution: question.solution ?? [],
+        }
+      : emptyQuestion)
     openDrawer('question', question ? 'edit' : 'create')
   }
 
@@ -453,7 +551,7 @@ export function AdminScreen({
             <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
             <button className="admin-primary" type="button" disabled={saving || !lessonDraft.title} onClick={saveLesson}>
               <Save size={16} />
-              Salvar lição
+              {saving ? 'Salvando...' : 'Salvar lição'}
             </button>
           </div>
         </>
@@ -503,7 +601,7 @@ export function AdminScreen({
             <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
             <button className="admin-primary" type="button" disabled={saving || !quizDraft.lessonId || !quizDraft.title} onClick={saveQuiz}>
               <Save size={16} />
-              Salvar quiz
+              {saving ? 'Salvando...' : 'Salvar quiz'}
             </button>
           </div>
         </>
@@ -601,6 +699,22 @@ export function AdminScreen({
                   </label>
                 </>
               )}
+              {questionDraft.kind === 'listening' && (
+                <>
+                  <label>Opções (uma por linha)
+                    <textarea value={(questionDraft.options ?? []).join('\n')} onChange={(event) => setQuestionDraft((current) => ({ ...current, options: event.target.value.split('\n') }))} />
+                  </label>
+                  <label>Resposta correta
+                    <input value={questionDraft.correct ?? ''} onChange={(event) => setQuestionDraft((current) => ({ ...current, correct: event.target.value }))} />
+                  </label>
+                </>
+              )}
+
+              {questionDraft.kind === 'speaking' && (
+                <label>Guia de fala
+                  <textarea value={questionDraft.explanation} onChange={(event) => setQuestionDraft((current) => ({ ...current, explanation: event.target.value }))} />
+                </label>
+              )}
             </div>
 
             <div className="question-preview-card">
@@ -611,7 +725,7 @@ export function AdminScreen({
               </div>
               <strong>{questionDraft.title || 'Prévia do desafio'}</strong>
               <p>{questionDraft.prompt || 'Monte a questão visualmente e veja como ela vai aparecer na home.'}</p>
-              <div className="question-preview-stage">{questionPreview}</div>
+              <QuestionPreviewStage draft={questionDraft} fallbackText={questionPreview} />
               <MediaPicker selected={questionDraft.art} onPick={applyMediaAsset} compact />
             </div>
           </div>
@@ -620,7 +734,7 @@ export function AdminScreen({
             <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
             <button className="admin-primary" type="button" disabled={saving || !questionDraft.quizId || !questionDraft.title} onClick={saveQuestion}>
               <Save size={16} />
-              Salvar questão
+              {saving ? 'Salvando...' : 'Salvar questão'}
             </button>
           </div>
         </>
@@ -656,7 +770,7 @@ export function AdminScreen({
           <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
           <button className="admin-primary" type="button" disabled={saving || !achievementDraft.title} onClick={saveAchievementItem}>
             <Save size={16} />
-            Salvar conquista
+            {saving ? 'Salvando...' : 'Salvar conquista'}
           </button>
         </div>
       </>
@@ -768,8 +882,18 @@ export function AdminScreen({
                   Nova lição
                 </button>
               </div>
+              <div className="cms-filter-row cms-filter-row-lessons">
+                <label className="cms-search">
+                  <Search size={16} />
+                  <input value={lessonSearch} onChange={(event) => setLessonSearch(event.target.value)} placeholder="Buscar por ID, título ou categoria" />
+                </label>
+                <select value={lessonFilterTag} onChange={(event) => setLessonFilterTag(event.target.value as FilterKey | 'Todos')}>
+                  <option value="Todos">Todas as categorias</option>
+                  {tagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
+                </select>
+              </div>
               <div className="cms-card-list">
-                {sortedLessons.map((lesson) => (
+                {filteredLessons.map((lesson) => (
                   <article key={lesson.id} className="cms-content-card">
                     <img src={lesson.image} alt={lesson.title} />
                     <div className="cms-content-copy">
@@ -801,6 +925,21 @@ export function AdminScreen({
                   Novo quiz
                 </button>
               </div>
+              <div className="cms-filter-row cms-filter-row-quizzes">
+                <label className="cms-search">
+                  <Search size={16} />
+                  <input value={quizSearch} onChange={(event) => setQuizSearch(event.target.value)} placeholder="Buscar por ID, título, lição ou categoria" />
+                </label>
+                <select value={quizFilterTag} onChange={(event) => setQuizFilterTag(event.target.value as FilterKey | 'Todos')}>
+                  <option value="Todos">Todas as categorias</option>
+                  {tagOptions.map((tag) => <option key={tag} value={tag}>{tag}</option>)}
+                </select>
+                <select value={quizFilterStatus} onChange={(event) => setQuizFilterStatus(event.target.value as StatusFilter)}>
+                  <option value="all">Todos os status</option>
+                  <option value="active">Ativos</option>
+                  <option value="inactive">Pausados</option>
+                </select>
+              </div>
               <div className="cms-table-wrap">
                 <table className="cms-table">
                   <thead>
@@ -815,7 +954,7 @@ export function AdminScreen({
                     </tr>
                   </thead>
                   <tbody>
-                    {sortedQuizzes.map((quiz) => (
+                    {filteredQuizzes.map((quiz) => (
                       <tr key={quiz.id}>
                         <td>{quiz.id}</td>
                         <td>{lessons.find((lesson) => lesson.id === quiz.lessonId)?.title ?? quiz.lessonId}</td>
@@ -853,7 +992,7 @@ export function AdminScreen({
               <div className="cms-filter-row">
                 <label className="cms-search">
                   <Search size={16} />
-                  <input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Buscar por ID, título, quiz ou lição" />
+                  <input value={questionSearch} onChange={(event) => setQuestionSearch(event.target.value)} placeholder="Buscar por ID, título, quiz ou lição" />
                 </label>
                 <select value={filterTag} onChange={(event) => setFilterTag(event.target.value as FilterKey | 'Todos')}>
                   <option value="Todos">Todas as categorias</option>
@@ -866,6 +1005,11 @@ export function AdminScreen({
                 <select value={filterQuizId} onChange={(event) => setFilterQuizId(event.target.value)}>
                   <option value="all">Todos os quizzes</option>
                   {sortedQuizzes.map((quiz) => <option key={quiz.id} value={quiz.id}>{quiz.title}</option>)}
+                </select>
+                <select value={questionStatus} onChange={(event) => setQuestionStatus(event.target.value as StatusFilter)}>
+                  <option value="all">Todos os status</option>
+                  <option value="active">Ativas</option>
+                  <option value="inactive">Pausadas</option>
                 </select>
               </div>
 
@@ -921,8 +1065,14 @@ export function AdminScreen({
                   Nova conquista
                 </button>
               </div>
+              <div className="cms-filter-row cms-filter-row-achievements">
+                <label className="cms-search">
+                  <Search size={16} />
+                  <input value={achievementSearch} onChange={(event) => setAchievementSearch(event.target.value)} placeholder="Buscar por ID, título ou descrição" />
+                </label>
+              </div>
               <div className="cms-card-list">
-                {(achievements.length ? achievements : defaultAchievementCatalog).map((achievement) => (
+                {filteredAchievements.map((achievement) => (
                   <article key={achievement.id} className="cms-content-card cms-content-card-simple">
                     <div className="cms-content-copy">
                       <strong>{achievement.title}</strong>
@@ -948,6 +1098,10 @@ export function AdminScreen({
                   <h2>Biblioteca de mídia</h2>
                   <p className="admin-helper">Escolha assets visuais por preview, sem digitar caminhos manuais.</p>
                 </div>
+                <button className="admin-primary cms-inline-button" type="button" onClick={() => setMediaAiOpen(true)}>
+                  <Sparkles size={16} />
+                  Gerar mídia com IA
+                </button>
               </div>
               <MediaPicker selected={null} onPick={applyMediaAsset} />
             </section>
@@ -987,7 +1141,7 @@ export function AdminScreen({
                     type="button"
                   >
                     <Sparkles size={16} />
-                    Popular catálogo base
+                    {saving ? 'Processando...' : 'Popular catálogo base'}
                   </button>
                 </article>
 
@@ -1010,7 +1164,7 @@ export function AdminScreen({
                     type="button"
                   >
                     <Save size={16} />
-                    Salvar plataforma
+                    {saving ? 'Salvando...' : 'Salvar plataforma'}
                   </button>
                 </article>
               </div>
@@ -1019,6 +1173,12 @@ export function AdminScreen({
         )}
 
         <p className="admin-status">{status}</p>
+        {toast && (
+          <div className={`admin-toast admin-toast-${toast.tone}`}>
+            {toast.tone === 'success' ? <CheckCircle2 size={18} /> : toast.tone === 'error' ? <AlertCircle size={18} /> : <Sparkles size={18} />}
+            <span>{toast.message}</span>
+          </div>
+        )}
       </div>
 
       {drawer.open && (
@@ -1026,6 +1186,69 @@ export function AdminScreen({
           <aside className="admin-drawer" onClick={(event) => event.stopPropagation()}>
             {renderDrawerContent()}
           </aside>
+        </div>
+      )}
+
+      {mediaAiOpen && (
+        <div className="admin-modal-backdrop" onClick={() => setMediaAiOpen(false)}>
+          <section className="admin-modal" onClick={(event) => event.stopPropagation()}>
+            <div className="admin-modal-head">
+              <div>
+                <span className="admin-drawer-kicker">✨ Gerar mídia com IA</span>
+                <h3>Preparar prompt visual</h3>
+                <p>Mock funcional para futura integração com Pollinations + rembg.</p>
+              </div>
+              <button type="button" className="drawer-close" onClick={() => setMediaAiOpen(false)}><X size={18} /></button>
+            </div>
+            <div className="admin-modal-body">
+              <div className="drawer-form">
+                <label>Escopo
+                  <select value={mediaAiTarget} onChange={(event) => { setMediaAiTarget(event.target.value as 'lesson' | 'quiz' | 'question'); setMediaAiTargetId('') }}>
+                    <option value="lesson">Lição</option>
+                    <option value="quiz">Quiz</option>
+                    <option value="question">Questão</option>
+                  </select>
+                </label>
+                <label>Alvo
+                  <select value={mediaAiTargetId} onChange={(event) => setMediaAiTargetId(event.target.value)}>
+                    <option value="">Selecione um item</option>
+                    {mediaTargetOptions.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                  </select>
+                </label>
+                <label>Estilo
+                  <div className="media-style-row">
+                    {(['cartoon', '3D', 'pastel', 'kawaii', 'cinematic'] as const).map((style) => (
+                      <button
+                        key={style}
+                        type="button"
+                        className={`media-style-chip${mediaAiStyle === style ? ' is-active' : ''}`}
+                        onClick={() => setMediaAiStyle(style)}
+                      >
+                        {style}
+                      </button>
+                    ))}
+                  </div>
+                </label>
+                <label>Prompt sugerido
+                  <textarea value={mediaPrompt} readOnly />
+                </label>
+              </div>
+            </div>
+            <div className="admin-drawer-footer">
+              <button className="admin-secondary" type="button" onClick={() => setMediaAiOpen(false)}>Fechar</button>
+              <button
+                className="admin-primary"
+                type="button"
+                onClick={() => {
+                  showToast('info', 'Fluxo de IA preparado. A integração real com Pollinations entra na próxima etapa.')
+                  setMediaAiOpen(false)
+                }}
+              >
+                <Sparkles size={16} />
+                Usar prompt mock
+              </button>
+            </div>
+          </section>
         </div>
       )}
     </div>
@@ -1062,4 +1285,76 @@ function MediaPicker({
       </div>
     </div>
   )
+}
+
+function QuestionPreviewStage({ draft, fallbackText }: { draft: QuizQuestionItem; fallbackText: string }) {
+  if (draft.kind === 'multiple-choice') {
+    const options = (draft.options ?? []).filter(Boolean)
+    return (
+      <div className="question-preview-stage question-preview-mc">
+        {options.length ? options.map((option) => <span key={option}>{option}</span>) : <span>go</span>}
+      </div>
+    )
+  }
+
+  if (draft.kind === 'drag-fill') {
+    return (
+      <div className="question-preview-stage question-preview-drag">
+        <div className="preview-sentence">
+          <span>{draft.sentenceBefore || 'I enjoy'}</span>
+          <span className="preview-slot">drop here</span>
+          <span>{draft.sentenceAfter || 'in the mountains.'}</span>
+        </div>
+        <div className="preview-token-row">
+          {(draft.options ?? []).filter(Boolean).slice(0, 4).map((option) => <span key={option}>{option}</span>)}
+        </div>
+      </div>
+    )
+  }
+
+  if (draft.kind === 'ordering') {
+    return (
+      <div className="question-preview-stage question-preview-ordering">
+        <div className="preview-token-row">
+          {(draft.scrambled ?? []).filter(Boolean).slice(0, 6).map((word) => <span key={word}>{word}</span>)}
+        </div>
+      </div>
+    )
+  }
+
+  if (draft.kind === 'listening') {
+    return (
+      <div className="question-preview-stage question-preview-audio">
+        <div className="preview-audio-player">
+          <button type="button"><Volume2 size={14} /></button>
+          <div className="preview-audio-wave" />
+          <small>0:12</small>
+        </div>
+        <div className="preview-token-row">
+          {(draft.options ?? []).filter(Boolean).slice(0, 3).map((option) => <span key={option}>{option}</span>)}
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="question-preview-stage question-preview-speaking">
+      <div className="preview-speaking-badge">
+        <Mic size={18} />
+        <span>Tap to speak</span>
+      </div>
+      <small>{draft.explanation || fallbackText || 'Seu feedback de fala aparece aqui.'}</small>
+    </div>
+  )
+}
+
+function useDebouncedValue<T>(value: T, delay = 180) {
+  const [debounced, setDebounced] = useState(value)
+
+  useEffect(() => {
+    const timeout = window.setTimeout(() => setDebounced(value), delay)
+    return () => window.clearTimeout(timeout)
+  }, [delay, value])
+
+  return debounced
 }
