@@ -45,6 +45,7 @@ import {
   type QuizCatalogItem,
   type QuizQuestionItem,
 } from '../services/catalog'
+import { generateMediaToStorage, type GeneratedMediaAsset } from '../services/media'
 import { defaultPlatformConfig, savePlatformConfig, type PlatformConfig } from '../services/platform'
 
 type AdminScreenProps = {
@@ -77,7 +78,6 @@ type DrawerState =
 
 type MediaAiScope = 'lesson' | 'quiz' | 'question'
 type MediaAiStyle = 'cartoon' | '3D' | 'pastel' | 'kawaii' | 'cinematic'
-type MediaAiLevel = 'A1' | 'A2' | 'B1' | 'B2'
 type MediaAsset = {
   id: string
   label: string
@@ -115,14 +115,6 @@ const mediaLibrary: MediaAsset[] = [
   { id: 'dog', label: 'Dog', path: '/pollinations/dog-card.png', tone: 'mint' },
   { id: 'storm', label: 'Storm', path: '/pollinations/storm-card.png', tone: 'violet' },
 ]
-
-const mediaStylePresets: Record<'cartoon' | '3D' | 'pastel' | 'kawaii' | 'cinematic', string[]> = {
-  cartoon: ['/pollinations/dog-card.png', '/pollinations/airport-card.png', '/pollinations/mountain-card.png'],
-  '3D': ['/pollinations/grammar-card.png', '/pollinations/listening-card.png', '/pollinations/airport-card.png'],
-  pastel: ['/pollinations/mountain-card.png', '/pollinations/listening-card.png', '/pollinations/grammar-card.png'],
-  kawaii: ['/pollinations/dog-card.png', '/pollinations/listening-card.png', '/pollinations/mountain-card.png'],
-  cinematic: ['/pollinations/storm-card.png', '/pollinations/airport-card.png', '/pollinations/grammar-card.png'],
-}
 
 const emptyLesson: LessonCatalogItem = {
   id: '',
@@ -267,8 +259,8 @@ export function AdminScreen({
   const [mediaAiTarget, setMediaAiTarget] = useState<MediaAiScope>('lesson')
   const [mediaAiTargetId, setMediaAiTargetId] = useState('')
   const [mediaAiStyle, setMediaAiStyle] = useState<MediaAiStyle>('3D')
-  const [mediaAiLevel, setMediaAiLevel] = useState<MediaAiLevel>('A2')
-  const [mediaAiGenerated, setMediaAiGenerated] = useState<MediaAsset[]>([])
+  const [mediaAiGenerated, setMediaAiGenerated] = useState<GeneratedMediaAsset[]>([])
+  const [mediaAiSelectedId, setMediaAiSelectedId] = useState('')
   const [mediaAiGenerating, setMediaAiGenerating] = useState(false)
 
   const debouncedLessonSearch = useDebouncedValue(lessonSearch)
@@ -399,10 +391,10 @@ export function AdminScreen({
   const selectedMediaQuiz = quizzes.find((quiz) => quiz.id === mediaAiTargetId)
   const selectedMediaQuestion = questions.find((question) => question.id === mediaAiTargetId)
   const mediaTargetOptions = mediaAiTarget === 'lesson'
-     ? sortedLessons.map((lesson) => ({ id: lesson.id, label: lesson.title }))
+    ? sortedLessons.map((lesson) => ({ id: lesson.id, label: lesson.title }))
     : mediaAiTarget === 'quiz'
-       ? sortedQuizzes.map((quiz) => ({ id: quiz.id, label: quiz.title }))
-      : filteredQuestions.map((question) => ({ id: question.id, label: question.title }))
+      ? sortedQuizzes.map((quiz) => ({ id: quiz.id, label: quiz.title }))
+      : questions.map((question) => ({ id: question.id, label: question.title }))
   const selectedMediaTarget = mediaTargetOptions.find((item) => item.id === mediaAiTargetId)
 
   const questionPreview = useMemo(() => {
@@ -436,17 +428,26 @@ export function AdminScreen({
       .filter(Boolean)
       .join(', ')
 
-    return `Crie uma ilustração ${mediaAiStyle} simples e premium para ${scopeLabel} do SparkLingo, tema "${label}"${contextLine ? `, contexto ${contextLine}` : ''}, nível ${mediaAiLevel}, fundo limpo, composição única, sem texto, sem interface e com leitura visual confortável.`
-  }, [mediaAiLevel, mediaAiStyle, mediaAiTarget, selectedMediaLesson?.category, selectedMediaQuestion?.kind, selectedMediaQuestion?.tag, selectedMediaQuiz?.kind, selectedMediaQuiz?.tag, selectedMediaTarget])
+    return `Crie uma ilustração ${mediaAiStyle} simples e premium para ${scopeLabel} do SparkLingo, tema "${label}"${contextLine ? `, contexto ${contextLine}` : ''}, foco em um objeto principal, composição clara, sem texto, sem interface e pronta para card.`
+  }, [mediaAiStyle, mediaAiTarget, selectedMediaLesson?.category, selectedMediaQuestion?.kind, selectedMediaQuestion?.tag, selectedMediaQuiz?.kind, selectedMediaQuiz?.tag, selectedMediaTarget])
 
-  const generatedMediaAssets = useMemo(() => {
-    if (mediaAiGenerated.length) return mediaAiGenerated.slice(0, 3)
+  const generatedMediaAssets = useMemo<GeneratedMediaAsset[]>(() => mediaAiGenerated.slice(0, 3), [mediaAiGenerated])
 
-    return mediaStylePresets[mediaAiStyle]
-      .slice(0, 3)
-      .map((path) => mediaLibrary.find((asset) => asset.path === path))
-      .filter((asset): asset is MediaAsset => Boolean(asset))
-  }, [mediaAiGenerated, mediaAiStyle])
+  const selectedGeneratedMedia = useMemo(
+    () => generatedMediaAssets.find((asset) => asset.id === mediaAiSelectedId) ?? generatedMediaAssets[0] ?? null,
+    [generatedMediaAssets, mediaAiSelectedId],
+  )
+
+  useEffect(() => {
+    if (!generatedMediaAssets.length) {
+      setMediaAiSelectedId('')
+      return
+    }
+
+    if (!generatedMediaAssets.some((asset) => asset.id === mediaAiSelectedId)) {
+      setMediaAiSelectedId(generatedMediaAssets[0].id)
+    }
+  }, [generatedMediaAssets, mediaAiSelectedId])
 
   const openDrawer = (kind: DrawerKind, mode: DrawerMode) => setDrawer({ open: true, kind, mode })
   const closeDrawer = () => setDrawer({ open: false })
@@ -465,10 +466,16 @@ export function AdminScreen({
       }
     }
     setMediaAiGenerated([])
+    setMediaAiSelectedId('')
     setMediaAiOpen(true)
   }
 
   const generateMediaMocks = async () => {
+    if (!mediaAiTargetId) {
+      showToast('info', 'Selecione um alvo para gerar a mídia com contexto real.')
+      return
+    }
+
     setMediaAiGenerating(true)
     try {
       const basePrompt = `${mediaPrompt}. Crie apenas uma imagem simples de card, sem texto, sem bordas de interface, sem personagens extras e sem colagem visual.`
@@ -479,36 +486,21 @@ export function AdminScreen({
             ? mediaLibrary.find((asset) => asset.path === selectedMediaQuestion?.art)?.tone
             : mediaLibrary.find((asset) => asset.path === selectedMediaQuiz?.coverArt)?.tone
 
-      const variants = Array.from({ length: 3 }, (_, index) => {
-        const seed = Date.now() + index * 97
-        const prompt = `${basePrompt} Variação ${index + 1}, estilo ${mediaAiStyle}, paleta ${targetTone ?? 'soft violet'}.`
-        const path = `https://image.pollinations.ai/prompt/${encodeURIComponent(prompt)}?model=flux&width=1024&height=768&seed=${seed}&nologo=true&private=true&enhance=true`
-
-        return {
-          id: `ai-${seed}`,
-          label: `${selectedMediaTarget?.label ?? 'Conteúdo'} ${index + 1}`,
-          path,
-          tone: targetTone ?? 'violet',
-        } satisfies MediaAsset
+      const variants = await generateMediaToStorage({
+        prompt: basePrompt,
+        scope: mediaAiTarget,
+        style: mediaAiStyle,
+        label: selectedMediaTarget?.label ?? 'Conteúdo',
+        tone: targetTone ?? 'violet',
+        count: 3,
       })
 
-      await Promise.all(
-        variants.map(
-          (asset) =>
-            new Promise<void>((resolve, reject) => {
-              const image = new window.Image()
-              image.onload = () => resolve()
-              image.onerror = () => reject(new Error('Falha ao carregar uma variação do Pollinations.'))
-              image.src = asset.path
-            }),
-        ),
-      )
-
       setMediaAiGenerated(variants)
+      setMediaAiSelectedId(variants[0]?.id ?? '')
       setMediaAiGenerating(false)
-      showToast('success', `3 variações geradas com Pollinations no estilo ${mediaAiStyle}.`)
+      showToast('success', `${variants.length} variações geradas, salvas no Firebase Storage e prontas para uso.`)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Não foi possível gerar variações com IA.'
+      const message = error instanceof Error ? error.message : 'Não foi possível gerar imagens com IA.'
       setMediaAiGenerating(false)
       showToast('error', message)
     }
@@ -1385,32 +1377,24 @@ export function AdminScreen({
             <div className="admin-modal-head">
               <div>
                 <span className="admin-drawer-kicker">✨ Gerar mídia com IA</span>
-                <h3>Preparar prompt visual</h3>
-                <p>Mock funcional para futura integração com Pollinations + rembg, já com preview, contexto pedagógico e aplicação no formulário.</p>
+                <h3>Gerar imagem contextual</h3>
+                <p>Gere imagens reais com Pollinations, salve no Firebase Storage e aplique o asset diretamente no conteúdo atual.</p>
               </div>
               <button type="button" className="drawer-close" onClick={() => setMediaAiOpen(false)}><X size={18} /></button>
             </div>
             <div className="admin-modal-body">
               <div className="drawer-form">
                 <label>Escopo
-                  <select value={mediaAiTarget} onChange={(event) => { setMediaAiTarget(event.target.value as MediaAiScope); setMediaAiTargetId('') }}>
+                  <select value={mediaAiTarget} onChange={(event) => { setMediaAiTarget(event.target.value as MediaAiScope); setMediaAiTargetId(''); setMediaAiGenerated([]); setMediaAiSelectedId('') }}>
                     <option value="lesson">Lição</option>
                     <option value="quiz">Quiz</option>
                     <option value="question">Questão</option>
                   </select>
                 </label>
                 <label>Alvo
-                  <select value={mediaAiTargetId} onChange={(event) => setMediaAiTargetId(event.target.value)}>
+                  <select value={mediaAiTargetId} onChange={(event) => { setMediaAiTargetId(event.target.value); setMediaAiGenerated([]); setMediaAiSelectedId('') }}>
                     <option value="">Selecione um item</option>
                     {mediaTargetOptions.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
-                  </select>
-                </label>
-                <label>Nível
-                  <select value={mediaAiLevel} onChange={(event) => setMediaAiLevel(event.target.value as MediaAiLevel)}>
-                    <option value="A1">A1</option>
-                    <option value="A2">A2</option>
-                    <option value="B1">B1</option>
-                    <option value="B2">B2</option>
                   </select>
                 </label>
                 <label>Estilo
@@ -1440,13 +1424,15 @@ export function AdminScreen({
                     {(selectedMediaQuestion?.kind || selectedMediaQuiz?.kind) && (
                       <span>{formatQuestionKind(selectedMediaQuestion?.kind ?? selectedMediaQuiz?.kind ?? 'multiple-choice')}</span>
                     )}
-                    <span>Nível {mediaAiLevel}</span>
                   </div>
                 </div>
               </div>
               <div className="media-ai-preview-panel">
                 <div className="media-ai-preview-head">
-                  <strong>Variações sugeridas</strong>
+                  <div>
+                    <strong>Variações geradas</strong>
+                    <span>Até 3 imagens por geração, prontas para aplicar no conteúdo atual.</span>
+                  </div>
                   <button
                     type="button"
                     className="admin-secondary media-ai-generate"
@@ -1454,34 +1440,59 @@ export function AdminScreen({
                     onClick={generateMediaMocks}
                   >
                     <Sparkles size={14} />
-                    {mediaAiGenerating ? 'Gerando imagens...' : 'Gerar imagens'}
+                    {mediaAiGenerating ? 'Gerando imagens...' : 'Gerar variações com IA'}
                   </button>
                 </div>
+                {selectedGeneratedMedia ? (
+                  <div className="media-ai-featured">
+                    <img src={selectedGeneratedMedia.path} alt={selectedGeneratedMedia.label} />
+                    <div className="media-ai-featured-copy">
+                      <strong>{selectedGeneratedMedia.label}</strong>
+                      <span>{mediaAiStyle} • {mediaAiTarget === 'question' ? 'questão' : mediaAiTarget === 'lesson' ? 'lição' : 'quiz'}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="media-ai-empty-state">
+                    <Sparkles size={18} />
+                    <span>Escolha um alvo e gere variações para visualizar o resultado aqui.</span>
+                  </div>
+                )}
                 <div className="media-ai-preview-grid">
                   {generatedMediaAssets.map((asset) => (
-                    <article key={asset.id} className="media-ai-card">
+                    <button
+                      key={asset.id}
+                      type="button"
+                      className={`media-ai-card${selectedGeneratedMedia?.id === asset.id ? ' is-selected' : ''}`}
+                      onClick={() => setMediaAiSelectedId(asset.id)}
+                    >
                       <img src={asset.path} alt={asset.label} />
                       <div className="media-ai-card-copy">
                         <strong>{asset.label}</strong>
                         <span>{mediaAiStyle} • {mediaAiTarget === 'question' ? 'questão' : mediaAiTarget === 'lesson' ? 'lição' : 'quiz'}</span>
                       </div>
-                      <button type="button" className="admin-secondary media-ai-apply" onClick={() => applyGeneratedMedia(asset.path)}>
-                        Aplicar asset
-                      </button>
-                    </article>
+                    </button>
                   ))}
+                </div>
+                <div className="media-ai-actions-row">
+                  <button
+                    type="button"
+                    className="admin-secondary media-ai-apply"
+                    disabled={!selectedGeneratedMedia}
+                    onClick={() => selectedGeneratedMedia && applyGeneratedMedia(selectedGeneratedMedia.path)}
+                  >
+                    Aplicar asset selecionado
+                  </button>
                 </div>
               </div>
             </div>
-            <div className="admin-drawer-footer">
+            <div className="admin-drawer-footer admin-modal-footer">
               <button className="admin-secondary" type="button" onClick={() => setMediaAiOpen(false)}>Fechar</button>
               <button
                 className="admin-primary"
                 type="button"
                 onClick={() => {
                   navigator.clipboard?.writeText(mediaPrompt).catch(() => undefined)
-                  showToast('success', 'Prompt copiado. Fluxo pronto para integrar com Pollinations na próxima etapa.')
-                  setMediaAiOpen(false)
+                  showToast('success', 'Prompt copiado. Você pode reutilizá-lo em novas variações.')
                 }}
               >
                 <Sparkles size={16} />

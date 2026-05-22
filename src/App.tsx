@@ -286,11 +286,14 @@ const skillByTag: Record<Exclude<FilterKey, 'Todos'>, string> = {
   Speaking: 'speaking',
 }
 
-const toRuntimeExercises = (questions: QuizQuestionItem[]): Exercise[] => {
+const toRuntimeExercises = (questions: QuizQuestionItem[], quizzes: QuizCatalogItem[]): Exercise[] => {
   const mapped = questions
     .filter((question) => question.active)
     .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }))
     .flatMap<Exercise>((question) => {
+      const linkedQuiz = quizzes.find((quiz) => quiz.id === question.quizId)
+      const art = linkedQuiz?.coverArt || question.art
+
       if (question.kind === 'multiple-choice' && question.options?.length && question.correct) {
         return [{
           id: question.id as MultipleChoiceExercise['id'],
@@ -300,7 +303,7 @@ const toRuntimeExercises = (questions: QuizQuestionItem[]): Exercise[] => {
           kicker: question.kicker,
           title: question.title,
           prompt: question.prompt,
-          art: question.art,
+          art,
           artAlt: question.artAlt,
           options: question.options,
           correct: question.correct,
@@ -320,7 +323,7 @@ const toRuntimeExercises = (questions: QuizQuestionItem[]): Exercise[] => {
           prompt: question.prompt,
           sentenceBefore: question.sentenceBefore ?? '',
           sentenceAfter: question.sentenceAfter ?? '',
-          art: question.art,
+          art,
           artAlt: question.artAlt,
           options: question.options,
           correct: question.correct,
@@ -338,7 +341,7 @@ const toRuntimeExercises = (questions: QuizQuestionItem[]): Exercise[] => {
           kicker: question.kicker,
           title: question.title,
           prompt: question.prompt,
-          art: question.art,
+          art,
           artAlt: question.artAlt,
           scrambled: question.scrambled,
           solution: question.solution,
@@ -416,7 +419,10 @@ function App() {
   const audioContextRef = useRef<AudioContext | null>(null)
   const audioUnlockedRef = useRef(false)
 
-  const runtimeExercises = useMemo(() => toRuntimeExercises(quizQuestionCatalog), [quizQuestionCatalog])
+  const runtimeExercises = useMemo(
+    () => toRuntimeExercises(quizQuestionCatalog, quizCatalog),
+    [quizCatalog, quizQuestionCatalog],
+  )
   const quizCatalogCount = quizCatalog.length || runtimeExercises.length
 
   const orderingSolved = useMemo(() => {

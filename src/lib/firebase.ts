@@ -1,6 +1,7 @@
 import { initializeApp } from 'firebase/app'
 import { getAuth, GoogleAuthProvider } from 'firebase/auth'
 import { initializeFirestore } from 'firebase/firestore'
+import { getStorage } from 'firebase/storage'
 
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -19,6 +20,7 @@ export const auth = firebaseApp ? getAuth(firebaseApp) : null
 export const db = firebaseApp ? initializeFirestore(firebaseApp, {
   experimentalAutoDetectLongPolling: true,
 }) : null
+export const storage = firebaseApp ? getStorage(firebaseApp) : null
 export const googleProvider = new GoogleAuthProvider()
 
 googleProvider.setCustomParameters({
@@ -26,9 +28,9 @@ googleProvider.setCustomParameters({
 })
 
 export const requireFirebase = () => {
-  if (!firebaseApp || !auth || !db) {
+  if (!firebaseApp || !auth || !db || !storage) {
     throw new Error('Firebase não está configurado. Preencha as variáveis VITE_FIREBASE_* antes de usar autenticação.')
   }
 
-  return { firebaseApp, auth, db }
+  return { firebaseApp, auth, db, storage }
 }
