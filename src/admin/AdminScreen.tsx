@@ -75,6 +75,11 @@ type DrawerState =
   | { open: false }
   | { open: true; kind: DrawerKind; mode: DrawerMode }
 
+type MediaAiScope = 'lesson' | 'quiz' | 'question'
+type MediaAiStyle = 'cartoon' | '3D' | 'pastel' | 'kawaii' | 'cinematic'
+type MediaAiLevel = 'A1' | 'A2' | 'B1' | 'B2'
+type MediaAiDifficulty = 'Fácil' | 'Médio'
+
 const tagOptions: Exclude<FilterKey, 'Todos'>[] = ['Gramática', 'Vocabulário', 'Listening', 'Reading', 'Speaking']
 type ToastState = {
   tone: 'success' | 'error' | 'info'
@@ -183,6 +188,18 @@ const questionPrefixByKind: Record<QuizQuestionItem['kind'], string> = {
   speaking: 'QT-SP',
 }
 
+const normalizeDisplayId = (id: string, kind: 'lesson' | 'quiz' | 'question' | 'achievement') => {
+  if (!id) return ''
+  if (/^(LS|QZ|QT-|AC-)/.test(id)) return id.toUpperCase()
+  if (kind === 'quiz' && /^q\d+$/i.test(id)) return `QUIZ-${padNumber(Number(id.replace(/^q/i, '')))}`
+  if (kind === 'question' && /^q\d+$/i.test(id)) return `QUESTION-${padNumber(Number(id.replace(/^q/i, '')))}`
+  if (kind === 'lesson' && id.startsWith('lesson-')) return `LESSON-${id.replace('lesson-', '').toUpperCase()}`
+  if (kind === 'quiz' && id.startsWith('quiz-')) return `QUIZ-${id.replace('quiz-', '').toUpperCase()}`
+  if (kind === 'question' && id.startsWith('question-')) return `QUESTION-${id.replace('question-', '').toUpperCase()}`
+  if (kind === 'achievement' && id.startsWith('achievement-')) return `ACHIEVEMENT-${id.replace('achievement-', '').toUpperCase()}`
+  return id.toUpperCase()
+}
+
 const padNumber = (value: number) => String(value).padStart(3, '0')
 
 const nextNumericId = (existingIds: string[], prefix: string) => {
@@ -191,7 +208,7 @@ const nextNumericId = (existingIds: string[], prefix: string) => {
     .map((id) => Number(id.replace(`${prefix}-`, '')))
     .filter((value) => Number.isFinite(value))
 
-  return `${prefix}-${padNumber((matches.length ? Math.max(...matches) : 0) + 1)}`
+  return `${prefix}-${padNumber((matches.length  ? Math.max(...matches) : 0) + 1)}`
 }
 
 const sectionTitle: Record<SectionKey, string> = {
@@ -249,10 +266,14 @@ export function AdminScreen({
   const [achievementDraft, setAchievementDraft] = useState<AchievementCatalogItem>(emptyAchievement)
   const [platformDraft, setPlatformDraft] = useState<PlatformConfig>(platformConfig ?? defaultPlatformConfig)
   const [mediaAiOpen, setMediaAiOpen] = useState(false)
-  const [mediaAiTarget, setMediaAiTarget] = useState<'lesson' | 'quiz' | 'question'>('lesson')
+  const [mediaAiTarget, setMediaAiTarget] = useState<MediaAiScope>('lesson')
   const [mediaAiTargetId, setMediaAiTargetId] = useState('')
-  const [mediaAiStyle, setMediaAiStyle] = useState<'cartoon' | '3D' | 'pastel' | 'kawaii' | 'cinematic'>('3D')
+  const [mediaAiStyle, setMediaAiStyle] = useState<MediaAiStyle>('3D')
+  const [mediaAiLevel, setMediaAiLevel] = useState<MediaAiLevel>('A2')
+  const [mediaAiDifficulty, setMediaAiDifficulty] = useState<MediaAiDifficulty>('Fácil')
+  const [mediaAiQuestionKind, setMediaAiQuestionKind] = useState<QuizQuestionItem['kind']>('multiple-choice')
   const [mediaAiGenerated, setMediaAiGenerated] = useState<string[]>([])
+  const [mediaAiGenerating, setMediaAiGenerating] = useState(false)
 
   const debouncedLessonSearch = useDebouncedValue(lessonSearch)
   const debouncedQuizSearch = useDebouncedValue(quizSearch)
@@ -318,7 +339,7 @@ export function AdminScreen({
   const filteredQuizzes = useMemo(() => {
     return sortedQuizzes
       .filter((quiz) => quizFilterTag === 'Todos' || quiz.tag === quizFilterTag)
-      .filter((quiz) => quizFilterStatus === 'all' || (quizFilterStatus === 'active' ? quiz.active : !quiz.active))
+      .filter((quiz) => quizFilterStatus === 'all' || (quizFilterStatus === 'active'  ? quiz.active : !quiz.active))
       .filter((quiz) => {
         if (!debouncedQuizSearch.trim()) return true
         const linkedLesson = lessons.find((lesson) => lesson.id === quiz.lessonId)
@@ -332,7 +353,7 @@ export function AdminScreen({
       .filter((question) => filterTag === 'Todos' || question.tag === filterTag)
       .filter((question) => filterKind === 'all' || question.kind === filterKind)
       .filter((question) => filterQuizId === 'all' || question.quizId === filterQuizId)
-      .filter((question) => questionStatus === 'all' || (questionStatus === 'active' ? question.active : !question.active))
+      .filter((question) => questionStatus === 'all' || (questionStatus === 'active'  ? question.active : !question.active))
       .filter((question) => {
         if (!debouncedQuestionSearch.trim()) return true
         const haystack = `${question.id} ${question.title} ${question.prompt} ${question.quizId} ${question.lessonId}`.toLowerCase()
@@ -342,7 +363,7 @@ export function AdminScreen({
   }, [debouncedQuestionSearch, filterKind, filterQuizId, filterTag, questionStatus, questions])
 
   const filteredAchievements = useMemo(() => {
-    const source = achievements.length ? achievements : defaultAchievementCatalog
+    const source = achievements.length  ? achievements : defaultAchievementCatalog
     return source.filter((achievement) => {
       if (!debouncedAchievementSearch.trim()) return true
       const haystack = `${achievement.id} ${achievement.title} ${achievement.description}`.toLowerCase()
@@ -360,9 +381,9 @@ export function AdminScreen({
   const currentQuestionQuiz = quizzes.find((quiz) => quiz.id === questionDraft.quizId)
   const currentQuestionLesson = lessons.find((lesson) => lesson.id === questionDraft.lessonId)
   const mediaTargetOptions = mediaAiTarget === 'lesson'
-    ? sortedLessons.map((lesson) => ({ id: lesson.id, label: lesson.title }))
+     ? sortedLessons.map((lesson) => ({ id: lesson.id, label: lesson.title }))
     : mediaAiTarget === 'quiz'
-      ? sortedQuizzes.map((quiz) => ({ id: quiz.id, label: quiz.title }))
+       ? sortedQuizzes.map((quiz) => ({ id: quiz.id, label: quiz.title }))
       : filteredQuestions.map((question) => ({ id: question.id, label: question.title }))
   const selectedMediaTarget = mediaTargetOptions.find((item) => item.id === mediaAiTargetId)
 
@@ -380,12 +401,15 @@ export function AdminScreen({
 
   const mediaPrompt = useMemo(() => {
     const label = selectedMediaTarget?.label ?? 'conteúdo atual'
-    return `Crie uma ilustração ${mediaAiStyle} para ${mediaAiTarget === 'lesson' ? 'uma lição' : mediaAiTarget === 'quiz' ? 'um quiz' : 'uma questão'} do SparkLingo, tema "${label}", mantendo visual premium, lilás suave, educacional gamificado e leitura confortável.`
-  }, [mediaAiStyle, mediaAiTarget, selectedMediaTarget])
+    const scopeLabel = mediaAiTarget === 'lesson' ? 'uma lição' : mediaAiTarget === 'quiz' ? 'um quiz' : 'uma questão'
+    const questionKind = mediaAiTarget === 'question' ? `, tipo ${formatQuestionKind(mediaAiQuestionKind).toLowerCase()}` : ''
+    return `Crie uma ilustração ${mediaAiStyle} para ${scopeLabel} do SparkLingo, tema "${label}", nível ${mediaAiLevel}, dificuldade ${mediaAiDifficulty}${questionKind}, mantendo visual premium, lilás suave, educacional gamificado e leitura confortável.`
+  }, [mediaAiDifficulty, mediaAiLevel, mediaAiQuestionKind, mediaAiStyle, mediaAiTarget, selectedMediaTarget])
 
   const generatedMediaAssets = useMemo(() => {
-    const paths = mediaAiGenerated.length ? mediaAiGenerated : mediaStylePresets[mediaAiStyle]
+    const paths = mediaAiGenerated.length  ? mediaAiGenerated : mediaStylePresets[mediaAiStyle]
     return paths
+      .slice(0, 3)
       .map((path) => mediaLibrary.find((asset) => asset.path === path))
       .filter((asset): asset is (typeof mediaLibrary)[number] => Boolean(asset))
   }, [mediaAiGenerated, mediaAiStyle])
@@ -398,6 +422,9 @@ export function AdminScreen({
       if (drawer.kind === 'lesson') {
         setMediaAiTarget('lesson')
         setMediaAiTargetId(lessonIdPreview)
+      } else if (drawer.kind === 'quiz') {
+        setMediaAiTarget('quiz')
+        setMediaAiTargetId(quizIdPreview)
       } else if (drawer.kind === 'question') {
         setMediaAiTarget('question')
         setMediaAiTargetId(questionIdPreview)
@@ -408,8 +435,12 @@ export function AdminScreen({
   }
 
   const generateMediaMocks = () => {
-    setMediaAiGenerated(mediaStylePresets[mediaAiStyle])
-    showToast('info', `Variações mock prontas no estilo ${mediaAiStyle}.`)
+    setMediaAiGenerating(true)
+    window.setTimeout(() => {
+      setMediaAiGenerated(mediaStylePresets[mediaAiStyle])
+      setMediaAiGenerating(false)
+      showToast('info', `Variações mock prontas no estilo ${mediaAiStyle}.`)
+    }, 520)
   }
 
   const applyGeneratedMedia = (path: string) => {
@@ -422,7 +453,7 @@ export function AdminScreen({
     showToast(
       'success',
       mediaAiTarget === 'quiz'
-        ? 'Preview do quiz preparado. Quando o quiz tiver capa dedicada, este asset poderá ser vinculado diretamente.'
+         ? 'Preview do quiz preparado. Quando o quiz tiver capa dedicada, este asset poderá ser vinculado diretamente.'
         : 'Asset aplicado no formulário atual.',
     )
   }
@@ -436,7 +467,7 @@ export function AdminScreen({
       setStatus(successMessage)
       showToast('success', successMessage)
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Não foi possível concluir a operação no Firestore.'
+      const message = error instanceof Error  ? error.message : 'Não foi possível concluir a operação no Firestore.'
       setStatus(message)
       showToast('error', message)
     } finally {
@@ -472,13 +503,13 @@ export function AdminScreen({
         ...questionDraft,
         id: questionIdPreview,
         options: questionDraft.kind === 'multiple-choice' || questionDraft.kind === 'drag-fill' || questionDraft.kind === 'listening'
-          ? (questionDraft.options ?? []).filter(Boolean)
+           ? (questionDraft.options ?? []).filter(Boolean)
           : [],
-        correct: questionDraft.kind === 'ordering' ? '' : (questionDraft.correct ?? ''),
-        sentenceBefore: questionDraft.kind === 'drag-fill' ? (questionDraft.sentenceBefore ?? '') : '',
-        sentenceAfter: questionDraft.kind === 'drag-fill' ? (questionDraft.sentenceAfter ?? '') : '',
-        scrambled: questionDraft.kind === 'ordering' ? (questionDraft.scrambled ?? []).filter(Boolean) : [],
-        solution: questionDraft.kind === 'ordering' ? (questionDraft.solution ?? []).filter(Boolean) : [],
+        correct: questionDraft.kind === 'ordering'  ? '' : (questionDraft.correct ?? ''),
+        sentenceBefore: questionDraft.kind === 'drag-fill'  ? (questionDraft.sentenceBefore ?? '') : '',
+        sentenceAfter: questionDraft.kind === 'drag-fill'  ? (questionDraft.sentenceAfter ?? '') : '',
+        scrambled: questionDraft.kind === 'ordering'  ? (questionDraft.scrambled ?? []).filter(Boolean) : [],
+        solution: questionDraft.kind === 'ordering'  ? (questionDraft.solution ?? []).filter(Boolean) : [],
       })
       setQuestionDraft(emptyQuestion)
       closeDrawer()
@@ -517,17 +548,17 @@ export function AdminScreen({
 
   const openLessonEditor = (lesson?: LessonCatalogItem) => {
     setLessonDraft(lesson ?? emptyLesson)
-    openDrawer('lesson', lesson ? 'edit' : 'create')
+    openDrawer('lesson', lesson  ? 'edit' : 'create')
   }
 
   const openQuizEditor = (quiz?: QuizCatalogItem) => {
     setQuizDraft(quiz ?? emptyQuiz)
-    openDrawer('quiz', quiz ? 'edit' : 'create')
+    openDrawer('quiz', quiz  ? 'edit' : 'create')
   }
 
   const openQuestionEditor = (question?: QuizQuestionItem) => {
     setQuestionDraft(question
-      ? {
+       ? {
           ...emptyQuestion,
           ...question,
           options: question.options ?? ['', '', '', ''],
@@ -538,12 +569,12 @@ export function AdminScreen({
           solution: question.solution ?? [],
         }
       : emptyQuestion)
-    openDrawer('question', question ? 'edit' : 'create')
+    openDrawer('question', question  ? 'edit' : 'create')
   }
 
   const openAchievementEditor = (achievement?: AchievementCatalogItem) => {
     setAchievementDraft(achievement ?? emptyAchievement)
-    openDrawer('achievement', achievement ? 'edit' : 'create')
+    openDrawer('achievement', achievement  ? 'edit' : 'create')
   }
 
   const applyMediaAsset = (path: string) => {
@@ -565,9 +596,9 @@ export function AdminScreen({
         <>
           <div className="admin-drawer-head">
             <div>
-              <span className="admin-drawer-kicker">{drawer.mode === 'create' ? 'Nova lição' : 'Editar lição'}</span>
+              <span className="admin-drawer-kicker">{drawer.mode === 'create'  ? 'Nova lição' : 'Editar lição'}</span>
               <h3>{lessonDraft.title || 'Defina a trilha principal'}</h3>
-              <p>ID automático: <strong>{lessonIdPreview}</strong></p>
+              <p>ID automático: <strong>{normalizeDisplayId(lessonIdPreview, 'lesson')}</strong></p>
             </div>
             <button type="button" className="drawer-close" onClick={closeDrawer}><X size={18} /></button>
           </div>
@@ -600,7 +631,7 @@ export function AdminScreen({
             <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
             <button className="admin-primary" type="button" disabled={saving || !lessonDraft.title} onClick={saveLesson}>
               <Save size={16} />
-              {saving ? 'Salvando...' : 'Salvar lição'}
+              {saving  ? 'Salvando...' : 'Salvar lição'}
             </button>
           </div>
         </>
@@ -612,9 +643,9 @@ export function AdminScreen({
         <>
           <div className="admin-drawer-head">
             <div>
-              <span className="admin-drawer-kicker">{drawer.mode === 'create' ? 'Novo quiz' : 'Editar quiz'}</span>
+              <span className="admin-drawer-kicker">{drawer.mode === 'create'  ? 'Novo quiz' : 'Editar quiz'}</span>
               <h3>{quizDraft.title || 'Estruture o bloco jogável'}</h3>
-              <p>ID automático: <strong>{quizIdPreview}</strong></p>
+              <p>ID automático: <strong>{normalizeDisplayId(quizIdPreview, 'quiz')}</strong></p>
             </div>
             <button type="button" className="drawer-close" onClick={closeDrawer}><X size={18} /></button>
           </div>
@@ -650,7 +681,7 @@ export function AdminScreen({
             <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
             <button className="admin-primary" type="button" disabled={saving || !quizDraft.lessonId || !quizDraft.title} onClick={saveQuiz}>
               <Save size={16} />
-              {saving ? 'Salvando...' : 'Salvar quiz'}
+              {saving  ? 'Salvando...' : 'Salvar quiz'}
             </button>
           </div>
         </>
@@ -662,19 +693,19 @@ export function AdminScreen({
         <>
           <div className="admin-drawer-head">
             <div>
-              <span className="admin-drawer-kicker">{drawer.mode === 'create' ? 'Nova questão' : 'Editar questão'}</span>
+              <span className="admin-drawer-kicker">{drawer.mode === 'create'  ? 'Nova questão' : 'Editar questão'}</span>
               <h3>{questionDraft.title || 'Construa o desafio jogável'}</h3>
-              <p>ID automático: <strong>{questionIdPreview}</strong></p>
+              <p>ID automático: <strong>{normalizeDisplayId(questionIdPreview, 'question')}</strong></p>
             </div>
             <button type="button" className="drawer-close" onClick={closeDrawer}><X size={18} /></button>
           </div>
 
           <div className="admin-flow-strip">
-            <span className={questionDraft.lessonId ? 'is-complete' : ''}>1. Lição</span>
+            <span className={questionDraft.lessonId  ? 'is-complete' : ''}>1. Lição</span>
             <ChevronRight size={14} />
-            <span className={questionDraft.quizId ? 'is-complete' : ''}>2. Quiz</span>
+            <span className={questionDraft.quizId  ? 'is-complete' : ''}>2. Quiz</span>
             <ChevronRight size={14} />
-            <span className={questionDraft.title ? 'is-complete' : ''}>3. Questão</span>
+            <span className={questionDraft.title  ? 'is-complete' : ''}>3. Questão</span>
           </div>
 
           <div className="admin-drawer-body admin-drawer-question">
@@ -783,7 +814,7 @@ export function AdminScreen({
             <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
             <button className="admin-primary" type="button" disabled={saving || !questionDraft.quizId || !questionDraft.title} onClick={saveQuestion}>
               <Save size={16} />
-              {saving ? 'Salvando...' : 'Salvar questão'}
+              {saving  ? 'Salvando...' : 'Salvar questão'}
             </button>
           </div>
         </>
@@ -794,9 +825,9 @@ export function AdminScreen({
       <>
         <div className="admin-drawer-head">
           <div>
-            <span className="admin-drawer-kicker">{drawer.mode === 'create' ? 'Nova conquista' : 'Editar conquista'}</span>
+            <span className="admin-drawer-kicker">{drawer.mode === 'create'  ? 'Nova conquista' : 'Editar conquista'}</span>
             <h3>{achievementDraft.title || 'Defina uma recompensa'}</h3>
-            <p>ID automático: <strong>{achievementIdPreview}</strong></p>
+            <p>ID automático: <strong>{normalizeDisplayId(achievementIdPreview, 'achievement')}</strong></p>
           </div>
           <button type="button" className="drawer-close" onClick={closeDrawer}><X size={18} /></button>
         </div>
@@ -819,7 +850,7 @@ export function AdminScreen({
           <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
           <button className="admin-primary" type="button" disabled={saving || !achievementDraft.title} onClick={saveAchievementItem}>
             <Save size={16} />
-            {saving ? 'Salvando...' : 'Salvar conquista'}
+            {saving  ? 'Salvando...' : 'Salvar conquista'}
           </button>
         </div>
       </>
@@ -844,7 +875,7 @@ export function AdminScreen({
               <button
                 key={item.key}
                 type="button"
-                className={`cms-nav-item${activeSection === item.key ? ' is-active' : ''}`}
+                className={`cms-nav-item${activeSection === item.key  ? ' is-active' : ''}`}
                 onClick={() => setActiveSection(item.key)}
               >
                 <Icon size={18} />
@@ -947,7 +978,7 @@ export function AdminScreen({
                     <img src={lesson.image} alt={lesson.title} />
                     <div className="cms-content-copy">
                       <strong>{lesson.title}</strong>
-                      <span>{lesson.id} • {lesson.category}</span>
+                      <span>{normalizeDisplayId(lesson.id, 'lesson')} • {lesson.category}</span>
                       <p>{lesson.blurb}</p>
                     </div>
                     <div className="cms-content-actions">
@@ -1005,8 +1036,8 @@ export function AdminScreen({
                   <tbody>
                     {filteredQuizzes.map((quiz) => (
                       <tr key={quiz.id}>
-                        <td>{quiz.id}</td>
-                        <td>{lessons.find((lesson) => lesson.id === quiz.lessonId)?.title ?? quiz.lessonId}</td>
+                        <td>{normalizeDisplayId(quiz.id, 'quiz')}</td>
+                        <td>{lessons.find((lesson) => lesson.id === quiz.lessonId)?.title ?? normalizeDisplayId(quiz.lessonId, 'lesson')}</td>
                         <td>{quiz.title}</td>
                         <td>{quiz.tag}</td>
                         <td>{formatQuestionKind(quiz.kind)}</td>
@@ -1078,7 +1109,7 @@ export function AdminScreen({
                   <tbody>
                     {filteredQuestions.map((question) => (
                       <tr key={question.id}>
-                        <td>{question.id}</td>
+                        <td>{normalizeDisplayId(question.id, 'question')}</td>
                         <td>{formatQuestionKind(question.kind)}</td>
                         <td>{question.tag}</td>
                         <td>
@@ -1086,7 +1117,7 @@ export function AdminScreen({
                           <small>{question.quizId}</small>
                         </td>
                         <td>{question.reward}</td>
-                        <td>{question.active ? 'Ativa' : 'Pausada'}</td>
+                        <td>{question.active  ? 'Ativa' : 'Pausada'}</td>
                         <td className="cms-row-actions">
                           <button type="button" onClick={() => openQuestionEditor(question)}><Pencil size={14} />Editar</button>
                           <button type="button" onClick={() => duplicateQuestion(question)}><Copy size={14} />Duplicar</button>
@@ -1125,7 +1156,7 @@ export function AdminScreen({
                   <article key={achievement.id} className="cms-content-card cms-content-card-simple">
                     <div className="cms-content-copy">
                       <strong>{achievement.title}</strong>
-                      <span>{achievement.id} • {achievement.xpReward} XP</span>
+                      <span>{normalizeDisplayId(achievement.id, 'achievement')} • {achievement.xpReward} XP</span>
                       <p>{achievement.description}</p>
                     </div>
                     <div className="cms-content-actions">
@@ -1152,7 +1183,7 @@ export function AdminScreen({
                   Gerar mídia com IA
                 </button>
               </div>
-              <MediaPicker selected={null} onPick={applyMediaAsset} onGenerateAi={openMediaAiModal} />
+              <MediaPicker selected={null} onPick={applyMediaAsset} />
             </section>
           </section>
         )}
@@ -1160,8 +1191,8 @@ export function AdminScreen({
         {(activeSection === 'users' || activeSection === 'analytics') && (
           <section className="cms-panel-stack">
             <section className="cms-panel cms-empty-panel">
-              {activeSection === 'users' ? <Users size={28} /> : <BarChart3 size={28} />}
-              <h2>{activeSection === 'users' ? 'Usuários' : 'Analytics'}</h2>
+              {activeSection === 'users'  ? <Users size={28} /> : <BarChart3 size={28} />}
+              <h2>{activeSection === 'users'  ? 'Usuários' : 'Analytics'}</h2>
               <p>
                 Esta área já existe estruturalmente no CMS. O próximo passo é ligar listagem real de usuários, sessões, streak e retenção via Firestore e Functions.
               </p>
@@ -1190,7 +1221,7 @@ export function AdminScreen({
                     type="button"
                   >
                     <Sparkles size={16} />
-                    {saving ? 'Processando...' : 'Popular catálogo base'}
+                    {saving  ? 'Processando...' : 'Popular catálogo base'}
                   </button>
                 </article>
 
@@ -1213,7 +1244,7 @@ export function AdminScreen({
                     type="button"
                   >
                     <Save size={16} />
-                    {saving ? 'Salvando...' : 'Salvar plataforma'}
+                    {saving  ? 'Salvando...' : 'Salvar plataforma'}
                   </button>
                 </article>
               </div>
@@ -1224,7 +1255,7 @@ export function AdminScreen({
         <p className="admin-status">{status}</p>
         {toast && (
           <div className={`admin-toast admin-toast-${toast.tone}`}>
-            {toast.tone === 'success' ? <CheckCircle2 size={18} /> : toast.tone === 'error' ? <AlertCircle size={18} /> : <Sparkles size={18} />}
+            {toast.tone === 'success'  ? <CheckCircle2 size={18} /> : toast.tone === 'error'  ? <AlertCircle size={18} /> : <Sparkles size={18} />}
             <span>{toast.message}</span>
           </div>
         )}
@@ -1243,25 +1274,44 @@ export function AdminScreen({
           <section className="admin-modal" onClick={(event) => event.stopPropagation()}>
             <div className="admin-modal-head">
               <div>
-                <span className="admin-drawer-kicker">? Gerar m?dia com IA</span>
+                <span className="admin-drawer-kicker">✨ Gerar mídia com IA</span>
                 <h3>Preparar prompt visual</h3>
-                <p>Mock funcional para futura integra??o com Pollinations + rembg, j? com preview e aplica??o no formul?rio.</p>
+                <p>Mock funcional para futura integração com Pollinations + rembg, já com preview, contexto pedagógico e aplicação no formulário.</p>
               </div>
               <button type="button" className="drawer-close" onClick={() => setMediaAiOpen(false)}><X size={18} /></button>
             </div>
             <div className="admin-modal-body">
               <div className="drawer-form">
                 <label>Escopo
-                  <select value={mediaAiTarget} onChange={(event) => { setMediaAiTarget(event.target.value as 'lesson' | 'quiz' | 'question'); setMediaAiTargetId('') }}>
-                    <option value="lesson">Li??o</option>
+                  <select value={mediaAiTarget} onChange={(event) => { setMediaAiTarget(event.target.value as MediaAiScope); setMediaAiTargetId('') }}>
+                    <option value="lesson">Lição</option>
                     <option value="quiz">Quiz</option>
-                    <option value="question">Quest?o</option>
+                    <option value="question">Questão</option>
                   </select>
                 </label>
                 <label>Alvo
                   <select value={mediaAiTargetId} onChange={(event) => setMediaAiTargetId(event.target.value)}>
                     <option value="">Selecione um item</option>
                     {mediaTargetOptions.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+                  </select>
+                </label>
+                <label>Nível
+                  <select value={mediaAiLevel} onChange={(event) => setMediaAiLevel(event.target.value as MediaAiLevel)}>
+                    <option value="A1">A1</option>
+                    <option value="A2">A2</option>
+                    <option value="B1">B1</option>
+                    <option value="B2">B2</option>
+                  </select>
+                </label>
+                <label>Dificuldade
+                  <select value={mediaAiDifficulty} onChange={(event) => setMediaAiDifficulty(event.target.value as MediaAiDifficulty)}>
+                    <option value="Fácil">Fácil</option>
+                    <option value="Médio">Médio</option>
+                  </select>
+                </label>
+                <label>Tipo de questão
+                  <select value={mediaAiQuestionKind} onChange={(event) => setMediaAiQuestionKind(event.target.value as QuizQuestionItem['kind'])}>
+                    {questionKinds.map((kind) => <option key={kind} value={kind}>{formatQuestionKind(kind)}</option>)}
                   </select>
                 </label>
                 <label>Estilo
@@ -1284,10 +1334,15 @@ export function AdminScreen({
               </div>
               <div className="media-ai-preview-panel">
                 <div className="media-ai-preview-head">
-                  <strong>Varia??es sugeridas</strong>
-                  <button type="button" className="admin-secondary media-ai-generate" onClick={generateMediaMocks}>
+                  <strong>Variações sugeridas</strong>
+                  <button
+                    type="button"
+                    className="admin-secondary media-ai-generate"
+                    disabled={mediaAiGenerating}
+                    onClick={generateMediaMocks}
+                  >
                     <Sparkles size={14} />
-                    Gerar varia??es mock
+                    {mediaAiGenerating ? 'Gerando...' : 'Gerar variações mock'}
                   </button>
                 </div>
                 <div className="media-ai-preview-grid">
@@ -1296,7 +1351,7 @@ export function AdminScreen({
                       <img src={asset.path} alt={asset.label} />
                       <div className="media-ai-card-copy">
                         <strong>{asset.label}</strong>
-                        <span>{mediaAiStyle} ? {mediaAiTarget === 'question' ? 'quest?o' : mediaAiTarget === 'lesson' ? 'li??o' : 'quiz'}</span>
+                        <span>{mediaAiStyle} • {mediaAiTarget === 'question' ? 'questão' : mediaAiTarget === 'lesson' ? 'lição' : 'quiz'}</span>
                       </div>
                       <button type="button" className="admin-secondary media-ai-apply" onClick={() => applyGeneratedMedia(asset.path)}>
                         Aplicar asset
@@ -1313,7 +1368,7 @@ export function AdminScreen({
                 type="button"
                 onClick={() => {
                   navigator.clipboard?.writeText(mediaPrompt).catch(() => undefined)
-                  showToast('success', 'Prompt copiado. Fluxo pronto para integrar com Pollinations na pr?xima etapa.')
+                  showToast('success', 'Prompt copiado. Fluxo pronto para integrar com Pollinations na próxima etapa.')
                   setMediaAiOpen(false)
                 }}
               >
@@ -1340,7 +1395,7 @@ function MediaPicker({
   onGenerateAi?: () => void
 }) {
   return (
-    <div className={`media-picker${compact ? ' compact' : ''}`}>
+    <div className={`media-picker${compact  ? ' compact' : ''}`}>
       <div className="media-picker-head">
         <div>
           <strong>Biblioteca visual</strong>
@@ -1358,7 +1413,7 @@ function MediaPicker({
           <button
             key={asset.id}
             type="button"
-            className={`media-card${selected === asset.path ? ' is-selected' : ''}`}
+            className={`media-card${selected === asset.path  ? ' is-selected' : ''}`}
             onClick={() => onPick(asset.path)}
           >
             <img src={asset.path} alt={asset.label} />
@@ -1375,7 +1430,7 @@ function QuestionPreviewStage({ draft, fallbackText }: { draft: QuizQuestionItem
     const options = (draft.options ?? []).filter(Boolean)
     return (
       <div className="question-preview-stage question-preview-mc">
-        {options.length ? options.map((option) => <span key={option}>{option}</span>) : <span>go</span>}
+        {options.length  ? options.map((option) => <span key={option}>{option}</span>) : <span>go</span>}
       </div>
     )
   }
