@@ -30,6 +30,7 @@ export type QuizCatalogItem = {
   lessonId: string
   tag: FilterKey
   title: string
+  coverArt?: string
   difficulty: Difficulty
   reward: number
   kind: ExerciseKind
@@ -94,6 +95,7 @@ const sanitizeQuiz = (quiz: QuizCatalogItem): QuizCatalogItem => ({
   lessonId: cleanString(quiz.lessonId),
   tag: quiz.tag,
   title: cleanString(quiz.title),
+  coverArt: cleanString(quiz.coverArt),
   difficulty: quiz.difficulty ?? 'Fácil',
   reward: cleanNumber(quiz.reward, 25),
   kind: ['multiple-choice', 'drag-fill', 'ordering', 'listening', 'speaking'].includes(quiz.kind) ? quiz.kind : 'multiple-choice',
