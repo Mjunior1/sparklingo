@@ -103,7 +103,7 @@ type AdminScreenProps = {
   questions: QuizQuestionItem[]
   achievements: AchievementCatalogItem[]
   onBack: () => void
-  onRefresh: () => Promise<void>
+  onRefresh: () => Promise<unknown>
   platformConfig: PlatformConfig | null
 }
 

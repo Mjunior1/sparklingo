@@ -22,7 +22,7 @@ export const saveQuizProgress = async (uid: string, item: QuizProgressItem) => {
 
   await setDoc(quizProgressRef(uid, item.quizId), {
     ...item,
-    attempts: Math.max(item.attempts, previousAttempts + 1),
+    attempts: Math.max(item.attempts, previousAttempts),
     updatedAt: serverTimestamp(),
   }, { merge: true })
 }

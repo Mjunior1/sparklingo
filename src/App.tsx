@@ -295,6 +295,19 @@ const formatSentence = (words: string[]) => {
   return sentence.charAt(0).toUpperCase() + sentence.slice(1)
 }
 const clampPercent = (value: number) => Math.min(100, Math.max(0, Math.round(value)))
+const normalizeForSignature = (value: unknown): unknown => {
+  if (Array.isArray(value)) return value.map((item) => normalizeForSignature(item))
+  if (value && typeof value === 'object') {
+    return Object.keys(value as Record<string, unknown>)
+      .sort()
+      .reduce<Record<string, unknown>>((acc, key) => {
+        acc[key] = normalizeForSignature((value as Record<string, unknown>)[key])
+        return acc
+      }, {})
+  }
+  return value
+}
+const buildSignature = (value: unknown) => JSON.stringify(normalizeForSignature(value))
 
 const fallbackLeaderboard: LeaderboardEntry[] = [
   { name: 'Kate', xp: '1250 XP' },
@@ -502,6 +515,10 @@ function App() {
   const attemptCountsRef = useRef<Record<string, number>>({})
   const audioContextRef = useRef<AudioContext | null>(null)
   const audioUnlockedRef = useRef(false)
+  const lastProgressSyncRef = useRef('')
+  const lastLessonSyncRef = useRef('')
+  const lastQuizSkillSyncRef = useRef('')
+  const lastSessionSyncRef = useRef('')
 
   const runtimeExercises = useMemo(
     () => toRuntimeExercises(quizQuestionCatalog, quizCatalog),
@@ -786,6 +803,112 @@ function App() {
       })
   }, [currentMissionLesson, currentMissionQuizzes, lessonMap, lessonsCatalog, quizCatalog])
 
+  const recentMissionTheme = currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? ''
+  const {
+    confidence: emotionalConfidence,
+    fluency: emotionalFluency,
+    hesitation: emotionalHesitation,
+    emotionalStreak: emotionalStreakScore,
+  } = emotionalPulse
+
+  const completedExerciseIds = useMemo(
+    () =>
+      runtimeExercises
+        .filter((exercise) => isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
+        .map((exercise) => exercise.id),
+    [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises, speakingCompletions],
+  )
+
+  const progressSyncPayload = useMemo(
+    () => ({
+      totalXp,
+      completedExerciseIds,
+      choiceAnswers,
+      dragFillAnswers,
+      speakingCompletions,
+      orderWordMap,
+      recentMissionTheme,
+      recentMissionContext: currentMissionLesson?.emotionalContext ?? '',
+      emotional: emotionalPulse,
+    }),
+    [
+      totalXp,
+      completedExerciseIds,
+      choiceAnswers,
+      dragFillAnswers,
+      speakingCompletions,
+      orderWordMap,
+      recentMissionTheme,
+      currentMissionLesson?.emotionalContext,
+      emotionalPulse,
+    ],
+  )
+  const progressSyncSignature = useMemo(() => buildSignature(progressSyncPayload), [progressSyncPayload])
+
+  const lessonProgressPayload = useMemo(() => {
+    const nextLessonProgress: LessonProgressMap = {}
+    const byLesson = runtimeExercises.reduce<Record<string, { total: number; solved: number }>>((acc, exercise) => {
+      const lessonId = quizQuestionCatalog.find((question) => question.id === exercise.id)?.lessonId
+      if (!lessonId) return acc
+      const current = acc[lessonId] ?? { total: 0, solved: 0 }
+      current.total += 1
+      current.solved += Number(isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
+      acc[lessonId] = current
+      return acc
+    }, {})
+
+    Object.entries(byLesson).forEach(([lessonId, stats]) => {
+      nextLessonProgress[lessonId] = stats.total ? Math.round((stats.solved / stats.total) * 100) : 0
+    })
+
+    return nextLessonProgress
+  }, [choiceAnswers, dragFillAnswers, orderWordMap, quizQuestionCatalog, runtimeExercises, speakingCompletions])
+  const lessonProgressSignature = useMemo(() => buildSignature(lessonProgressPayload), [lessonProgressPayload])
+
+  const quizProgressPayload = useMemo(
+    () =>
+      runtimeExercises.map((exercise) => {
+        const questionSource = quizQuestionCatalog.find((question) => question.id === exercise.id)
+        const completed = isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions)
+        const attempts = getExerciseAttempts(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions)
+
+        return {
+          quizId: exercise.id,
+          lessonId: questionSource?.lessonId ?? '',
+          skillId: skillByTag[exercise.tag as Exclude<FilterKey, 'Todos'>],
+          completed,
+          attempts,
+          correct: completed,
+          xpEarned: completed ? exercise.reward : 0,
+        }
+      }),
+    [choiceAnswers, dragFillAnswers, orderWordMap, quizQuestionCatalog, runtimeExercises, speakingCompletions],
+  )
+
+  const skillProgressPayload = useMemo(() => {
+    const skillStats = runtimeExercises.reduce<Record<string, { total: number; solved: number; xp: number }>>((acc, exercise) => {
+      const skillId = skillByTag[exercise.tag as Exclude<FilterKey, 'Todos'>]
+      const solved = Number(isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
+      const current = acc[skillId] ?? { total: 0, solved: 0, xp: 0 }
+      current.total += 1
+      current.solved += solved
+      current.xp += solved ? exercise.reward : 0
+      acc[skillId] = current
+      return acc
+    }, {})
+
+    return Object.entries(skillStats).map(([skillId, stats]) => ({
+      skillId,
+      xpEarned: stats.xp,
+      completedQuizzes: stats.solved,
+      accuracy: stats.total ? (stats.solved / stats.total) * 100 : 0,
+    }))
+  }, [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises, speakingCompletions])
+  const quizSkillSyncSignature = useMemo(
+    () => buildSignature({ quizzes: quizProgressPayload, skills: skillProgressPayload }),
+    [quizProgressPayload, skillProgressPayload],
+  )
+
   const refreshBackendCatalog = useCallback(async () => {
     if (!user) return
 
@@ -806,6 +929,15 @@ function App() {
     setAchievementCatalog(nextAchievementCatalog)
     setQuizQuestionCatalog(nextQuizQuestions)
     setLeaderboard(nextLeaderboard.length ? nextLeaderboard : fallbackLeaderboard)
+
+    return {
+      nextLessonProgress,
+      nextLessonsCatalog,
+      nextQuizCatalog,
+      nextAchievementCatalog,
+      nextQuizQuestions,
+      nextLeaderboard,
+    }
   }, [user])
 
   const playUiSound = useCallback((kind: 'success' | 'error' | 'combo' | 'play' | 'click') => {
@@ -961,13 +1093,84 @@ function App() {
     setProgressHydrated(false)
 
     Promise.all([getUserProgress(user.uid), refreshBackendCatalog()])
-      .then(([nextProgress]) => {
+      .then(([nextProgress, catalogSeed]) => {
         if (cancelled) return
         setChoiceAnswers((current) => ({ ...current, ...nextProgress.choiceAnswers }))
         setDragFillAnswers(nextProgress.dragFillAnswers ?? {})
         setSpeakingCompletions(nextProgress.speakingCompletions ?? {})
         setOrderWordMap(nextProgress.orderWordMap ?? {})
         setProgressSnapshot(nextProgress)
+        lastProgressSyncRef.current = buildSignature({
+          totalXp: nextProgress.totalXp,
+          completedExerciseIds: nextProgress.completedExerciseIds,
+          choiceAnswers: nextProgress.choiceAnswers,
+          dragFillAnswers: nextProgress.dragFillAnswers ?? {},
+          speakingCompletions: nextProgress.speakingCompletions ?? {},
+          orderWordMap: nextProgress.orderWordMap ?? {},
+          recentMissionTheme: nextProgress.recentMissionTheme ?? '',
+          recentMissionContext: nextProgress.recentMissionContext ?? '',
+          emotional: nextProgress.emotional,
+        })
+        if (catalogSeed?.nextLessonProgress) {
+          lastLessonSyncRef.current = buildSignature(catalogSeed.nextLessonProgress)
+          const seededExercises = toRuntimeExercises(catalogSeed.nextQuizQuestions, catalogSeed.nextQuizCatalog)
+          const seededQuizPayload = seededExercises.map((exercise) => {
+            const questionSource = catalogSeed.nextQuizQuestions.find((question) => question.id === exercise.id)
+            const completed = isExerciseSolved(
+              exercise,
+              nextProgress.choiceAnswers,
+              nextProgress.dragFillAnswers ?? {},
+              nextProgress.orderWordMap ?? {},
+              nextProgress.speakingCompletions ?? {},
+            )
+            const attempts = getExerciseAttempts(
+              exercise,
+              nextProgress.choiceAnswers,
+              nextProgress.dragFillAnswers ?? {},
+              nextProgress.orderWordMap ?? {},
+              nextProgress.speakingCompletions ?? {},
+            )
+
+            return {
+              quizId: exercise.id,
+              lessonId: questionSource?.lessonId ?? '',
+              skillId: skillByTag[exercise.tag as Exclude<FilterKey, 'Todos'>],
+              completed,
+              attempts,
+              correct: completed,
+              xpEarned: completed ? exercise.reward : 0,
+            }
+          })
+
+          const seededSkillStats = seededExercises.reduce<Record<string, { total: number; solved: number; xp: number }>>((acc, exercise) => {
+            const skillId = skillByTag[exercise.tag as Exclude<FilterKey, 'Todos'>]
+            const solved = Number(
+              isExerciseSolved(
+                exercise,
+                nextProgress.choiceAnswers,
+                nextProgress.dragFillAnswers ?? {},
+                nextProgress.orderWordMap ?? {},
+                nextProgress.speakingCompletions ?? {},
+              ),
+            )
+            const current = acc[skillId] ?? { total: 0, solved: 0, xp: 0 }
+            current.total += 1
+            current.solved += solved
+            current.xp += solved ? exercise.reward : 0
+            acc[skillId] = current
+            return acc
+          }, {})
+
+          lastQuizSkillSyncRef.current = buildSignature({
+            quizzes: seededQuizPayload,
+            skills: Object.entries(seededSkillStats).map(([skillId, stats]) => ({
+              skillId,
+              xpEarned: stats.xp,
+              completedQuizzes: stats.solved,
+              accuracy: stats.total ? (stats.solved / stats.total) * 100 : 0,
+            })),
+          })
+        }
         setSyncState('saved')
         setSyncMessage('Progresso carregado do Firestore.')
         setProgressHydrated(true)
@@ -1038,28 +1241,16 @@ function App() {
 
   useEffect(() => {
     if (!user || !progressHydrated) return
-
-    const completedExerciseIds = runtimeExercises
-      .filter((exercise) => isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
-      .map((exercise) => exercise.id)
+    if (lastProgressSyncRef.current === progressSyncSignature) return
 
     const timeout = window.setTimeout(() => {
       setSyncState('saving')
       setSyncMessage('Salvando progresso da sessão...')
       void (async () => {
         try {
-        const nextProgress = await saveUserProgress(user.uid, {
-            totalXp,
-            completedExerciseIds,
-            choiceAnswers,
-            dragFillAnswers,
-            speakingCompletions,
-            orderWordMap,
-            recentMissionTheme: currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? '',
-            recentMissionContext: currentMissionLesson?.emotionalContext ?? '',
-            emotional: emotionalPulse,
-          })
+          const nextProgress = await saveUserProgress(user.uid, progressSyncPayload)
 
+          lastProgressSyncRef.current = progressSyncSignature
           setProgressSnapshot(nextProgress)
 
           if (
@@ -1074,11 +1265,11 @@ function App() {
               xp: nextProgress.totalXp,
               streak: nextProgress.streakDays,
               level: nextProgress.level,
-              confidence: emotionalPulse.confidence,
-              fluency: emotionalPulse.fluency,
-              hesitation: emotionalPulse.hesitation,
-              emotionalStreak: emotionalPulse.emotionalStreak,
-              recentMissionTheme: currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? '',
+              confidence: emotionalConfidence,
+              fluency: emotionalFluency,
+              hesitation: emotionalHesitation,
+              emotionalStreak: emotionalStreakScore,
+              recentMissionTheme,
             })
           }
           setSyncState('saved')
@@ -1094,47 +1285,30 @@ function App() {
   }, [
     user,
     progressHydrated,
-    totalXp,
-    choiceAnswers,
-    dragFillAnswers,
-    orderWordMap,
-    currentMissionLesson?.emotionalContext,
-    currentMissionLesson?.missionTitle,
-    currentMissionLesson?.title,
-    emotionalPulse,
+    progressSyncPayload,
+    progressSyncSignature,
     patchProfile,
     profile,
-    runtimeExercises,
-    speakingCompletions,
+    emotionalConfidence,
+    emotionalFluency,
+    emotionalHesitation,
+    emotionalStreakScore,
+    recentMissionTheme,
   ])
 
   useEffect(() => {
     if (!user || !progressHydrated) return
-
-    const nextLessonProgress: LessonProgressMap = {}
-
-    const byLesson = runtimeExercises.reduce<Record<string, { total: number; solved: number }>>((acc, exercise) => {
-      const lessonId = quizQuestionCatalog.find((question) => question.id === exercise.id)?.lessonId
-      if (!lessonId) return acc
-      const current = acc[lessonId] ?? { total: 0, solved: 0 }
-      current.total += 1
-      current.solved += Number(isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
-      acc[lessonId] = current
-      return acc
-    }, {})
-
-    Object.entries(byLesson).forEach(([lessonId, stats]) => {
-      nextLessonProgress[lessonId] = stats.total ? Math.round((stats.solved / stats.total) * 100) : 0
-    })
+    if (lastLessonSyncRef.current === lessonProgressSignature) return
 
     const timeout = window.setTimeout(() => {
       setSyncState('saving')
       setSyncMessage('Atualizando progresso das aulas...')
-      void saveLessonProgressMap(user.uid, nextLessonProgress)
+      void saveLessonProgressMap(user.uid, lessonProgressPayload)
         .then(() => {
+          lastLessonSyncRef.current = lessonProgressSignature
           setLessonsCatalog((current) => current.map((lesson) => ({
             ...lesson,
-            progress: nextLessonProgress[lesson.id] ?? lesson.progress,
+            progress: lessonProgressPayload[lesson.id] ?? lesson.progress,
           })))
           setSyncState('saved')
           setSyncMessage('Aulas sincronizadas com o Firestore.')
@@ -1146,76 +1320,56 @@ function App() {
     }, 460)
 
     return () => window.clearTimeout(timeout)
-  }, [user, progressHydrated, choiceAnswers, dragFillAnswers, orderWordMap, quizQuestionCatalog, runtimeExercises, speakingCompletions])
+  }, [user, progressHydrated, lessonProgressPayload, lessonProgressSignature])
 
   useEffect(() => {
     if (!user || !progressHydrated) return
+    if (lastQuizSkillSyncRef.current === quizSkillSyncSignature) return
 
     const timeout = window.setTimeout(() => {
-      const quizWrites = runtimeExercises.map((exercise) => {
-        const questionSource = quizQuestionCatalog.find((question) => question.id === exercise.id)
-        const completed = isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions)
-        const attempts = getExerciseAttempts(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions)
+      const quizWrites = quizProgressPayload.map((item) => saveQuizProgress(user.uid, item))
+      const skillWrites = skillProgressPayload.map((item) => saveSkillProgress(user.uid, item))
 
-        return saveQuizProgress(user.uid, {
-          quizId: exercise.id,
-          lessonId: questionSource?.lessonId ?? '',
-          skillId: skillByTag[exercise.tag as Exclude<FilterKey, 'Todos'>],
-          completed,
-          attempts,
-          correct: completed,
-          xpEarned: completed ? exercise.reward : 0,
-        })
+      void Promise.all([...quizWrites, ...skillWrites]).then(() => {
+        lastQuizSkillSyncRef.current = quizSkillSyncSignature
       })
-
-      const skillStats = runtimeExercises.reduce<Record<string, { total: number; solved: number; xp: number }>>((acc, exercise) => {
-        const skillId = skillByTag[exercise.tag as Exclude<FilterKey, 'Todos'>]
-        const solved = Number(isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
-        const current = acc[skillId] ?? { total: 0, solved: 0, xp: 0 }
-        current.total += 1
-        current.solved += solved
-        current.xp += solved ? exercise.reward : 0
-        acc[skillId] = current
-        return acc
-      }, {})
-
-      const skillWrites = Object.entries(skillStats).map(([skillId, stats]) => saveSkillProgress(user.uid, {
-        skillId,
-        xpEarned: stats.xp,
-        completedQuizzes: stats.solved,
-        accuracy: stats.total ? (stats.solved / stats.total) * 100 : 0,
-      }))
-
-      void Promise.all([...quizWrites, ...skillWrites])
     }, 520)
 
     return () => window.clearTimeout(timeout)
-  }, [user, progressHydrated, choiceAnswers, dragFillAnswers, orderWordMap, quizQuestionCatalog, runtimeExercises, speakingCompletions])
+  }, [user, progressHydrated, quizProgressPayload, skillProgressPayload, quizSkillSyncSignature])
 
   useEffect(() => {
     if (!user || !sessionId || sessionStartedAt === null) return
+    const wrongCount = runtimeExercises.reduce((sum, exercise) => {
+      if (exercise.kind === 'multiple-choice' || exercise.kind === 'listening') {
+        const answer = choiceAnswers[exercise.id]
+        return sum + Number(answer !== null && answer !== exercise.correct)
+      }
+      if (exercise.kind === 'drag-fill') {
+        const answer = dragFillAnswers[exercise.id] ?? null
+        return sum + Number(answer !== null && answer !== exercise.correct)
+      }
+      if (exercise.kind === 'speaking') {
+        return sum
+      }
+      return sum + Number((orderWordMap[exercise.id]?.length ?? 0) > 0 && !isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
+    }, 0)
+
+    if (completedExerciseIds.length === 0 && totalXp === 0 && wrongCount === 0) return
+
+    const sessionSyncSignature = buildSignature({
+      sessionId,
+      totalXp,
+      completedCount,
+      wrongCount,
+      comboMax: Math.max(sessionStreak, 1),
+      completedExerciseIds,
+    })
+    if (lastSessionSyncRef.current === sessionSyncSignature) return
 
     const timeout = window.setTimeout(() => {
       void (async () => {
         const endedAt = Date.now()
-        const wrongCount = runtimeExercises.reduce((sum, exercise) => {
-          if (exercise.kind === 'multiple-choice' || exercise.kind === 'listening') {
-            const answer = choiceAnswers[exercise.id]
-            return sum + Number(answer !== null && answer !== exercise.correct)
-          }
-          if (exercise.kind === 'drag-fill') {
-            const answer = dragFillAnswers[exercise.id] ?? null
-            return sum + Number(answer !== null && answer !== exercise.correct)
-          }
-          if (exercise.kind === 'speaking') {
-            return sum
-          }
-          return sum + Number((orderWordMap[exercise.id]?.length ?? 0) > 0 && !isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
-        }, 0)
-
-        const completedExerciseIds = runtimeExercises
-          .filter((exercise) => isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
-          .map((exercise) => exercise.id)
 
         await completeStudySession(sessionId, {
           uid: user.uid,
@@ -1228,6 +1382,8 @@ function App() {
           completedExerciseIds,
         })
 
+        lastSessionSyncRef.current = sessionSyncSignature
+
         await trackProductEvent(user.uid, 'session_completed', {
           sessionId,
           endedAt,
@@ -1239,7 +1395,7 @@ function App() {
     }, 720)
 
     return () => window.clearTimeout(timeout)
-  }, [user, sessionId, sessionStartedAt, totalXp, completedCount, sessionStreak, choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises, speakingCompletions])
+  }, [user, sessionId, sessionStartedAt, totalXp, completedCount, completedExerciseIds, sessionStreak, choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises, speakingCompletions])
 
   const handleChoiceSelect = (id: Exercise['id'], option: string) => {
     const exercise = runtimeExercises.find(
@@ -1352,6 +1508,7 @@ function App() {
     if (user) {
       const startedAt = Date.now()
       setSessionStartedAt(startedAt)
+      lastSessionSyncRef.current = ''
       void startStudySession(user.uid)
         .then((nextSessionId) => setSessionId(nextSessionId))
         .catch(() => setSessionId(null))
