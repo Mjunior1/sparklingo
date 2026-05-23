@@ -16,6 +16,11 @@ export type UserProfile = {
   learningGoal: string
   focusSkill: string
   dailyMinutes: number
+  confidence: number
+  fluency: number
+  hesitation: number
+  emotionalStreak: number
+  recentMissionTheme: string
   createdAt?: unknown
   updatedAt?: unknown
   lastLoginAt?: unknown
@@ -24,6 +29,7 @@ export type UserProfile = {
 export type UserProfileUpdate = Partial<Pick<
   UserProfile,
   'displayName' | 'avatarUrl' | 'role' | 'xp' | 'streak' | 'level' | 'onboardingCompleted' | 'learningGoal' | 'focusSkill' | 'dailyMinutes'
+  | 'confidence' | 'fluency' | 'hesitation' | 'emotionalStreak' | 'recentMissionTheme'
 >>
 
 const userProfileRef = (uid: string) => {
@@ -50,6 +56,11 @@ const buildBaseProfile = (user: User): UserProfile => ({
   learningGoal: 'Speaking with confidence',
   focusSkill: 'Listening',
   dailyMinutes: 10,
+  confidence: 18,
+  fluency: 12,
+  hesitation: 62,
+  emotionalStreak: 0,
+  recentMissionTheme: '',
 })
 
 export const ensureUserProfile = async (user: User) => {

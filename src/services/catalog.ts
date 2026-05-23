@@ -23,6 +23,15 @@ export type LessonCatalogItem = {
   image: string
   tone: LessonTone
   progress: number
+  missionTitle?: string
+  emotionalContext?: string
+  practicalGoal?: string
+  tensionLabel?: string
+  urgencyNote?: string
+  emotionalGoal?: string
+  confidenceTarget?: string
+  nextMissionHook?: string
+  journeyArc?: string[]
 }
 
 export type QuizCatalogItem = {
@@ -31,6 +40,8 @@ export type QuizCatalogItem = {
   tag: FilterKey
   title: string
   coverArt?: string
+  objective?: string
+  storyBeat?: string
   difficulty: Difficulty
   reward: number
   kind: ExerciseKind
@@ -52,6 +63,7 @@ export type QuizQuestionItem = {
   artAlt: string
   reward: number
   active: boolean
+  contextCue?: string
   options?: string[]
   correct?: string
   explanation: string
@@ -88,6 +100,15 @@ const sanitizeLesson = (lesson: LessonCatalogItem): LessonCatalogItem => ({
   image: cleanString(lesson.image),
   tone: ['sky', 'violet', 'mint'].includes(lesson.tone) ? lesson.tone : 'sky',
   progress: cleanNumber(lesson.progress),
+  missionTitle: cleanString(lesson.missionTitle),
+  emotionalContext: cleanString(lesson.emotionalContext),
+  practicalGoal: cleanString(lesson.practicalGoal),
+  tensionLabel: cleanString(lesson.tensionLabel),
+  urgencyNote: cleanString(lesson.urgencyNote),
+  emotionalGoal: cleanString(lesson.emotionalGoal),
+  confidenceTarget: cleanString(lesson.confidenceTarget),
+  nextMissionHook: cleanString(lesson.nextMissionHook),
+  journeyArc: cleanStringArray(lesson.journeyArc),
 })
 
 const sanitizeQuiz = (quiz: QuizCatalogItem): QuizCatalogItem => ({
@@ -96,6 +117,8 @@ const sanitizeQuiz = (quiz: QuizCatalogItem): QuizCatalogItem => ({
   tag: quiz.tag,
   title: cleanString(quiz.title),
   coverArt: cleanString(quiz.coverArt),
+  objective: cleanString(quiz.objective),
+  storyBeat: cleanString(quiz.storyBeat),
   difficulty: quiz.difficulty ?? 'Fácil',
   reward: cleanNumber(quiz.reward, 25),
   kind: ['multiple-choice', 'drag-fill', 'ordering', 'listening', 'speaking'].includes(quiz.kind) ? quiz.kind : 'multiple-choice',
@@ -122,6 +145,7 @@ const sanitizeQuestion = (question: QuizQuestionItem): QuizQuestionItem => {
     artAlt: cleanString(question.artAlt),
     reward: cleanNumber(question.reward, 25),
     active: cleanBoolean(question.active, true),
+    contextCue: cleanString(question.contextCue),
     options: ['multiple-choice', 'drag-fill', 'listening'].includes(kind) ? cleanStringArray(question.options) : [],
     correct: kind === 'ordering' ? '' : cleanString(question.correct),
     explanation: cleanString(question.explanation),
@@ -149,6 +173,15 @@ export const defaultLessonsCatalog: LessonCatalogItem[] = [
     image: '/pollinations/airport-card.png',
     tone: 'sky',
     progress: 60,
+    missionTitle: 'Airport survival',
+    emotionalContext: 'You missed your flight in London.',
+    practicalGoal: 'Pedir ajuda e entender o próximo passo no aeroporto.',
+    tensionLabel: 'Urgência moderada',
+    urgencyNote: 'Você precisa reagir antes de perder a conexão.',
+    emotionalGoal: 'Trocar hesitação por ação rápida.',
+    confidenceTarget: 'Falar uma frase útil com segurança.',
+    nextMissionHook: 'Depois do aeroporto, o próximo passo é chegar ao hotel.',
+    journeyArc: ['Arriving in London', 'Airport survival', 'Hotel check-in', 'Restaurant interaction'],
   },
   {
     id: 'lesson-present-simple',
@@ -158,6 +191,15 @@ export const defaultLessonsCatalog: LessonCatalogItem[] = [
     image: '/pollinations/grammar-card.png',
     tone: 'violet',
     progress: 40,
+    missionTitle: 'Daily routine briefing',
+    emotionalContext: 'Você precisa explicar sua rotina em uma reunião rápida.',
+    practicalGoal: 'Usar present simple com fluidez em contexto prático.',
+    tensionLabel: 'Pressão leve',
+    urgencyNote: 'Você precisa soar claro e confiante em pouco tempo.',
+    emotionalGoal: 'Transformar regra em fala natural.',
+    confidenceTarget: 'Responder sem travar na estrutura.',
+    nextMissionHook: 'Depois disso, você entra em uma conversa mais espontânea.',
+    journeyArc: ['Short intro', 'Daily routine briefing', 'Meeting check-in', 'Client follow-up'],
   },
   {
     id: 'lesson-daily-routines',
@@ -167,6 +209,15 @@ export const defaultLessonsCatalog: LessonCatalogItem[] = [
     image: '/pollinations/listening-card.png',
     tone: 'mint',
     progress: 20,
+    missionTitle: 'Catch the clue',
+    emotionalContext: 'Você ouviu uma instrução rápida e precisa agir sem repetir tudo.',
+    practicalGoal: 'Entender a pista principal de áudios curtos.',
+    tensionLabel: 'Atenção ativa',
+    urgencyNote: 'A mensagem passa rápido e você precisa captar o essencial.',
+    emotionalGoal: 'Reduzir medo de listening com pistas claras.',
+    confidenceTarget: 'Entender o suficiente para seguir a cena.',
+    nextMissionHook: 'Depois do áudio, a missão vira resposta prática.',
+    journeyArc: ['Short audio', 'Catch the clue', 'Follow the direction', 'Respond in context'],
   },
 ]
 

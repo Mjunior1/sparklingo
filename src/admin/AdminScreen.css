@@ -964,6 +964,15 @@
   line-height: 1.55;
 }
 
+.cms-advanced-settings {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(145, 115, 255, 0.12);
+  background: rgba(252, 250, 255, 0.9);
+}
+
 .cms-mini-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));

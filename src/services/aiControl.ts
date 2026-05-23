@@ -1,4 +1,5 @@
 import { doc, getDoc, serverTimestamp, setDoc } from 'firebase/firestore'
+import { httpsCallable } from 'firebase/functions'
 import { requireFirebase } from '../lib/firebase'
 
 export type AIProvider = 'openrouter' | 'openai' | 'anthropic'
@@ -17,6 +18,7 @@ export type PedagogicalMode =
   | 'Fast Daily Lesson'
 export type DifficultyCeiling = 'beginner' | 'intermediate' | 'advanced'
 export type NaturalnessMode = 'guided' | 'balanced' | 'native'
+export type ContinuityMode = 'linked' | 'episodic'
 
 export type AIControlConfig = {
   provider: AIProvider
@@ -49,7 +51,12 @@ export type MemoryEngineConfig = {
   trackFrequentErrors: boolean
   trackWeakSkills: boolean
   trackFavoriteModes: boolean
+  trackSpeakingConfidence: boolean
+  trackListeningAvoidance: boolean
+  trackResponseLatency: boolean
+  trackConfidenceSignals: boolean
   historyDepthDays: number
+  continuityMode: ContinuityMode
   notes: string
 }
 
@@ -57,6 +64,21 @@ export type ProviderConnectionResult = {
   ok: boolean
   message: string
   provider: AIProvider
+  maskedKey?: string
+  usingStoredSecret?: boolean
+  latencyMs?: number
+}
+
+type SaveAiProviderSecretRequest = {
+  provider: AIProvider
+  apiKey: string
+  apiKeyReference: string
+}
+
+type TestAiProviderConnectionRequest = {
+  provider: AIProvider
+  apiKeyReference: string
+  apiKey?: string
 }
 
 export const providerModels: Record<AIProvider, AIModel[]> = {
@@ -96,8 +118,13 @@ export const defaultMemoryEngineConfig: MemoryEngineConfig = {
   trackFrequentErrors: true,
   trackWeakSkills: true,
   trackFavoriteModes: true,
+  trackSpeakingConfidence: true,
+  trackListeningAvoidance: true,
+  trackResponseLatency: true,
+  trackConfidenceSignals: true,
   historyDepthDays: 30,
-  notes: 'Preparado para rastrear palavras ensinadas, erros frequentes e habilidades fracas sem pesar o produto.',
+  continuityMode: 'linked',
+  notes: 'Rastreie confiança, hesitação, speaking avoidance e memória contextual sem transformar a operação em um ERP técnico.',
 }
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
@@ -121,8 +148,7 @@ const sanitizeAIControlConfig = (input: Partial<AIControlConfig>): AIControlConf
       ? input.fallbackModel
       : defaultAIControlConfig.fallbackModel,
   temperature: clamp(cleanNumber(input.temperature, defaultAIControlConfig.temperature), 0, 1),
-  pedagogicalMode:
-    input.pedagogicalMode ?? defaultAIControlConfig.pedagogicalMode,
+  pedagogicalMode: input.pedagogicalMode ?? defaultAIControlConfig.pedagogicalMode,
   limits: {
     maxQuizzes: clamp(cleanNumber(input.limits?.maxQuizzes, defaultAIControlConfig.limits.maxQuizzes), 1, 8),
     maxQuestions: clamp(cleanNumber(input.limits?.maxQuestions, defaultAIControlConfig.limits.maxQuestions), 4, 40),
@@ -146,7 +172,12 @@ const sanitizeMemoryEngineConfig = (input: Partial<MemoryEngineConfig>): MemoryE
   trackFrequentErrors: cleanBoolean(input.trackFrequentErrors, defaultMemoryEngineConfig.trackFrequentErrors),
   trackWeakSkills: cleanBoolean(input.trackWeakSkills, defaultMemoryEngineConfig.trackWeakSkills),
   trackFavoriteModes: cleanBoolean(input.trackFavoriteModes, defaultMemoryEngineConfig.trackFavoriteModes),
+  trackSpeakingConfidence: cleanBoolean(input.trackSpeakingConfidence, defaultMemoryEngineConfig.trackSpeakingConfidence),
+  trackListeningAvoidance: cleanBoolean(input.trackListeningAvoidance, defaultMemoryEngineConfig.trackListeningAvoidance),
+  trackResponseLatency: cleanBoolean(input.trackResponseLatency, defaultMemoryEngineConfig.trackResponseLatency),
+  trackConfidenceSignals: cleanBoolean(input.trackConfidenceSignals, defaultMemoryEngineConfig.trackConfidenceSignals),
   historyDepthDays: clamp(cleanNumber(input.historyDepthDays, defaultMemoryEngineConfig.historyDepthDays), 7, 180),
+  continuityMode: input.continuityMode === 'episodic' ? 'episodic' : 'linked',
   notes: cleanString(input.notes, defaultMemoryEngineConfig.notes),
 })
 
@@ -158,6 +189,11 @@ const aiControlDoc = () => {
 const memoryDoc = () => {
   const { db } = requireFirebase()
   return doc(db, 'platform', 'memoryEngine')
+}
+
+const secretCall = <TRequest, TResponse>(name: string) => {
+  const { functions } = requireFirebase()
+  return httpsCallable<TRequest, TResponse>(functions, name)
 }
 
 export const getAIControlConfig = async () => {
@@ -172,10 +208,14 @@ export const getAIControlConfig = async () => {
 
 export const saveAIControlConfig = async (config: AIControlConfig) => {
   const safeConfig = sanitizeAIControlConfig(config)
-  await setDoc(aiControlDoc(), {
-    ...safeConfig,
-    updatedAt: serverTimestamp(),
-  }, { merge: true })
+  await setDoc(
+    aiControlDoc(),
+    {
+      ...safeConfig,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  )
 }
 
 export const getMemoryEngineConfig = async () => {
@@ -190,10 +230,14 @@ export const getMemoryEngineConfig = async () => {
 
 export const saveMemoryEngineConfig = async (config: MemoryEngineConfig) => {
   const safeConfig = sanitizeMemoryEngineConfig(config)
-  await setDoc(memoryDoc(), {
-    ...safeConfig,
-    updatedAt: serverTimestamp(),
-  }, { merge: true })
+  await setDoc(
+    memoryDoc(),
+    {
+      ...safeConfig,
+      updatedAt: serverTimestamp(),
+    },
+    { merge: true },
+  )
 }
 
 export const maskApiKey = (value: string) => {
@@ -203,54 +247,30 @@ export const maskApiKey = (value: string) => {
   return `${trimmed.slice(0, 4)}••••${trimmed.slice(-4)}`
 }
 
-export const testProviderConnection = async (
+export const saveAIProviderSecret = async (
   provider: AIProvider,
   apiKey: string,
+  apiKeyReference: string,
+) => {
+  const callable = secretCall<SaveAiProviderSecretRequest, ProviderConnectionResult>('saveAiProviderSecret')
+  const result = await callable({
+    provider,
+    apiKey,
+    apiKeyReference,
+  })
+  return result.data
+}
+
+export const testProviderConnection = async (
+  provider: AIProvider,
+  apiKeyReference: string,
+  apiKey = '',
 ): Promise<ProviderConnectionResult> => {
-  const trimmed = apiKey.trim()
-  if (!trimmed) {
-    return { ok: false, message: 'Informe uma chave antes de testar a conexão.', provider }
-  }
-
-  try {
-    if (provider === 'openrouter') {
-      const response = await fetch('https://openrouter.ai/api/v1/models', {
-        headers: { Authorization: `Bearer ${trimmed}` },
-      })
-      return {
-        ok: response.ok,
-        message: response.ok ? 'OpenRouter respondeu corretamente.' : `OpenRouter retornou ${response.status}.`,
-        provider,
-      }
-    }
-
-    if (provider === 'openai') {
-      const response = await fetch('https://api.openai.com/v1/models', {
-        headers: { Authorization: `Bearer ${trimmed}` },
-      })
-      return {
-        ok: response.ok,
-        message: response.ok ? 'OpenAI respondeu corretamente.' : `OpenAI retornou ${response.status}.`,
-        provider,
-      }
-    }
-
-    const response = await fetch('https://api.anthropic.com/v1/models', {
-      headers: {
-        'x-api-key': trimmed,
-        'anthropic-version': '2023-06-01',
-      },
-    })
-    return {
-      ok: response.ok,
-      message: response.ok ? 'Anthropic respondeu corretamente.' : `Anthropic retornou ${response.status}.`,
-      provider,
-    }
-  } catch (error) {
-    return {
-      ok: false,
-      message: error instanceof Error ? error.message : 'Falha ao testar a conexão do provider.',
-      provider,
-    }
-  }
+  const callable = secretCall<TestAiProviderConnectionRequest, ProviderConnectionResult>('testAiProviderConnection')
+  const result = await callable({
+    provider,
+    apiKeyReference,
+    apiKey,
+  })
+  return result.data
 }

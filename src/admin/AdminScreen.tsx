@@ -54,9 +54,9 @@ import {
   type QuizQuestionItem,
 } from '../services/catalog'
 import {
-  buildDraftFromComposer,
   defaultQuestionMix,
   draftQuestionTypeOptions,
+  generateAIDraftWithSpark,
   getAIDrafts,
   missionLevelOptions,
   missionTemplateOptions,
@@ -81,6 +81,7 @@ import {
   getMemoryEngineConfig,
   maskApiKey,
   providerModels,
+  saveAIProviderSecret,
   saveAIControlConfig,
   saveMemoryEngineConfig,
   testProviderConnection,
@@ -363,6 +364,7 @@ export function AdminScreen({
   const [aiControl, setAiControl] = useState<AIControlConfig>(defaultAIControlConfig)
   const [memoryConfig, setMemoryConfig] = useState<MemoryEngineConfig>(defaultMemoryEngineConfig)
   const [aiApiKeyInput, setAiApiKeyInput] = useState('')
+  const [showAdvancedAiSettings, setShowAdvancedAiSettings] = useState(false)
   const [aiConnectionMessage, setAiConnectionMessage] = useState('')
   const [aiTestingConnection, setAiTestingConnection] = useState(false)
   const [aiDrafts, setAiDrafts] = useState<AIDraftRecord[]>([])
@@ -928,11 +930,17 @@ export function AdminScreen({
       'Salvando AI Control Center...',
       'Configurações de IA salvas com sucesso.',
       async () => {
+        let apiKeyMasked = aiControl.apiKeyMasked
+        if (aiApiKeyInput.trim()) {
+          const result = await saveAIProviderSecret(aiControl.provider, aiApiKeyInput.trim(), aiControl.apiKeyReference)
+          apiKeyMasked = result.maskedKey ?? maskApiKey(aiApiKeyInput)
+          setAiApiKeyInput('')
+        }
         await saveAIControlConfig({
           ...aiControl,
-          apiKeyMasked: aiApiKeyInput.trim() ? maskApiKey(aiApiKeyInput) : aiControl.apiKeyMasked,
+          apiKeyMasked,
         })
-        if (aiApiKeyInput.trim()) setAiApiKeyInput('')
+        setAiControl((current) => ({ ...current, apiKeyMasked }))
       },
     )
 
@@ -947,16 +955,23 @@ export function AdminScreen({
 
   const handleTestConnection = async () => {
     setAiTestingConnection(true)
-    const result = await testProviderConnection(aiControl.provider, aiApiKeyInput)
-    setAiConnectionMessage(result.message)
-    setAiTestingConnection(false)
-    showToast(result.ok ? 'success' : 'error', result.message)
+    try {
+      const result = await testProviderConnection(aiControl.provider, aiControl.apiKeyReference, aiApiKeyInput)
+      setAiConnectionMessage(result.message)
+      showToast(result.ok ? 'success' : 'error', result.message)
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Falha ao testar a conexão com o provider.'
+      setAiConnectionMessage(message)
+      showToast('error', message)
+    } finally {
+      setAiTestingConnection(false)
+    }
   }
 
   const handleGenerateAIDraft = async () => {
     setAiComposerLoading(true)
     try {
-      const draft = buildDraftFromComposer(aiComposer, aiControl, {
+      const draft = await generateAIDraftWithSpark(aiComposer, aiControl, memoryConfig, {
         lessonIds: lessons.map((item) => item.id),
         quizIds: quizzes.map((item) => item.id),
         questionIds: questions.map((item) => item.id),
@@ -1476,38 +1491,46 @@ export function AdminScreen({
                       </button>
                       <span className="cms-inline-helper">{aiConnectionMessage || 'A chave real fica fora do Firestore; aqui fica só a referência mascarada.'}</span>
                     </div>
-                    <label>Modelo principal
-                      <select value={aiControl.primaryModel} onChange={(event) => setAiControl((current) => ({ ...current, primaryModel: event.target.value as AIControlConfig['primaryModel'] }))}>
-                        {providerModels[aiControl.provider].map((model) => <option key={model} value={model}>{model}</option>)}
-                      </select>
-                    </label>
-                    <label>Modelo fallback
-                      <select value={aiControl.fallbackModel} onChange={(event) => setAiControl((current) => ({ ...current, fallbackModel: event.target.value as AIControlConfig['fallbackModel'] }))}>
-                        {providerModels[aiControl.provider].map((model) => <option key={model} value={model}>{model}</option>)}
-                      </select>
-                    </label>
-                    <label>Temperatura
-                      <input type="range" min="0" max="1" step="0.05" value={aiControl.temperature} onChange={(event) => setAiControl((current) => ({ ...current, temperature: Number(event.target.value) }))} />
-                    </label>
                     <label>Modo pedagógico
                       <select value={aiControl.pedagogicalMode} onChange={(event) => setAiControl((current) => ({ ...current, pedagogicalMode: event.target.value as AIControlConfig['pedagogicalMode'] }))}>
                         {pedagogicalModes.map((mode) => <option key={mode} value={mode}>{mode}</option>)}
                       </select>
                     </label>
-                    <div className="cms-mini-grid">
-                      <label>Máx. quizzes
-                        <input type="number" value={aiControl.limits.maxQuizzes} onChange={(event) => setAiControl((current) => ({ ...current, limits: { ...current.limits, maxQuizzes: Number(event.target.value) || 1 } }))} />
-                      </label>
-                      <label>Máx. questões
-                        <input type="number" value={aiControl.limits.maxQuestions} onChange={(event) => setAiControl((current) => ({ ...current, limits: { ...current.limits, maxQuestions: Number(event.target.value) || 1 } }))} />
-                      </label>
-                      <label>Limite diário
-                        <input type="number" value={aiControl.limits.dailyDrafts} onChange={(event) => setAiControl((current) => ({ ...current, limits: { ...current.limits, dailyDrafts: Number(event.target.value) || 1 } }))} />
-                      </label>
-                      <label>Orçamento tokens
-                        <input type="number" value={aiControl.limits.tokenBudget} onChange={(event) => setAiControl((current) => ({ ...current, limits: { ...current.limits, tokenBudget: Number(event.target.value) || 0 } }))} />
-                      </label>
-                    </div>
+                    <button className="admin-secondary cms-inline-button" type="button" onClick={() => setShowAdvancedAiSettings((current) => !current)}>
+                      <SlidersHorizontal size={14} />
+                      {showAdvancedAiSettings ? 'Ocultar modo avançado' : 'Abrir modo avançado'}
+                    </button>
+                    {showAdvancedAiSettings && (
+                      <div className="cms-advanced-settings">
+                        <label>Modelo principal
+                          <select value={aiControl.primaryModel} onChange={(event) => setAiControl((current) => ({ ...current, primaryModel: event.target.value as AIControlConfig['primaryModel'] }))}>
+                            {providerModels[aiControl.provider].map((model) => <option key={model} value={model}>{model}</option>)}
+                          </select>
+                        </label>
+                        <label>Modelo fallback
+                          <select value={aiControl.fallbackModel} onChange={(event) => setAiControl((current) => ({ ...current, fallbackModel: event.target.value as AIControlConfig['fallbackModel'] }))}>
+                            {providerModels[aiControl.provider].map((model) => <option key={model} value={model}>{model}</option>)}
+                          </select>
+                        </label>
+                        <label>Temperatura
+                          <input type="range" min="0" max="1" step="0.05" value={aiControl.temperature} onChange={(event) => setAiControl((current) => ({ ...current, temperature: Number(event.target.value) }))} />
+                        </label>
+                        <div className="cms-mini-grid">
+                          <label>Máx. quizzes
+                            <input type="number" value={aiControl.limits.maxQuizzes} onChange={(event) => setAiControl((current) => ({ ...current, limits: { ...current.limits, maxQuizzes: Number(event.target.value) || 1 } }))} />
+                          </label>
+                          <label>Máx. questões
+                            <input type="number" value={aiControl.limits.maxQuestions} onChange={(event) => setAiControl((current) => ({ ...current, limits: { ...current.limits, maxQuestions: Number(event.target.value) || 1 } }))} />
+                          </label>
+                          <label>Limite diário
+                            <input type="number" value={aiControl.limits.dailyDrafts} onChange={(event) => setAiControl((current) => ({ ...current, limits: { ...current.limits, dailyDrafts: Number(event.target.value) || 1 } }))} />
+                          </label>
+                          <label>Orçamento tokens
+                            <input type="number" value={aiControl.limits.tokenBudget} onChange={(event) => setAiControl((current) => ({ ...current, limits: { ...current.limits, tokenBudget: Number(event.target.value) || 0 } }))} />
+                          </label>
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <div className="cms-inline-actions">
                     <button className="admin-primary" type="button" disabled={saving} onClick={handleAIControlSave}>
@@ -1574,8 +1597,18 @@ export function AdminScreen({
                     <label className="cms-toggle-row"><input type="checkbox" checked={memoryConfig.trackFrequentErrors} onChange={(event) => setMemoryConfig((current) => ({ ...current, trackFrequentErrors: event.target.checked }))} />Rastrear erros frequentes</label>
                     <label className="cms-toggle-row"><input type="checkbox" checked={memoryConfig.trackWeakSkills} onChange={(event) => setMemoryConfig((current) => ({ ...current, trackWeakSkills: event.target.checked }))} />Rastrear habilidades fracas</label>
                     <label className="cms-toggle-row"><input type="checkbox" checked={memoryConfig.trackFavoriteModes} onChange={(event) => setMemoryConfig((current) => ({ ...current, trackFavoriteModes: event.target.checked }))} />Rastrear modos favoritos</label>
+                    <label className="cms-toggle-row"><input type="checkbox" checked={memoryConfig.trackSpeakingConfidence} onChange={(event) => setMemoryConfig((current) => ({ ...current, trackSpeakingConfidence: event.target.checked }))} />Rastrear medo de speaking</label>
+                    <label className="cms-toggle-row"><input type="checkbox" checked={memoryConfig.trackListeningAvoidance} onChange={(event) => setMemoryConfig((current) => ({ ...current, trackListeningAvoidance: event.target.checked }))} />Rastrear abandono de listening</label>
+                    <label className="cms-toggle-row"><input type="checkbox" checked={memoryConfig.trackResponseLatency} onChange={(event) => setMemoryConfig((current) => ({ ...current, trackResponseLatency: event.target.checked }))} />Rastrear tempo de resposta</label>
+                    <label className="cms-toggle-row"><input type="checkbox" checked={memoryConfig.trackConfidenceSignals} onChange={(event) => setMemoryConfig((current) => ({ ...current, trackConfidenceSignals: event.target.checked }))} />Rastrear sinais de confiança</label>
                     <label>Janela de memória (dias)
                       <input type="number" value={memoryConfig.historyDepthDays} onChange={(event) => setMemoryConfig((current) => ({ ...current, historyDepthDays: Number(event.target.value) || 7 }))} />
+                    </label>
+                    <label>Continuidade narrativa
+                      <select value={memoryConfig.continuityMode} onChange={(event) => setMemoryConfig((current) => ({ ...current, continuityMode: event.target.value as MemoryEngineConfig['continuityMode'] }))}>
+                        <option value="linked">linked</option>
+                        <option value="episodic">episodic</option>
+                      </select>
                     </label>
                     <label>Notas operacionais
                       <textarea value={memoryConfig.notes} onChange={(event) => setMemoryConfig((current) => ({ ...current, notes: event.target.value }))} />
@@ -1708,6 +1741,12 @@ export function AdminScreen({
                       <div className="cms-draft-cover">
                         <strong>Prompt de capa</strong>
                         <p>{aiPreviewDraft.coverPrompt}</p>
+                        <div className="cms-draft-meta-grid">
+                          <div><strong>Tensão</strong><span>{aiPreviewDraft.tensionLabel}</span></div>
+                          <div><strong>Objetivo emocional</strong><span>{aiPreviewDraft.emotionalGoal}</span></div>
+                          <div><strong>Confiança alvo</strong><span>{aiPreviewDraft.confidenceTarget}</span></div>
+                          <div><strong>Próxima cena</strong><span>{aiPreviewDraft.continuity.nextScene}</span></div>
+                        </div>
                         <button className="admin-secondary" type="button" onClick={() => handleRegenerateDraftPart('cover')}>
                           <RefreshCw size={14} />
                           Regenerar capa
@@ -1817,6 +1856,10 @@ export function AdminScreen({
                         <div><strong>Habilidades</strong><span>{selectedDraft.skills.join(' • ')}</span></div>
                         <div><strong>XP total</strong><span>{selectedDraft.xpTotal}</span></div>
                         <div><strong>Status</strong><span>{selectedDraft.status}</span></div>
+                        <div><strong>Tensão</strong><span>{selectedDraft.tensionLabel}</span></div>
+                        <div><strong>Objetivo emocional</strong><span>{selectedDraft.emotionalGoal}</span></div>
+                        <div><strong>Cena atual</strong><span>{selectedDraft.continuity.currentScene}</span></div>
+                        <div><strong>Próxima cena</strong><span>{selectedDraft.continuity.nextScene}</span></div>
                       </div>
                       <div className="cms-inline-actions">
                         <button className="admin-secondary" type="button" onClick={() => handleDraftStatus('approved')}>Aprovar</button>

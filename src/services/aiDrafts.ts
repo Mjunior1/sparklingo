@@ -1,6 +1,7 @@
 import { collection, doc, getDocs, orderBy, query, serverTimestamp, setDoc, updateDoc, writeBatch } from 'firebase/firestore'
+import { httpsCallable } from 'firebase/functions'
 import { requireFirebase } from '../lib/firebase'
-import type { AIControlConfig, PedagogicalMode } from './aiControl'
+import type { AIControlConfig, MemoryEngineConfig, PedagogicalMode } from './aiControl'
 import type { ExerciseKind, FilterKey, LessonCatalogItem, LessonTone, QuizCatalogItem, QuizQuestionItem } from './catalog'
 
 export type MissionTemplate =
@@ -16,6 +17,7 @@ export type StudentGoal = 'Travel' | 'Business' | 'Immigration' | 'Social' | 'Co
 export type VisualStyle = 'Cartoon 3D' | 'Modern Flat' | 'Minimal' | 'Realistic' | 'Kids Friendly'
 export type DraftQuestionType = 'multiple-choice' | 'speaking' | 'drag-fill' | 'matching' | 'fill-blank' | 'listening'
 export type DraftStatus = 'draft' | 'approved' | 'published' | 'rejected'
+export type DraftGenerationMode = 'provider' | 'fallback-template'
 
 export type QuestionMix = Record<DraftQuestionType, number>
 
@@ -35,6 +37,78 @@ export type LessonComposerInput = {
 
 export type PartialRegenerationMode = 'question' | 'alternatives' | 'speaking' | 'cover'
 
+export type GeneratedQuestionDraft = {
+  type: DraftQuestionType
+  tag: string
+  title: string
+  prompt: string
+  explanation: string
+  options: string[]
+  correct: string
+  sentenceBefore: string
+  sentenceAfter: string
+  scrambled: string[]
+  solution: string[]
+  reward: number
+  kicker: string
+  difficulty: 'Fácil' | 'Médio'
+}
+
+export type GeneratedQuizDraft = {
+  title: string
+  objective: string
+  storyBeat: string
+  reward: number
+  difficulty: 'Fácil' | 'Médio'
+  kind: 'multiple-choice' | 'drag-fill' | 'ordering' | 'listening' | 'speaking'
+  order: number
+  questions: GeneratedQuestionDraft[]
+}
+
+export type GeneratedMissionDraft = {
+  title: string
+  theme: string
+  emotionalContext: string
+  practicalGoal: string
+  template: MissionTemplate
+  level: MissionLevel
+  studentGoal: StudentGoal
+  pedagogicalMode: PedagogicalMode
+  visualStyle: VisualStyle
+  tensionLabel: string
+  urgencyNote: string
+  emotionalGoal: string
+  confidenceTarget: string
+  perceivedProgress: {
+    confidence: string
+    fluency: string
+    hesitation: string
+    mastery: string
+  }
+  continuity: {
+    previousScene: string
+    currentScene: string
+    nextScene: string
+    arc: string[]
+  }
+  adaptationNotes: {
+    speakingSupport: string
+    listeningSupport: string
+    repetitionStrategy: string
+    reviewPressure: string
+  }
+  questionMix: QuestionMix
+  quizzes: GeneratedQuizDraft[]
+  coverPrompt: string
+  promptsUsed: string[]
+  estimatedTokens: number
+  estimatedCostUsd: number
+  provider: AIControlConfig['provider']
+  model: AIControlConfig['primaryModel']
+  generationMode: DraftGenerationMode
+  generationNotes: string
+}
+
 export type AIDraftRecord = {
   id: string
   status: DraftStatus
@@ -47,6 +121,28 @@ export type AIDraftRecord = {
   studentGoal: StudentGoal
   pedagogicalMode: PedagogicalMode
   visualStyle: VisualStyle
+  tensionLabel: string
+  urgencyNote: string
+  emotionalGoal: string
+  confidenceTarget: string
+  perceivedProgress: {
+    confidence: string
+    fluency: string
+    hesitation: string
+    mastery: string
+  }
+  continuity: {
+    previousScene: string
+    currentScene: string
+    nextScene: string
+    arc: string[]
+  }
+  adaptationNotes: {
+    speakingSupport: string
+    listeningSupport: string
+    repetitionStrategy: string
+    reviewPressure: string
+  }
   questionMix: QuestionMix
   skills: string[]
   xpTotal: number
@@ -56,6 +152,8 @@ export type AIDraftRecord = {
   model: AIControlConfig['primaryModel']
   estimatedTokens: number
   estimatedCostUsd: number
+  generationMode: DraftGenerationMode
+  generationNotes: string
   lesson: LessonCatalogItem
   quizzes: QuizCatalogItem[]
   questions: QuizQuestionItem[]
@@ -136,6 +234,7 @@ const cleanStringArray = (value: unknown) =>
 
 const mapQuestionKind = (kind: DraftQuestionType): ExerciseKind => {
   if (kind === 'drag-fill' || kind === 'fill-blank') return 'drag-fill'
+  if (kind === 'matching') return 'multiple-choice'
   if (kind === 'listening') return 'listening'
   if (kind === 'speaking') return 'speaking'
   return 'multiple-choice'
@@ -182,106 +281,123 @@ const buildExperienceName = (theme: string, context: string) => {
   return `${theme.trim()} • ${context.trim()}`
 }
 
-const createOptions = (goal: StudentGoal, theme: string) => {
-  if (goal === 'Travel') return ['ask for help', 'hide the ticket', 'leave the airport', 'sleep outside']
-  if (goal === 'Business') return ['confirm the meeting', 'cancel the client', 'ignore the email', 'miss the deadline']
-  if (theme.toLowerCase().includes('restaurant')) return ['order politely', 'shout at the waiter', 'leave without paying', 'skip the menu']
-  return ['choose the best answer', 'skip the context', 'guess randomly', 'close the mission']
-}
-
-const buildQuestionCopy = (
-  type: DraftQuestionType,
-  theme: string,
-  context: string,
-  goal: string,
-  index: number,
-  level: MissionLevel,
-) => {
-  const prefix = `${theme}: ${context || goal}`
-  if (type === 'speaking') {
-    return {
-      title: `Say it with confidence ${index}`,
-      prompt: `Respond aloud inside the scene: ${prefix}.`,
-      explanation: `Goal: answer naturally and keep the tone appropriate for a ${level.toLowerCase()} learner.`,
-    }
+const buildBlueprintFromComposer = (input: LessonComposerInput, config: AIControlConfig): GeneratedMissionDraft => {
+  const mergedInput: LessonComposerInput = { ...templateDefaults[input.template], ...input }
+  const category = mapCategory(mergedInput.studentGoal)
+  const routeByGoal: Record<StudentGoal, string[]> = {
+    Travel: ['Arriving in London', 'Airport survival', 'Hotel check-in', 'Restaurant interaction'],
+    Business: ['Meeting intro', 'Boardroom briefing', 'Client objection', 'Follow-up call'],
+    Immigration: ['Border questions', 'Lost document support', 'Public transport', 'Rental setup'],
+    Social: ['First hello', 'Making plans', 'Explaining yourself', 'Keeping the vibe alive'],
+    Confidence: ['Safe warm-up', 'Low-pressure response', 'Live interaction', 'Confident recovery'],
+    Gaming: ['Party chat', 'Quick strategy call', 'Live teamwork', 'Friendly banter'],
+    Movies: ['Catch the clue', 'Interpret the scene', 'Retell the moment', 'Discuss what changed'],
   }
-
-  if (type === 'listening') {
-    return {
-      title: `Listen for the clue ${index}`,
-      prompt: `You hear a short message in the scenario: ${prefix}. What is the key meaning?`,
-      explanation: `Focus on one useful detail and avoid overloading the learner.`,
-    }
-  }
-
-  if (type === 'drag-fill' || type === 'fill-blank') {
-    return {
-      title: `Fill the response ${index}`,
-      prompt: `Complete the missing part of the line in context: ${prefix}.`,
-      explanation: `Short sentence, high clarity, and immediate practical use.`,
-    }
-  }
-
-  if (type === 'matching') {
-    return {
-      title: `Match the meaning ${index}`,
-      prompt: `Link the expression to the right meaning inside the mission.`,
-      explanation: `Keep the vocabulary useful, visual, and memorable.`,
-    }
-  }
-
-  return {
-    title: `Choose the next move ${index}`,
-    prompt: `Pick the best response in the moment: ${prefix}.`,
-    explanation: `One answer should clearly move the mission forward.`,
-  }
-}
-
-const buildDraftQuestion = (
-  type: DraftQuestionType,
-  index: number,
-  quiz: QuizCatalogItem,
-  lesson: LessonCatalogItem,
-  input: LessonComposerInput,
-  questionId: string,
-): QuizQuestionItem => {
-  const copy = buildQuestionCopy(type, input.theme, input.emotionalContext, input.practicalGoal, index + 1, input.level)
-  const mappedKind = mapQuestionKind(type)
-  const category = lesson.category as FilterKey
-  const baseOptions = createOptions(input.studentGoal, input.theme)
-  const scrambled = ['I', 'need', 'help', 'please', 'now']
-
-  return {
-    id: questionId,
-    quizId: quiz.id,
-    lessonId: lesson.id,
-    tag: category,
-    kind: mappedKind,
-    difficulty: input.level === 'Beginner' ? 'Fácil' : 'Médio',
-    kicker: `Missão ${quiz.order}.${index + 1}`,
-    title: copy.title,
-    prompt: copy.prompt,
-    art: quiz.coverArt || lesson.image,
-    artAlt: `${input.theme} visual`,
-    reward: quiz.reward,
-    active: true,
-    options: mappedKind === 'ordering' || mappedKind === 'speaking' ? [] : baseOptions,
-    correct: mappedKind === 'speaking' || mappedKind === 'ordering' ? '' : baseOptions[0],
-    explanation: copy.explanation,
-    sentenceBefore: mappedKind === 'drag-fill' ? 'I need' : '',
-    sentenceAfter: mappedKind === 'drag-fill' ? 'at the airport.' : '',
-    scrambled: mappedKind === 'ordering' ? scrambled : [],
-    solution: mappedKind === 'ordering' ? ['I', 'need', 'help', 'now', 'please'] : [],
-  }
-}
-
-const buildQuestionTypeSequence = (questionMix: QuestionMix): DraftQuestionType[] => {
-  const sequence: DraftQuestionType[] = []
+  const arc = routeByGoal[mergedInput.studentGoal]
+  const questionTypes: DraftQuestionType[] = []
   safeQuestionTypes.forEach((type) => {
-    const total = Math.max(0, questionMix[type] ?? 0)
-    for (let index = 0; index < total; index += 1) sequence.push(type)
+    const total = Math.max(0, mergedInput.questionMix[type] ?? 0)
+    for (let index = 0; index < total; index += 1) questionTypes.push(type)
   })
-  return sequence.length ? sequence : ['multiple-choice', 'drag-fill', 'speaking']
+  const sequence: DraftQuestionType[] = questionTypes.length ? questionTypes : ['multiple-choice', 'drag-fill', 'speaking']
+  const quizzes: GeneratedQuizDraft[] = []
+  let questionIndex = 0
+
+  for (let quizIndex = 0; quizIndex < mergedInput.quizCount; quizIndex += 1) {
+    const questions: GeneratedQuestionDraft[] = []
+    for (let localIndex = 0; localIndex < mergedInput.questionsPerQuiz; localIndex += 1) {
+      const type = sequence[questionIndex % sequence.length] ?? 'multiple-choice'
+      questions.push({
+        type,
+        tag: category,
+        title:
+          type === 'speaking' ? `Say it with confidence ${localIndex + 1}`
+            : type === 'listening' ? `Catch the clue ${localIndex + 1}`
+            : type === 'drag-fill' || type === 'fill-blank' ? `Complete the line ${localIndex + 1}`
+            : `Choose the next move ${localIndex + 1}`,
+        prompt:
+          type === 'speaking'
+            ? `Você está em ${mergedInput.theme}. ${mergedInput.emotionalContext} Responda em voz alta e peça ajuda com naturalidade.`
+            : type === 'listening'
+              ? `Escute o detalhe-chave enquanto a cena acontece: ${mergedInput.emotionalContext}.`
+              : type === 'drag-fill' || type === 'fill-blank'
+                ? `Complete a frase dentro do contexto: ${mergedInput.emotionalContext}.`
+                : `Escolha a melhor resposta para manter a missão avançando em ${mergedInput.theme}.`,
+        explanation:
+          mergedInput.level === 'Beginner'
+            ? 'Use uma frase curta, útil e emocionalmente segura.'
+            : 'Mantenha naturalidade, clareza e progresso contextual.',
+        options: type === 'speaking' ? [] : ['ask for help', 'stay silent', 'walk away', 'change the subject'],
+        correct: type === 'speaking' ? '' : 'ask for help',
+        sentenceBefore: type === 'drag-fill' || type === 'fill-blank' ? 'I need' : '',
+        sentenceAfter: type === 'drag-fill' || type === 'fill-blank' ? 'right now.' : '',
+        scrambled: type === 'matching' ? [] : type === 'speaking' ? [] : type === 'listening' ? [] : ['I', 'need', 'help', 'now'],
+        solution: type === 'matching' ? [] : type === 'speaking' ? [] : type === 'listening' ? [] : ['I', 'need', 'help', 'now'],
+        reward: 20 + localIndex * 5 + quizIndex * 4,
+        kicker: `Missão ${quizIndex + 1}.${localIndex + 1}`,
+        difficulty: mergedInput.level === 'Beginner' ? 'Fácil' : 'Médio',
+      })
+      questionIndex += 1
+    }
+
+    quizzes.push({
+      title: `${mergedInput.theme} • etapa ${quizIndex + 1}`,
+      objective: mergedInput.practicalGoal,
+      storyBeat: arc[Math.min(quizIndex + 1, arc.length - 1)] ?? arc[arc.length - 1],
+      reward: 20 + quizIndex * 5,
+      difficulty: mergedInput.level === 'Beginner' ? 'Fácil' : 'Médio',
+      kind: mapQuestionKind(questions[0]?.type ?? 'multiple-choice'),
+      order: quizIndex + 1,
+      questions,
+    })
+  }
+
+  const promptsUsed = quizzes.flatMap((quiz) => quiz.questions.map((question) => question.prompt))
+  const estimatedTokens = Math.max(2000, quizzes.length * mergedInput.questionsPerQuiz * 220)
+
+  return {
+    title: `${mergedInput.theme} mission`,
+    theme: mergedInput.theme,
+    emotionalContext: mergedInput.emotionalContext,
+    practicalGoal: mergedInput.practicalGoal,
+    template: mergedInput.template,
+    level: mergedInput.level,
+    studentGoal: mergedInput.studentGoal,
+    pedagogicalMode: mergedInput.pedagogicalMode,
+    visualStyle: mergedInput.visualStyle,
+    tensionLabel: mergedInput.emotionalContext || 'Urgência contextual',
+    urgencyNote: mergedInput.emotionalContext || 'O aluno precisa agir antes que a situação piore.',
+    emotionalGoal: mergedInput.studentGoal === 'Confidence' ? 'Diminuir medo de falar e aumentar coragem contextual.' : 'Trocar hesitação por ação útil em contexto real.',
+    confidenceTarget: mergedInput.level === 'Beginner' ? 'Terminar sentindo: eu consigo responder essa situação.' : 'Sentir mais fluidez e menos bloqueio para agir.',
+    perceivedProgress: {
+      confidence: 'mais coragem ao responder',
+      fluency: 'menos travas no fluxo',
+      hesitation: 'redução de pausa antes de agir',
+      mastery: 'uma cena real desbloqueada',
+    },
+    continuity: {
+      previousScene: arc[0] ?? mergedInput.theme,
+      currentScene: arc[1] ?? mergedInput.theme,
+      nextScene: arc[2] ?? mergedInput.theme,
+      arc,
+    },
+    adaptationNotes: {
+      speakingSupport: 'Começar com respostas curtas e aumentar confiança gradualmente.',
+      listeningSupport: 'Usar pistas curtas antes de aumentar ruído ou densidade.',
+      repetitionStrategy: `Repetição máxima ${config.guardrails.repetitionLimit}, variando intenção e contexto.`,
+      reviewPressure: mergedInput.level === 'Beginner' ? 'Baixa pressão e recuperação rápida.' : 'Pressão moderada com continuidade narrativa.',
+    },
+    questionMix: mergedInput.questionMix,
+    quizzes,
+    coverPrompt: `Create one premium ${mergedInput.visualStyle} mission cover for "${mergedInput.theme}" with emotional context "${mergedInput.emotionalContext}", no text, lilac-driven palette, warm urgency, educational game feel.`,
+    promptsUsed,
+    estimatedTokens,
+    estimatedCostUsd: Number(((estimatedTokens / 1_000_000) * 0.55).toFixed(4)),
+    provider: config.provider,
+    model: config.primaryModel,
+    generationMode: 'fallback-template',
+    generationNotes: 'Blueprint local contextual usado como fallback seguro.',
+  }
 }
 
 const sanitizeDraft = (draft: AIDraftRecord): AIDraftRecord => ({
@@ -296,6 +412,28 @@ const sanitizeDraft = (draft: AIDraftRecord): AIDraftRecord => ({
   studentGoal: draft.studentGoal,
   pedagogicalMode: draft.pedagogicalMode,
   visualStyle: draft.visualStyle,
+  tensionLabel: cleanString(draft.tensionLabel),
+  urgencyNote: cleanString(draft.urgencyNote),
+  emotionalGoal: cleanString(draft.emotionalGoal),
+  confidenceTarget: cleanString(draft.confidenceTarget),
+  perceivedProgress: {
+    confidence: cleanString(draft.perceivedProgress?.confidence),
+    fluency: cleanString(draft.perceivedProgress?.fluency),
+    hesitation: cleanString(draft.perceivedProgress?.hesitation),
+    mastery: cleanString(draft.perceivedProgress?.mastery),
+  },
+  continuity: {
+    previousScene: cleanString(draft.continuity?.previousScene),
+    currentScene: cleanString(draft.continuity?.currentScene),
+    nextScene: cleanString(draft.continuity?.nextScene),
+    arc: cleanStringArray(draft.continuity?.arc),
+  },
+  adaptationNotes: {
+    speakingSupport: cleanString(draft.adaptationNotes?.speakingSupport),
+    listeningSupport: cleanString(draft.adaptationNotes?.listeningSupport),
+    repetitionStrategy: cleanString(draft.adaptationNotes?.repetitionStrategy),
+    reviewPressure: cleanString(draft.adaptationNotes?.reviewPressure),
+  },
   questionMix: {
     'multiple-choice': cleanNumber(draft.questionMix?.['multiple-choice'], 0),
     speaking: cleanNumber(draft.questionMix?.speaking, 0),
@@ -312,14 +450,16 @@ const sanitizeDraft = (draft: AIDraftRecord): AIDraftRecord => ({
   model: draft.model,
   estimatedTokens: cleanNumber(draft.estimatedTokens, 0),
   estimatedCostUsd: cleanNumber(draft.estimatedCostUsd, 0),
+  generationMode: draft.generationMode ?? 'fallback-template',
+  generationNotes: cleanString(draft.generationNotes),
   lesson: draft.lesson,
   quizzes: draft.quizzes,
   questions: draft.questions,
 })
 
-export const buildDraftFromComposer = (
+const assembleDraftRecord = (
+  generated: GeneratedMissionDraft,
   input: LessonComposerInput,
-  config: AIControlConfig,
   context: {
     lessonIds: string[]
     quizIds: string[]
@@ -332,92 +472,165 @@ export const buildDraftFromComposer = (
   const lessonId = nextId(context.lessonIds, 'LS')
   const draftId = nextId(context.existingDraftIds, 'DR')
   const tone = mapTone(mergedInput.visualStyle)
-  const totalQuestions = buildQuestionTypeSequence(mergedInput.questionMix)
-  const quizCount = Math.max(1, mergedInput.quizCount)
-  const perQuiz = Math.max(1, mergedInput.questionsPerQuiz)
   const quizzes: QuizCatalogItem[] = []
   const questions: QuizQuestionItem[] = []
-  const promptsUsed: string[] = []
+  const availableQuizIds = [...context.quizIds]
+  const availableQuestionIds = [...context.questionIds]
 
   const lesson: LessonCatalogItem = {
     id: lessonId,
     category,
-    title: buildExperienceName(mergedInput.theme, mergedInput.emotionalContext || mergedInput.studentGoal),
-    blurb: `${mergedInput.practicalGoal} • template ${mergedInput.template} • goal ${mergedInput.studentGoal}`,
+    title: buildExperienceName(generated.theme, generated.emotionalContext || generated.studentGoal),
+    blurb: generated.practicalGoal,
     image: '/pollinations/airport-card.png',
     tone,
     progress: 0,
+    missionTitle: generated.title,
+    emotionalContext: generated.emotionalContext,
+    practicalGoal: generated.practicalGoal,
+    tensionLabel: generated.tensionLabel,
+    urgencyNote: generated.urgencyNote,
+    emotionalGoal: generated.emotionalGoal,
+    confidenceTarget: generated.confidenceTarget,
+    nextMissionHook: generated.continuity.nextScene,
+    journeyArc: generated.continuity.arc,
   }
 
-  const coverPrompt = `Create one premium ${mergedInput.visualStyle} cover for SparkLingo mission "${mergedInput.theme}" with emotional context "${mergedInput.emotionalContext}", practical goal "${mergedInput.practicalGoal}", clean composition, no text, education-first, premium lilac tone.`
-
-  let questionCursor = 0
-  const availableQuizIds = [...context.quizIds]
-  const availableQuestionIds = [...context.questionIds]
-
-  for (let quizIndex = 0; quizIndex < quizCount; quizIndex += 1) {
+  generated.quizzes.forEach((quizBlueprint, quizIndex) => {
     const quizId = nextId(availableQuizIds, 'QZ', quizIndex + 1)
     availableQuizIds.push(quizId)
-    const semanticType: DraftQuestionType = totalQuestions[questionCursor] ?? 'multiple-choice'
     const quiz: QuizCatalogItem = {
       id: quizId,
       lessonId,
       tag: category,
-      title: `${mergedInput.theme} • etapa ${quizIndex + 1}`,
+      title: quizBlueprint.title,
       coverArt: lesson.image,
-      difficulty: mergedInput.level === 'Beginner' ? 'Fácil' : 'Médio',
-      reward: 20 + quizIndex * 5,
-      kind: mapQuestionKind(semanticType),
-      order: quizIndex + 1,
+      objective: quizBlueprint.objective,
+      storyBeat: quizBlueprint.storyBeat,
+      difficulty: quizBlueprint.difficulty,
+      reward: quizBlueprint.reward,
+      kind: quizBlueprint.kind,
+      order: quizBlueprint.order,
       active: true,
     }
     quizzes.push(quiz)
 
-    for (let localIndex = 0; localIndex < perQuiz; localIndex += 1) {
-      const type: DraftQuestionType = totalQuestions[questionCursor % totalQuestions.length] ?? 'multiple-choice'
-      const questionId = nextId(availableQuestionIds, 'QT', questionCursor + 1)
+    quizBlueprint.questions.forEach((questionBlueprint, questionIndex) => {
+      const questionId = nextId(availableQuestionIds, 'QT', questions.length + 1)
       availableQuestionIds.push(questionId)
-      const question = buildDraftQuestion(type, localIndex, quiz, lesson, mergedInput, questionId)
-      questions.push(question)
-      promptsUsed.push(question.prompt)
-      questionCursor += 1
-    }
-  }
+      const kind = mapQuestionKind(questionBlueprint.type)
+      questions.push({
+        id: questionId,
+        quizId,
+        lessonId,
+        tag: category,
+        kind,
+        difficulty: questionBlueprint.difficulty,
+        kicker: questionBlueprint.kicker || `Missão ${quizIndex + 1}.${questionIndex + 1}`,
+        title: questionBlueprint.title,
+        prompt: questionBlueprint.prompt,
+        art: quiz.coverArt || lesson.image,
+        artAlt: `${generated.theme} visual`,
+        reward: questionBlueprint.reward,
+        active: true,
+        contextCue: quizBlueprint.storyBeat,
+        options: kind === 'multiple-choice' || kind === 'drag-fill' || kind === 'listening' ? (questionBlueprint.options ?? []) : [],
+        correct: kind === 'ordering' || kind === 'speaking' ? '' : questionBlueprint.correct,
+        explanation: questionBlueprint.explanation,
+        sentenceBefore: kind === 'drag-fill' ? questionBlueprint.sentenceBefore : '',
+        sentenceAfter: kind === 'drag-fill' ? questionBlueprint.sentenceAfter : '',
+        scrambled: kind === 'ordering' ? questionBlueprint.scrambled : [],
+        solution: kind === 'ordering' ? questionBlueprint.solution : [],
+      })
+    })
+  })
 
   const xpTotal = questions.reduce((sum, item) => sum + item.reward, 0)
-  const skills = Array.from(new Set([
-    mergedInput.studentGoal,
-    category,
-    mergedInput.pedagogicalMode,
-  ]))
-  const estimatedTokens = Math.max(1800, questions.length * 260 + quizzes.length * 420)
-  const estimatedCostUsd = Number((estimatedTokens / 1000000 * 0.45).toFixed(4))
+  const skills = Array.from(new Set([mergedInput.studentGoal, category, mergedInput.pedagogicalMode, generated.emotionalGoal]))
 
   return sanitizeDraft({
     id: draftId,
     status: 'draft',
-    title: `${mergedInput.theme} mission`,
-    theme: mergedInput.theme,
-    emotionalContext: mergedInput.emotionalContext,
-    practicalGoal: mergedInput.practicalGoal,
-    level: mergedInput.level,
-    template: mergedInput.template,
-    studentGoal: mergedInput.studentGoal,
-    pedagogicalMode: mergedInput.pedagogicalMode,
-    visualStyle: mergedInput.visualStyle,
-    questionMix: mergedInput.questionMix,
+    title: generated.title,
+    theme: generated.theme,
+    emotionalContext: generated.emotionalContext,
+    practicalGoal: generated.practicalGoal,
+    level: generated.level,
+    template: generated.template,
+    studentGoal: generated.studentGoal,
+    pedagogicalMode: generated.pedagogicalMode,
+    visualStyle: generated.visualStyle,
+    tensionLabel: generated.tensionLabel,
+    urgencyNote: generated.urgencyNote,
+    emotionalGoal: generated.emotionalGoal,
+    confidenceTarget: generated.confidenceTarget,
+    perceivedProgress: generated.perceivedProgress,
+    continuity: generated.continuity,
+    adaptationNotes: generated.adaptationNotes,
+    questionMix: generated.questionMix,
     skills,
     xpTotal,
-    coverPrompt,
-    promptsUsed,
-    provider: config.provider,
-    model: config.primaryModel,
-    estimatedTokens,
-    estimatedCostUsd,
+    coverPrompt: generated.coverPrompt,
+    promptsUsed: generated.promptsUsed,
+    provider: generated.provider,
+    model: generated.model,
+    estimatedTokens: generated.estimatedTokens,
+    estimatedCostUsd: generated.estimatedCostUsd,
+    generationMode: generated.generationMode,
+    generationNotes: generated.generationNotes,
     lesson,
     quizzes,
     questions,
   })
+}
+
+const generateDraftCallable = () => {
+  const { functions } = requireFirebase()
+  return httpsCallable<
+    {
+      composer: LessonComposerInput
+      aiControl: AIControlConfig
+      memoryConfig: MemoryEngineConfig
+    },
+    GeneratedMissionDraft
+  >(functions, 'generateMissionDraft')
+}
+
+export const buildDraftFromComposer = (
+  input: LessonComposerInput,
+  config: AIControlConfig,
+  context: {
+    lessonIds: string[]
+    quizIds: string[]
+    questionIds: string[]
+    existingDraftIds: string[]
+  },
+): AIDraftRecord => {
+  const generated = buildBlueprintFromComposer(input, config)
+  return assembleDraftRecord(generated, input, context)
+}
+
+export const generateAIDraftWithSpark = async (
+  input: LessonComposerInput,
+  config: AIControlConfig,
+  memoryConfig: MemoryEngineConfig,
+  context: {
+    lessonIds: string[]
+    quizIds: string[]
+    questionIds: string[]
+    existingDraftIds: string[]
+  },
+) => {
+  try {
+    const result = await generateDraftCallable()({
+      composer: input,
+      aiControl: config,
+      memoryConfig,
+    })
+    return assembleDraftRecord(result.data, input, context)
+  } catch {
+    return buildDraftFromComposer(input, config, context)
+  }
 }
 
 export const regenerateDraftPart = (
@@ -429,6 +642,7 @@ export const regenerateDraftPart = (
 
   if (mode === 'cover') {
     updated.coverPrompt = `${draft.coverPrompt} Variation ${Date.now()}.`
+    updated.generationNotes = 'Capa regenerada localmente para revisão manual.'
     return updated
   }
 
@@ -456,6 +670,7 @@ export const regenerateDraftPart = (
     question.prompt = `${question.prompt} Add one fresh variation with the same learning goal.`
   }
 
+  updated.generationNotes = `Trecho regenerado manualmente (${mode}) antes da aprovação final.`
   return sanitizeDraft(updated)
 }
 
@@ -467,10 +682,12 @@ const draftCollection = () => {
 export const getAIDrafts = async (): Promise<AIDraftRecord[]> => {
   try {
     const snapshot = await getDocs(query(draftCollection(), orderBy('updatedAt', 'desc')))
-    return snapshot.docs.map((item) => sanitizeDraft({
-      id: item.id,
-      ...(item.data() as Omit<AIDraftRecord, 'id'>),
-    }))
+    return snapshot.docs.map((item) =>
+      sanitizeDraft({
+        id: item.id,
+        ...(item.data() as Omit<AIDraftRecord, 'id'>),
+      }),
+    )
   } catch {
     return []
   }
@@ -479,12 +696,16 @@ export const getAIDrafts = async (): Promise<AIDraftRecord[]> => {
 export const saveAIDraft = async (draft: AIDraftRecord) => {
   const { db, auth } = requireFirebase()
   const safeDraft = sanitizeDraft(draft)
-  await setDoc(doc(db, 'aiDrafts', safeDraft.id), stripUndefinedDeep({
-    ...safeDraft,
-    createdBy: auth.currentUser?.uid ?? null,
-    updatedAt: serverTimestamp(),
-    createdAt: serverTimestamp(),
-  }), { merge: true })
+  await setDoc(
+    doc(db, 'aiDrafts', safeDraft.id),
+    stripUndefinedDeep({
+      ...safeDraft,
+      createdBy: auth.currentUser?.uid ?? null,
+      updatedAt: serverTimestamp(),
+      createdAt: serverTimestamp(),
+    }),
+    { merge: true },
+  )
 }
 
 export const updateAIDraftStatus = async (draftId: string, status: DraftStatus) => {
@@ -502,35 +723,57 @@ export const publishAIDraft = async (draft: AIDraftRecord) => {
   const safeDraft = sanitizeDraft(draft)
   const batch = writeBatch(db)
 
-  batch.set(doc(db, 'lessons', safeDraft.lesson.id), stripUndefinedDeep({
-    ...safeDraft.lesson,
-    missionTitle: safeDraft.title,
-    emotionalContext: safeDraft.emotionalContext,
-    practicalGoal: safeDraft.practicalGoal,
-    updatedAt: serverTimestamp(),
-  }), { merge: true })
+  batch.set(
+    doc(db, 'lessons', safeDraft.lesson.id),
+    stripUndefinedDeep({
+      ...safeDraft.lesson,
+      missionTitle: safeDraft.title,
+      emotionalContext: safeDraft.emotionalContext,
+      practicalGoal: safeDraft.practicalGoal,
+      tensionLabel: safeDraft.tensionLabel,
+      urgencyNote: safeDraft.urgencyNote,
+      emotionalGoal: safeDraft.emotionalGoal,
+      confidenceTarget: safeDraft.confidenceTarget,
+      nextMissionHook: safeDraft.continuity.nextScene,
+      journeyArc: safeDraft.continuity.arc,
+      updatedAt: serverTimestamp(),
+    }),
+    { merge: true },
+  )
 
   safeDraft.quizzes.forEach((quiz) => {
-    batch.set(doc(db, 'quizzes', quiz.id), stripUndefinedDeep({
-      ...quiz,
-      updatedAt: serverTimestamp(),
-    }), { merge: true })
+    batch.set(
+      doc(db, 'quizzes', quiz.id),
+      stripUndefinedDeep({
+        ...quiz,
+        updatedAt: serverTimestamp(),
+      }),
+      { merge: true },
+    )
   })
 
   safeDraft.questions.forEach((question) => {
-    batch.set(doc(db, 'quizQuestions', question.id), stripUndefinedDeep({
-      ...question,
-      updatedAt: serverTimestamp(),
-    }), { merge: true })
+    batch.set(
+      doc(db, 'quizQuestions', question.id),
+      stripUndefinedDeep({
+        ...question,
+        updatedAt: serverTimestamp(),
+      }),
+      { merge: true },
+    )
   })
 
-  batch.set(doc(db, 'aiDrafts', safeDraft.id), stripUndefinedDeep({
-    ...safeDraft,
-    status: 'published',
-    publishedBy: auth.currentUser?.uid ?? null,
-    publishedAt: serverTimestamp(),
-    updatedAt: serverTimestamp(),
-  }), { merge: true })
+  batch.set(
+    doc(db, 'aiDrafts', safeDraft.id),
+    stripUndefinedDeep({
+      ...safeDraft,
+      status: 'published',
+      publishedBy: auth.currentUser?.uid ?? null,
+      publishedAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    }),
+    { merge: true },
+  )
 
   await batch.commit()
 }

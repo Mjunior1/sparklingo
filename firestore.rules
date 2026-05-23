@@ -49,6 +49,10 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /platformSecure/{docId} {
+      allow read, write: if false;
+    }
+
     match /lessons/{lessonId} {
       allow read: if signedIn();
       allow write: if isAdmin();
@@ -76,6 +80,11 @@ service cloud.firestore {
 
     match /aiDrafts/{draftId} {
       allow read, write: if isAdmin();
+    }
+
+    match /aiLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
   }
 }

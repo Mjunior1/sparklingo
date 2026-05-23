@@ -35,6 +35,7 @@ import {
   Home,
   Map,
   Medal,
+  Mic,
   Play,
   RotateCcw,
   Search,
@@ -76,6 +77,10 @@ type MultipleChoiceExercise = {
   reward: number
 }
 
+type ListeningExercise = Omit<MultipleChoiceExercise, 'kind'> & {
+  kind: 'listening'
+}
+
 type DragFillExercise = {
   id: string
   kind: 'drag-fill'
@@ -110,12 +115,41 @@ type OrderingExercise = {
   reward: number
 }
 
-type Exercise = MultipleChoiceExercise | DragFillExercise | OrderingExercise
+type SpeakingExercise = {
+  id: string
+  kind: 'speaking'
+  tag: FilterKey
+  difficulty: Difficulty
+  kicker: string
+  title: string
+  prompt: string
+  art: string
+  artAlt: string
+  explanation: string
+  reward: number
+  contextCue?: string
+}
+
+type Exercise = MultipleChoiceExercise | ListeningExercise | DragFillExercise | OrderingExercise | SpeakingExercise
 type MascotMood = 'guide' | 'cheer' | 'oops' | 'streak'
 type ActiveReaction = {
   exerciseId: Exercise['id']
   kind: 'success' | 'error'
   label: string
+}
+
+type EmotionalPulse = {
+  confidence: number
+  fluency: number
+  hesitation: number
+  emotionalStreak: number
+  speakingConfidence: number
+  listeningConfidence: number
+  reviewPressure: number
+  averageResponseMs: number
+  favoriteModes: string[]
+  weakSkills: string[]
+  recurringErrors: string[]
 }
 
 type SyncState = 'idle' | 'saving' | 'saved' | 'error'
@@ -270,6 +304,7 @@ const formatSentence = (words: string[]) => {
   const sentence = words.join(' ').replace(/\s([?.!,;:])/g, '$1')
   return sentence.charAt(0).toUpperCase() + sentence.slice(1)
 }
+const clampPercent = (value: number) => Math.min(100, Math.max(0, Math.round(value)))
 
 const fallbackLeaderboard: LeaderboardEntry[] = [
   { name: 'Kate', xp: '1250 XP' },
@@ -332,6 +367,24 @@ const toRuntimeExercises = (questions: QuizQuestionItem[], quizzes: QuizCatalogI
         }]
       }
 
+      if (question.kind === 'listening' && question.options?.length && question.correct) {
+        return [{
+          id: question.id as ListeningExercise['id'],
+          kind: 'listening',
+          tag: question.tag,
+          difficulty: question.difficulty,
+          kicker: question.kicker,
+          title: question.title,
+          prompt: question.prompt,
+          art,
+          artAlt: question.artAlt,
+          options: question.options,
+          correct: question.correct,
+          explanation: question.explanation,
+          reward: question.reward,
+        }]
+      }
+
       if (question.kind === 'ordering' && question.scrambled?.length && question.solution?.length) {
         return [{
           id: question.id as OrderingExercise['id'],
@@ -347,6 +400,23 @@ const toRuntimeExercises = (questions: QuizQuestionItem[], quizzes: QuizCatalogI
           solution: question.solution,
           explanation: question.explanation,
           reward: question.reward,
+        }]
+      }
+
+      if (question.kind === 'speaking') {
+        return [{
+          id: question.id as SpeakingExercise['id'],
+          kind: 'speaking',
+          tag: question.tag,
+          difficulty: question.difficulty,
+          kicker: question.kicker,
+          title: question.title,
+          prompt: question.prompt,
+          art,
+          artAlt: question.artAlt,
+          explanation: question.explanation,
+          reward: question.reward,
+          contextCue: question.contextCue,
         }]
       }
 
@@ -375,9 +445,12 @@ const isExerciseSolved = (
   choiceAnswers: Record<string, string | null>,
   dragFillAnswers: Record<string, string | null>,
   orderWordMap: Record<string, string[]>,
+  speakingCompletions: Record<string, boolean>,
 ) => {
   if (exercise.kind === 'multiple-choice') return choiceAnswers[exercise.id] === exercise.correct
+  if (exercise.kind === 'listening') return choiceAnswers[exercise.id] === exercise.correct
   if (exercise.kind === 'drag-fill') return dragFillAnswers[exercise.id] === exercise.correct
+  if (exercise.kind === 'speaking') return speakingCompletions[exercise.id] === true
   return normalizeTokenOrder(orderWordMap[exercise.id] ?? exercise.scrambled) === normalizeTokenOrder(exercise.solution)
 }
 
@@ -386,9 +459,12 @@ const getExerciseAttempts = (
   choiceAnswers: Record<string, string | null>,
   dragFillAnswers: Record<string, string | null>,
   orderWordMap: Record<string, string[]>,
+  speakingCompletions: Record<string, boolean>,
 ) => {
   if (exercise.kind === 'multiple-choice') return Number(choiceAnswers[exercise.id] !== null)
+  if (exercise.kind === 'listening') return Number(choiceAnswers[exercise.id] !== null)
   if (exercise.kind === 'drag-fill') return Number((dragFillAnswers[exercise.id] ?? null) !== null)
+  if (exercise.kind === 'speaking') return Number(speakingCompletions[exercise.id] === true)
   return Number(normalizeTokenOrder(orderWordMap[exercise.id] ?? exercise.scrambled) !== normalizeTokenOrder(exercise.scrambled))
 }
 
@@ -398,6 +474,7 @@ function App() {
   const [activeFilter, setActiveFilter] = useState<FilterKey>('Todos')
   const [choiceAnswers, setChoiceAnswers] = useState<Record<string, string | null>>({})
   const [dragFillAnswers, setDragFillAnswers] = useState<Record<string, string | null>>({})
+  const [speakingCompletions, setSpeakingCompletions] = useState<Record<string, boolean>>({})
   const [orderWordMap, setOrderWordMap] = useState<Record<string, string[]>>({})
   const [sessionStreak, setSessionStreak] = useState(0)
   const [mascotMood, setMascotMood] = useState<MascotMood>('guide')
@@ -416,6 +493,9 @@ function App() {
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null)
   const previousOrderingSolved = useRef(false)
+  const exercisePresentedAtRef = useRef<Record<string, number>>({})
+  const responseTimesRef = useRef<Record<string, number>>({})
+  const attemptCountsRef = useRef<Record<string, number>>({})
   const audioContextRef = useRef<AudioContext | null>(null)
   const audioUnlockedRef = useRef(false)
 
@@ -426,8 +506,12 @@ function App() {
   const quizCatalogCount = quizCatalog.length || runtimeExercises.length
 
   const orderingSolved = useMemo(() => {
-    return runtimeExercises.some((exercise) => exercise.kind === 'ordering' && isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap))
-  }, [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises])
+    return runtimeExercises.some(
+      (exercise) =>
+        exercise.kind === 'ordering' &&
+        isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions),
+    )
+  }, [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises, speakingCompletions])
 
   const visibleExercises = useMemo(() => {
     if (activeFilter === 'Todos') return runtimeExercises
@@ -435,18 +519,20 @@ function App() {
   }, [activeFilter, runtimeExercises])
 
   const completedCount = useMemo(() => {
-    return runtimeExercises.filter((exercise) => isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap)).length
-  }, [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises])
+    return runtimeExercises.filter((exercise) => isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions)).length
+  }, [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises, speakingCompletions])
 
   const totalXp = useMemo(() => {
     let xp = 0
     runtimeExercises.forEach((exercise) => {
       if (exercise.kind === 'multiple-choice' && choiceAnswers[exercise.id] === exercise.correct) xp += exercise.reward
+      if (exercise.kind === 'listening' && choiceAnswers[exercise.id] === exercise.correct) xp += exercise.reward
       if (exercise.kind === 'drag-fill' && dragFillAnswers[exercise.id] === exercise.correct) xp += exercise.reward
-      if (exercise.kind === 'ordering' && isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap)) xp += exercise.reward
+      if (exercise.kind === 'speaking' && speakingCompletions[exercise.id]) xp += exercise.reward
+      if (exercise.kind === 'ordering' && isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions)) xp += exercise.reward
     })
     return xp
-  }, [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises])
+  }, [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises, speakingCompletions])
 
   const totalAvailableXp = useMemo(() => runtimeExercises.reduce((sum, exercise) => sum + exercise.reward, 0), [runtimeExercises])
   const profileXp = progressSnapshot?.totalXp ?? profile?.xp ?? totalXp
@@ -464,6 +550,90 @@ function App() {
   const sessionIntensity = Math.min(100, Math.round((totalXp / totalAvailableXp) * 100))
   const firstName = profile?.displayName?.split(' ')[0] ?? user?.displayName?.split(' ')[0] ?? 'learner'
   const isAdmin = profile?.role === 'admin'
+  const currentMissionLesson = useMemo(() => {
+    if (!lessonsCatalog.length) return null
+    const unfinished = lessonsCatalog
+      .filter((lesson) => lesson.progress < 100)
+      .sort((a, b) => (b.progress ?? 0) - (a.progress ?? 0))
+    return unfinished[0] ?? lessonsCatalog[0]
+  }, [lessonsCatalog])
+  const currentMissionArc = useMemo(
+    () => currentMissionLesson?.journeyArc?.length ? currentMissionLesson.journeyArc : [currentMissionLesson?.title ?? ''],
+    [currentMissionLesson],
+  )
+  const emotionalPulse = useMemo<EmotionalPulse>(() => {
+    const base = progressSnapshot?.emotional ?? {
+      confidence: 18,
+      fluency: 12,
+      hesitation: 62,
+      emotionalStreak: 0,
+      speakingConfidence: 10,
+      listeningConfidence: 10,
+      reviewPressure: 28,
+      averageResponseMs: 0,
+      favoriteModes: [],
+      weakSkills: [],
+      recurringErrors: [],
+    }
+
+    const attemptsByTag = runtimeExercises.reduce<Record<string, { attempts: number; solved: number }>>((acc, exercise) => {
+      const attempts = getExerciseAttempts(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions)
+      const solved = Number(isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
+      const current = acc[exercise.tag] ?? { attempts: 0, solved: 0 }
+      current.attempts += attempts
+      current.solved += solved
+      acc[exercise.tag] = current
+      return acc
+    }, {})
+
+    const responseValues = Object.values(responseTimesRef.current).filter((value) => value > 0)
+    const averageResponseMs = responseValues.length
+      ? Math.round(responseValues.reduce((sum, value) => sum + value, 0) / responseValues.length)
+      : base.averageResponseMs
+
+    const favoriteModes = Object.entries(attemptsByTag)
+      .sort((a, b) => b[1].attempts - a[1].attempts)
+      .slice(0, 2)
+      .map(([tag]) => tag)
+
+    const weakSkills = Object.entries(attemptsByTag)
+      .filter(([, stats]) => stats.attempts > 0)
+      .sort((a, b) => a[1].solved / Math.max(1, a[1].attempts) - b[1].solved / Math.max(1, b[1].attempts))
+      .slice(0, 2)
+      .map(([tag]) => tag)
+
+    const recurringErrors = runtimeExercises
+      .filter((exercise) => {
+        const attempts = getExerciseAttempts(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions)
+        return attempts > 0 && !isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions)
+      })
+      .slice(0, 3)
+      .map((exercise) => exercise.title)
+
+    const speakingSolved = runtimeExercises.filter((exercise) => exercise.kind === 'speaking' && speakingCompletions[exercise.id]).length
+    const listeningSolved = runtimeExercises.filter((exercise) => exercise.kind === 'listening' && choiceAnswers[exercise.id] === exercise.correct).length
+    const failedAttempts = Object.values(attemptsByTag).reduce((sum, stats) => sum + Math.max(0, stats.attempts - stats.solved), 0)
+    const solvedRatio = runtimeExercises.length ? completedCount / runtimeExercises.length : 0
+
+    const confidence = clampPercent(base.confidence * 0.45 + solvedRatio * 48 + Math.min(sessionStreak, 4) * 7 - failedAttempts * 2)
+    const fluency = clampPercent(base.fluency * 0.45 + solvedRatio * 42 + Math.max(0, 18 - averageResponseMs / 700))
+    const hesitation = clampPercent(Math.max(8, 100 - confidence - Math.min(18, solvedRatio * 12)))
+    const reviewPressure = clampPercent(base.reviewPressure * 0.65 + Math.max(0, weakSkills.length * 14 + failedAttempts * 5 - completedCount * 3))
+
+    return {
+      confidence,
+      fluency,
+      hesitation,
+      emotionalStreak: Math.max(base.emotionalStreak, streakDays, sessionStreak),
+      speakingConfidence: clampPercent(base.speakingConfidence * 0.45 + speakingSolved * 24),
+      listeningConfidence: clampPercent(base.listeningConfidence * 0.45 + listeningSolved * 20),
+      reviewPressure,
+      averageResponseMs,
+      favoriteModes,
+      weakSkills,
+      recurringErrors,
+    }
+  }, [choiceAnswers, completedCount, dragFillAnswers, orderWordMap, progressSnapshot?.emotional, runtimeExercises, sessionStreak, speakingCompletions, streakDays])
 
   const refreshBackendCatalog = useCallback(async () => {
     if (!user) return
@@ -574,6 +744,16 @@ function App() {
     playUiSound('error')
   }, [playUiSound])
 
+  const registerExerciseAttempt = useCallback((exerciseId: string) => {
+    const now = Date.now()
+    const presentedAt = exercisePresentedAtRef.current[exerciseId] ?? now
+    exercisePresentedAtRef.current[exerciseId] = presentedAt
+    attemptCountsRef.current[exerciseId] = (attemptCountsRef.current[exerciseId] ?? 0) + 1
+    if (!(exerciseId in responseTimesRef.current)) {
+      responseTimesRef.current[exerciseId] = Math.max(0, now - presentedAt)
+    }
+  }, [])
+
   useEffect(() => {
     if (!activeReaction) return
     const timeout = window.setTimeout(() => setActiveReaction(null), 1650)
@@ -596,6 +776,16 @@ function App() {
       })
 
       return changed ? next : current
+    })
+
+    const now = Date.now()
+    runtimeExercises.forEach((exercise) => {
+      if (!(exercise.id in exercisePresentedAtRef.current)) {
+        exercisePresentedAtRef.current[exercise.id] = now
+      }
+      if (!(exercise.id in attemptCountsRef.current)) {
+        attemptCountsRef.current[exercise.id] = 0
+      }
     })
   }, [runtimeExercises])
 
@@ -624,6 +814,7 @@ function App() {
         if (cancelled) return
         setChoiceAnswers((current) => ({ ...current, ...nextProgress.choiceAnswers }))
         setDragFillAnswers(nextProgress.dragFillAnswers ?? {})
+        setSpeakingCompletions(nextProgress.speakingCompletions ?? {})
         setOrderWordMap(nextProgress.orderWordMap ?? {})
         setProgressSnapshot(nextProgress)
         setSyncState('saved')
@@ -672,7 +863,7 @@ function App() {
   }, [])
 
   useEffect(() => {
-    const exercise = runtimeExercises.find((item): item is OrderingExercise => item.kind === 'ordering' && isExerciseSolved(item, choiceAnswers, dragFillAnswers, orderWordMap))
+    const exercise = runtimeExercises.find((item): item is OrderingExercise => item.kind === 'ordering' && isExerciseSolved(item, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
     const justSolved = Boolean(exercise) && orderingSolved && !previousOrderingSolved.current
 
     if (exercise && justSolved) {
@@ -692,13 +883,13 @@ function App() {
     }
 
     previousOrderingSolved.current = orderingSolved
-  }, [choiceAnswers, dragFillAnswers, orderWordMap, orderingSolved, runtimeExercises, triggerMoment, user])
+  }, [choiceAnswers, dragFillAnswers, orderWordMap, orderingSolved, runtimeExercises, speakingCompletions, triggerMoment, user])
 
   useEffect(() => {
     if (!user || !progressHydrated) return
 
     const completedExerciseIds = runtimeExercises
-      .filter((exercise) => isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap))
+      .filter((exercise) => isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
       .map((exercise) => exercise.id)
 
     const timeout = window.setTimeout(() => {
@@ -706,12 +897,16 @@ function App() {
       setSyncMessage('Salvando progresso da sessão...')
       void (async () => {
         try {
-          const nextProgress = await saveUserProgress(user.uid, {
+        const nextProgress = await saveUserProgress(user.uid, {
             totalXp,
             completedExerciseIds,
             choiceAnswers,
             dragFillAnswers,
+            speakingCompletions,
             orderWordMap,
+            recentMissionTheme: currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? '',
+            recentMissionContext: currentMissionLesson?.emotionalContext ?? '',
+            emotional: emotionalPulse,
           })
 
           setProgressSnapshot(nextProgress)
@@ -728,6 +923,11 @@ function App() {
               xp: nextProgress.totalXp,
               streak: nextProgress.streakDays,
               level: nextProgress.level,
+              confidence: emotionalPulse.confidence,
+              fluency: emotionalPulse.fluency,
+              hesitation: emotionalPulse.hesitation,
+              emotionalStreak: emotionalPulse.emotionalStreak,
+              recentMissionTheme: currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? '',
             })
           }
           setSyncState('saved')
@@ -747,9 +947,14 @@ function App() {
     choiceAnswers,
     dragFillAnswers,
     orderWordMap,
+    currentMissionLesson?.emotionalContext,
+    currentMissionLesson?.missionTitle,
+    currentMissionLesson?.title,
+    emotionalPulse,
     patchProfile,
     profile,
     runtimeExercises,
+    speakingCompletions,
   ])
 
   useEffect(() => {
@@ -762,7 +967,7 @@ function App() {
       if (!lessonId) return acc
       const current = acc[lessonId] ?? { total: 0, solved: 0 }
       current.total += 1
-      current.solved += Number(isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap))
+      current.solved += Number(isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
       acc[lessonId] = current
       return acc
     }, {})
@@ -790,7 +995,7 @@ function App() {
     }, 460)
 
     return () => window.clearTimeout(timeout)
-  }, [user, progressHydrated, choiceAnswers, dragFillAnswers, orderWordMap, quizQuestionCatalog, runtimeExercises])
+  }, [user, progressHydrated, choiceAnswers, dragFillAnswers, orderWordMap, quizQuestionCatalog, runtimeExercises, speakingCompletions])
 
   useEffect(() => {
     if (!user || !progressHydrated) return
@@ -798,8 +1003,8 @@ function App() {
     const timeout = window.setTimeout(() => {
       const quizWrites = runtimeExercises.map((exercise) => {
         const questionSource = quizQuestionCatalog.find((question) => question.id === exercise.id)
-        const completed = isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap)
-        const attempts = getExerciseAttempts(exercise, choiceAnswers, dragFillAnswers, orderWordMap)
+        const completed = isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions)
+        const attempts = getExerciseAttempts(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions)
 
         return saveQuizProgress(user.uid, {
           quizId: exercise.id,
@@ -814,7 +1019,7 @@ function App() {
 
       const skillStats = runtimeExercises.reduce<Record<string, { total: number; solved: number; xp: number }>>((acc, exercise) => {
         const skillId = skillByTag[exercise.tag as Exclude<FilterKey, 'Todos'>]
-        const solved = Number(isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap))
+        const solved = Number(isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
         const current = acc[skillId] ?? { total: 0, solved: 0, xp: 0 }
         current.total += 1
         current.solved += solved
@@ -834,7 +1039,7 @@ function App() {
     }, 520)
 
     return () => window.clearTimeout(timeout)
-  }, [user, progressHydrated, choiceAnswers, dragFillAnswers, orderWordMap, quizQuestionCatalog, runtimeExercises])
+  }, [user, progressHydrated, choiceAnswers, dragFillAnswers, orderWordMap, quizQuestionCatalog, runtimeExercises, speakingCompletions])
 
   useEffect(() => {
     if (!user || !sessionId || sessionStartedAt === null) return
@@ -843,7 +1048,7 @@ function App() {
       void (async () => {
         const endedAt = Date.now()
         const wrongCount = runtimeExercises.reduce((sum, exercise) => {
-          if (exercise.kind === 'multiple-choice') {
+          if (exercise.kind === 'multiple-choice' || exercise.kind === 'listening') {
             const answer = choiceAnswers[exercise.id]
             return sum + Number(answer !== null && answer !== exercise.correct)
           }
@@ -851,11 +1056,14 @@ function App() {
             const answer = dragFillAnswers[exercise.id] ?? null
             return sum + Number(answer !== null && answer !== exercise.correct)
           }
-          return sum + Number((orderWordMap[exercise.id]?.length ?? 0) > 0 && !isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap))
+          if (exercise.kind === 'speaking') {
+            return sum
+          }
+          return sum + Number((orderWordMap[exercise.id]?.length ?? 0) > 0 && !isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
         }, 0)
 
         const completedExerciseIds = runtimeExercises
-          .filter((exercise) => isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap))
+          .filter((exercise) => isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions))
           .map((exercise) => exercise.id)
 
         await completeStudySession(sessionId, {
@@ -880,16 +1088,20 @@ function App() {
     }, 720)
 
     return () => window.clearTimeout(timeout)
-  }, [user, sessionId, sessionStartedAt, totalXp, completedCount, sessionStreak, choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises])
+  }, [user, sessionId, sessionStartedAt, totalXp, completedCount, sessionStreak, choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises, speakingCompletions])
 
-  const handleChoiceSelect = (id: MultipleChoiceExercise['id'], option: string) => {
-    const exercise = runtimeExercises.find((item): item is MultipleChoiceExercise => item.id === id && item.kind === 'multiple-choice')
+  const handleChoiceSelect = (id: Exercise['id'], option: string) => {
+    const exercise = runtimeExercises.find(
+      (item): item is MultipleChoiceExercise | ListeningExercise =>
+        item.id === id && (item.kind === 'multiple-choice' || item.kind === 'listening'),
+    )
     if (!exercise) return
 
     const previous = choiceAnswers[id]
     if (previous === option) return
 
     const isCorrect = option === exercise.correct
+    registerExerciseAttempt(id)
     setChoiceAnswers((current) => ({ ...current, [id]: option }))
     if (user) {
       void trackProductEvent(user.uid, isCorrect ? 'quiz_completed' : 'quiz_failed', {
@@ -925,6 +1137,7 @@ function App() {
     if (!exercise) return
 
     const isCorrect = draggedWord === exercise.correct
+    registerExerciseAttempt(exercise.id)
     setDragFillAnswers((current) => ({ ...current, [exerciseId]: draggedWord }))
     if (user) {
       void trackProductEvent(user.uid, isCorrect ? 'quiz_completed' : 'quiz_failed', {
@@ -945,6 +1158,8 @@ function App() {
     const { active, over } = event
     if (!over || active.id === over.id) return
 
+    registerExerciseAttempt(exerciseId)
+
     setOrderWordMap((current) => {
       const words = current[exerciseId] ?? []
       const oldIndex = words.indexOf(String(active.id))
@@ -956,6 +1171,27 @@ function App() {
 
   const resetOrdering = (exercise: OrderingExercise) => {
     setOrderWordMap((current) => ({ ...current, [exercise.id]: [...exercise.scrambled] }))
+  }
+
+  const handleSpeakingComplete = (exerciseId: string) => {
+    const exercise = runtimeExercises.find((item): item is SpeakingExercise => item.id === exerciseId && item.kind === 'speaking')
+    if (!exercise || speakingCompletions[exerciseId]) return
+
+    registerExerciseAttempt(exerciseId)
+    setSpeakingCompletions((current) => ({ ...current, [exerciseId]: true }))
+    if (user) {
+      void trackProductEvent(user.uid, 'quiz_completed', {
+        quizId: exerciseId,
+        mode: 'speaking',
+      })
+    }
+    triggerMoment({
+      exerciseId,
+      correct: true,
+      reward: exercise.reward,
+      successLine: 'Boa. Sua voz entrou no contexto da missão.',
+      errorLine: '',
+    })
   }
 
   const launchRun = () => {
@@ -1105,19 +1341,19 @@ function App() {
 
             <div className="hero-quick-grid">
               <article className="hero-quick-card">
-                <span>Foco de hoje</span>
-                <strong>{profile?.focusSkill ?? 'Listening'} pack</strong>
-                <small>{profile?.learningGoal ?? '1 aula visual + 2 desafios curtos'}</small>
+                <span>Missão ativa</span>
+                <strong>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? `${profile?.focusSkill ?? 'Listening'} pack`}</strong>
+                <small>{currentMissionLesson?.practicalGoal ?? profile?.learningGoal ?? '1 aula visual + 2 desafios curtos'}</small>
               </article>
               <article className="hero-quick-card">
-                <span>Próxima recompensa</span>
-                <strong>+80 XP</strong>
-                <small>Faltam 2 atividades para o bônus</small>
+                <span>Confiança percebida</span>
+                <strong>{emotionalPulse.confidence}% de confiança</strong>
+                <small>Fluidez {emotionalPulse.fluency}% • hesitação {emotionalPulse.hesitation}%</small>
               </article>
               <article className="hero-quick-card">
-                <span>Streak</span>
-                <strong>{streakDays} dias</strong>
-                <small>Sua melhor sequência nesta semana</small>
+                <span>Próxima cena</span>
+                <strong>{currentMissionLesson?.nextMissionHook ?? currentMissionArc[1] ?? 'Continue a jornada'}</strong>
+                <small>{currentMissionLesson?.urgencyNote ?? 'Sua narrativa continua de forma contextual.'}</small>
               </article>
             </div>
 
@@ -1149,11 +1385,11 @@ function App() {
               </div>
               <div className="hero-badge">
                 <Sparkles size={16} />
-                <span>{quizCatalogCount} desafios no catálogo</span>
+                <span>{currentMissionLesson?.tensionLabel ?? `${quizCatalogCount} desafios no catálogo`}</span>
               </div>
               <div className="hero-badge">
                 <Medal size={16} />
-                <span>Feedback instantâneo</span>
+                <span>Confiança {emotionalPulse.confidence}%</span>
               </div>
             </div>
 
@@ -1175,11 +1411,11 @@ function App() {
               <div className="mascot-console-copy">
                 <span>Spark ao vivo</span>
                 <strong>{mascotTitles[mascotMood]}</strong>
-                <p>{mascotLine}</p>
+                <p>{mascotLine} {currentMissionLesson?.emotionalGoal ? `Objetivo emocional: ${currentMissionLesson.emotionalGoal}.` : ''}</p>
               </div>
               <div className="mascot-console-stats">
-                <span>Combo</span>
-                <strong>x{Math.max(sessionStreak, 1)}</strong>
+                <span>Domínio percebido</span>
+                <strong>{emotionalPulse.confidence}%</strong>
               </div>
             </div>
 
@@ -1189,7 +1425,7 @@ function App() {
                   <div className="quest-node-dot">{index + 1}</div>
                   <div className="quest-node-copy">
                     <strong>{step.label}</strong>
-                    <span>{step.done ? 'Concluído' : 'Próximo passo'}</span>
+                    <span>{step.done ? 'Concluído' : currentMissionArc[index] ?? 'Próximo passo'}</span>
                   </div>
                 </div>
               ))}
@@ -1197,14 +1433,14 @@ function App() {
 
             <div className="hero-highlight-row">
               <article className="hero-highlight hero-highlight-gold">
-                <p>Daily Quest</p>
-                <strong>Complete 3 atividades hoje</strong>
-                <span>Ganhe uma caixa surpresa e mantenha sua streak viva.</span>
+                <p>Tensão da missão</p>
+                <strong>{currentMissionLesson?.emotionalContext ?? 'Complete 3 atividades hoje'}</strong>
+                <span>{currentMissionLesson?.confidenceTarget ?? 'Ganhe uma caixa surpresa e mantenha sua streak viva.'}</span>
               </article>
               <article className="hero-highlight hero-highlight-soft">
-                <p>Modo rápido</p>
+                <p>Adaptação invisível</p>
                 <strong>{profile?.dailyMinutes ?? 5} minutos por sessão</strong>
-                <span>Perfeito para estudar entre tarefas sem perder o ritmo.</span>
+                <span>{emotionalPulse.weakSkills.length ? `Spark vai reforçar ${emotionalPulse.weakSkills.join(' e ')} sem quebrar a fluidez.` : 'Perfeito para estudar entre tarefas sem perder o ritmo.'}</span>
               </article>
             </div>
           </div>
@@ -1369,7 +1605,7 @@ function App() {
                 {visibleExercises.map((exercise) => {
                   const exerciseTagClass = exercise.tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, '-')
 
-                  if (exercise.kind === 'multiple-choice') {
+                  if (exercise.kind === 'multiple-choice' || exercise.kind === 'listening') {
                     const selected = choiceAnswers[exercise.id]
                     const isCorrect = selected === exercise.correct
                     const isWrong = selected !== null && selected !== exercise.correct
@@ -1400,7 +1636,7 @@ function App() {
                           <span><Flame size={14} /> combo x{Math.max(sessionStreak, 1)}</span>
                         </div>
 
-                        {exercise.id === 'q3' && (
+                        {exercise.kind === 'listening' && (
                           <div className="audio-player">
                             <button className="play-circle" aria-label="Tocar áudio">
                               <Play size={18} fill="currentColor" />
@@ -1507,6 +1743,56 @@ function App() {
                                 ? `A palavra certa é "${exercise.correct}". ${exercise.explanation}`
                                 : 'Arraste uma opção para a lacuna.'}
                           </span>
+                          <strong>⚡ {exercise.reward} XP</strong>
+                        </div>
+                      </article>
+                    )
+                  }
+
+                  if (exercise.kind === 'speaking') {
+                    const speakingDone = speakingCompletions[exercise.id] === true
+
+                    return (
+                      <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
+                        <div className="exercise-glow" />
+                        {activeReaction?.exerciseId === exercise.id && (
+                          <div className={`exercise-burst exercise-burst-${activeReaction.kind}`}>{activeReaction.label}</div>
+                        )}
+                        <div className="exercise-head">
+                          <span className="exercise-kicker">{exercise.kicker}</span>
+                          <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
+                            {exercise.difficulty}
+                          </span>
+                        </div>
+
+                        <div className="exercise-topline">
+                          <div>
+                            <h3>{exercise.title}</h3>
+                            <p>{exercise.prompt}</p>
+                          </div>
+                          <img src={exercise.art} alt={exercise.artAlt} className="exercise-art" />
+                        </div>
+
+                        <div className="mini-game-strip">
+                          <span><Mic size={14} /> Speaking confidence</span>
+                          <span><Target size={14} /> {exercise.contextCue ?? 'responda em voz alta para destravar a próxima cena'}</span>
+                        </div>
+
+                        <div className={`speaking-stage${speakingDone ? ' is-done' : ''}`}>
+                          <div className="speaking-orb">
+                            <Mic size={20} />
+                          </div>
+                          <div className="speaking-copy">
+                            <strong>{speakingDone ? 'Resposta registrada' : 'Momento de voz'}</strong>
+                            <span>{speakingDone ? 'Spark marcou este speaking como concluído.' : 'Fale em voz alta, ganhe confiança e depois confirme a conclusão.'}</span>
+                          </div>
+                          <button className="hero-secondary speaking-cta" type="button" onClick={() => handleSpeakingComplete(exercise.id)}>
+                            {speakingDone ? 'Concluído' : 'Já respondi'}
+                          </button>
+                        </div>
+
+                        <div className={`feedback-strip${speakingDone ? ' success' : ''}`}>
+                          <span>{speakingDone ? exercise.explanation : exercise.contextCue ?? 'Respire, responda curto e continue a missão.'}</span>
                           <strong>⚡ {exercise.reward} XP</strong>
                         </div>
                       </article>
