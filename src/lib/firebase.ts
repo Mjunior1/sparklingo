@@ -11,6 +11,7 @@ const firebaseConfig = {
   messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
   appId: import.meta.env.VITE_FIREBASE_APP_ID,
 }
+const firestoreDatabaseId = import.meta.env.VITE_FIREBASE_DATABASE_ID?.trim() || undefined
 
 export const hasCoreFirebaseConfig = Boolean(
   firebaseConfig.apiKey &&
@@ -27,7 +28,7 @@ export const auth = firebaseApp ? getAuth(firebaseApp) : null
 export const db = firebaseApp
   ? initializeFirestore(firebaseApp, {
       experimentalAutoDetectLongPolling: true,
-    })
+    }, firestoreDatabaseId)
   : null
 export const functions = firebaseApp ? getFunctions(firebaseApp, 'us-central1') : null
 export const googleProvider = new GoogleAuthProvider()

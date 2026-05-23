@@ -3,9 +3,11 @@ import { getFirestore } from 'firebase-admin/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { onDocumentWritten } from 'firebase-functions/v2/firestore'
 
-initializeApp()
-
-const db = getFirestore()
+const firebaseAdminApp = initializeApp()
+const firestoreDatabaseId = process.env.FIRESTORE_DATABASE_ID?.trim() || undefined
+const db = firestoreDatabaseId
+  ? getFirestore(firebaseAdminApp, firestoreDatabaseId)
+  : getFirestore(firebaseAdminApp)
 
 type AIProvider = 'openrouter' | 'openai' | 'anthropic'
 type AIModel =
