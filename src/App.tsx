@@ -165,13 +165,6 @@ const navItems: NavItem[] = [
   { label: 'Perfil', icon: UserRound },
 ]
 
-const dailyMissions = [
-  { title: 'Ouça 3 áudios', progress: '2/3', xp: 30, progressValue: 67, icon: Headphones },
-  { title: 'Acerte 5 perguntas', progress: '3/5', xp: 40, progressValue: 60, icon: Medal },
-  { title: 'Estude 15 minutos', progress: '10/15', xp: 20, progressValue: 68, icon: Flame },
-  { title: 'Complete 1 quiz', progress: '0/1', xp: 50, progressValue: 8, icon: Sparkles },
-]
-
 const lessonCards: LessonCatalogItem[] = [
   {
     category: 'Vocabulário',
@@ -427,9 +420,9 @@ const toRuntimeExercises = (questions: QuizQuestionItem[], quizzes: QuizCatalogI
 }
 
 const mascotTitles: Record<MascotMood, string> = {
-  guide: 'Spark está guiando sua run',
-  cheer: 'Spark curtiu esse acerto',
-  oops: 'Spark viu espaço para ajustar',
+  guide: 'Spark está guiando sua missão',
+  cheer: 'Spark sentiu seu avanço',
+  oops: 'Spark detectou um ponto de apoio',
   streak: 'Spark entrou no modo combo',
 }
 
@@ -438,6 +431,27 @@ const getExerciseMode = (exercise: Exercise) => {
   if (exercise.kind === 'ordering') return 'Word shuffle'
   if (exercise.tag === 'Listening') return 'Audio sprint'
   return 'XP rush'
+}
+
+const getChallengeDuration = (exercise: Exercise) => {
+  if (exercise.kind === 'speaking') return '15s'
+  if (exercise.kind === 'listening') return '45s'
+  if (exercise.kind === 'drag-fill') return '1 min'
+  if (exercise.kind === 'ordering') return '50s'
+  return exercise.tag === 'Reading' ? '90s' : '40s'
+}
+
+const getChallengeTitle = (exercise: Exercise) => {
+  if (exercise.kind === 'speaking') return 'Speak Up'
+  if (exercise.kind === 'listening') return 'Listen Fast'
+  if (exercise.kind === 'drag-fill') return 'Drag & Match'
+  if (exercise.kind === 'ordering') return 'Speed Order'
+  return exercise.tag === 'Reading' ? 'Reflex Read' : 'Mini Survival'
+}
+
+const getChallengeTone = (index: number) => {
+  const tones = ['lime', 'sky', 'berry', 'violet', 'gold', 'coral'] as const
+  return tones[index % tones.length]
 }
 
 const isExerciseSolved = (
@@ -486,7 +500,7 @@ function App() {
   const [quizCatalog, setQuizCatalog] = useState<QuizCatalogItem[]>([])
   const [achievementCatalog, setAchievementCatalog] = useState<AchievementCatalogItem[]>([])
   const [quizQuestionCatalog, setQuizQuestionCatalog] = useState<QuizQuestionItem[]>([])
-  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(fallbackLeaderboard)
+  const [, setLeaderboard] = useState<LeaderboardEntry[]>(fallbackLeaderboard)
   const [syncState, setSyncState] = useState<SyncState>('idle')
   const [syncMessage, setSyncMessage] = useState('Progresso local pronto para sincronizar.')
   const [view, setView] = useState<'home' | 'admin'>('home')
@@ -634,6 +648,157 @@ function App() {
       recurringErrors,
     }
   }, [choiceAnswers, completedCount, dragFillAnswers, orderWordMap, progressSnapshot?.emotional, runtimeExercises, sessionStreak, speakingCompletions, streakDays])
+
+  const lessonMap = useMemo<Record<string, LessonCatalogItem>>(
+    () =>
+      lessonsCatalog.reduce<Record<string, LessonCatalogItem>>((acc, lesson) => {
+        acc[lesson.id] = lesson
+        return acc
+      }, {}),
+    [lessonsCatalog],
+  )
+
+  const currentMissionQuizzes = useMemo(
+    () =>
+      currentMissionLesson
+        ? quizCatalog.filter((quiz) => quiz.lessonId === currentMissionLesson.id)
+        : quizCatalog,
+    [currentMissionLesson, quizCatalog],
+  )
+
+  const currentMissionVisual = useMemo(
+    () =>
+      currentMissionQuizzes.find((quiz) => quiz.coverArt)?.coverArt ||
+      currentMissionLesson?.image ||
+      '/pollinations/hero-scene.png',
+    [currentMissionLesson, currentMissionQuizzes],
+  )
+
+  const quickChallenges = useMemo(
+    () =>
+      runtimeExercises.slice(0, 5).map((exercise, index) => {
+        const Icon =
+          exercise.kind === 'speaking'
+            ? Mic
+            : exercise.kind === 'listening'
+              ? Headphones
+              : exercise.kind === 'drag-fill'
+                ? Grip
+                : exercise.kind === 'ordering'
+                  ? Sparkles
+                  : Zap
+
+        return {
+          ...exercise,
+          Icon,
+          tone: getChallengeTone(index),
+          duration: getChallengeDuration(exercise),
+          label: getChallengeTitle(exercise),
+          caption: ('contextCue' in exercise ? exercise.contextCue : '') || exercise.prompt,
+          done: isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions),
+        }
+      }),
+    [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises, speakingCompletions],
+  )
+
+  const emotionalInsights = useMemo(
+    () => [
+      {
+        title: emotionalPulse.speakingConfidence < 45 ? 'Sua fala ainda pede um começo seguro' : 'Sua confiança para falar subiu de nível',
+        body:
+          emotionalPulse.speakingConfidence < 45
+            ? 'Spark percebeu hesitação ao responder em voz alta. Hoje a jornada prioriza falas curtas e vitórias rápidas.'
+            : 'Você está respondendo com menos travas. Vale puxar uma cena com mais improviso e menos script.',
+        meta: `Speaking confidence ${emotionalPulse.speakingConfidence}%`,
+        tone: 'violet',
+      },
+      {
+        title: emotionalPulse.reviewPressure > 55 ? 'Existe risco real de abandono no listening' : 'Seu ouvido está acompanhando melhor a cena',
+        body:
+          emotionalPulse.reviewPressure > 55
+            ? 'O sistema detectou pressão de revisão e vai encurtar frases, repetir contexto e reduzir ruído para manter o ritmo.'
+            : 'A compreensão está mais fluida. Dá para sustentar uma missão curta sem quebrar a confiança percebida.',
+        meta: `Pressão de revisão ${emotionalPulse.reviewPressure}%`,
+        tone: 'aqua',
+      },
+      {
+        title: emotionalPulse.weakSkills.length
+          ? `Foco adaptativo em ${emotionalPulse.weakSkills.join(' e ')}`
+          : 'Seu modo favorito está guiando a próxima etapa',
+        body: emotionalPulse.favoriteModes.length
+          ? `Você engata melhor quando a experiência mistura ${emotionalPulse.favoriteModes.join(' + ')}. Spark vai usar isso como entrada emocional.`
+          : `Spark está usando ${profile?.focusSkill ?? 'Listening'} como âncora para manter continuidade e sensação de progresso real.`,
+        meta: currentMissionLesson?.emotionalGoal ?? 'Objetivo emocional ativo',
+        tone: 'gold',
+      },
+    ],
+    [currentMissionLesson?.emotionalGoal, emotionalPulse, profile?.focusSkill],
+  )
+
+  const currentMissionIndex = useMemo(() => {
+    const index = lessonsCatalog.findIndex((lesson) => lesson.id === currentMissionLesson?.id)
+    return index >= 0 ? index : 0
+  }, [currentMissionLesson?.id, lessonsCatalog])
+
+  const adventureProgress = useMemo(
+    () =>
+      lessonsCatalog.map((lesson, index) => {
+        const state =
+          lesson.progress >= 100
+            ? 'done'
+            : index === currentMissionIndex
+              ? 'active'
+              : index < currentMissionIndex
+                ? 'ready'
+                : 'locked'
+
+        return {
+          ...lesson,
+          step: index + 1,
+          state,
+          label:
+            state === 'done'
+              ? 'Concluída'
+              : state === 'active'
+                ? 'Em andamento'
+                : state === 'ready'
+                  ? 'Disponível'
+                  : 'Próxima',
+          cue: lesson.nextMissionHook ?? lesson.practicalGoal ?? lesson.blurb,
+        }
+      }),
+    [currentMissionIndex, lessonsCatalog],
+  )
+
+  const realLifeMoments = useMemo(() => {
+    const source = (currentMissionQuizzes.length ? currentMissionQuizzes : quizCatalog).slice(0, 4)
+
+    if (!source.length) {
+      return lessonsCatalog.slice(0, 4).map((lesson, index) => ({
+        id: lesson.id,
+        title: lesson.missionTitle ?? lesson.title,
+        context: lesson.emotionalContext ?? lesson.blurb,
+        hook: lesson.practicalGoal ?? lesson.confidenceTarget ?? 'Treine em uma situação rápida e real.',
+        duration: `${Math.max(2, 5 - index)} min`,
+        image: lesson.image,
+        badge: lesson.category,
+      }))
+    }
+
+    return source.map((quiz, index) => {
+      const linkedLesson = lessonMap[quiz.lessonId] ?? currentMissionLesson ?? lessonsCatalog[index]
+
+        return {
+          id: quiz.id,
+          title: quiz.storyBeat ?? linkedLesson?.missionTitle ?? quiz.title,
+          context: linkedLesson?.emotionalContext ?? quiz.objective ?? linkedLesson?.blurb ?? 'Situação curta com urgência leve.',
+          hook: quiz.objective ?? linkedLesson?.practicalGoal ?? 'Resolva a cena e avance com segurança.',
+          duration: `${Math.max(1, Math.min(5, Math.round((quiz.reward ?? 24) / 10)))} min`,
+          image: quiz.coverArt || linkedLesson?.image || '/pollinations/hero-scene.png',
+          badge: quiz.tag || linkedLesson?.category || 'Missão',
+        }
+      })
+  }, [currentMissionLesson, currentMissionQuizzes, lessonMap, lessonsCatalog, quizCatalog])
 
   const refreshBackendCatalog = useCallback(async () => {
     if (!user) return
@@ -1310,14 +1475,17 @@ function App() {
       <main className="main-panel">
         <section className="hero-card">
           <div className="hero-copy">
-            <div className="hero-topbar">
-              <div className="hero-intro">
-                <p className="micro-label">Hey, {firstName}!</p>
-                <h1>{platformConfig?.heroHeadline ?? 'Vamos turbinar seu inglês hoje?'}</h1>
-                <p className="hero-subtitle">
-                  {platformConfig?.heroSubtitle ?? 'Missões curtas, exercícios vivos e uma trilha com energia de jogo, não de dashboard.'}
-                </p>
-              </div>
+            <div className="hero-intro hero-intro-mission">
+              <p className="micro-label">Hey, {firstName}! • missão em andamento</p>
+              <span className="hero-story-kicker">{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Spark mission'}</span>
+              <h1 className="hero-title-cinematic">
+                {currentMissionLesson?.emotionalContext ?? platformConfig?.heroHeadline ?? 'Continue sua aventura de inglês em contexto real.'}
+              </h1>
+              <p className="hero-subtitle hero-subtitle-mission">
+                {currentMissionLesson?.practicalGoal ??
+                  platformConfig?.heroSubtitle ??
+                  'Spark usa sua memória, sua confiança e seu ritmo real para transformar a prática em progresso percebido.'}
+              </p>
             </div>
 
             <div className="hero-status">
@@ -1339,21 +1507,21 @@ function App() {
 
             <p className={`sync-caption sync-caption-${syncState}`}>{syncMessage}</p>
 
-            <div className="hero-quick-grid">
-              <article className="hero-quick-card">
-                <span>Missão ativa</span>
-                <strong>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? `${profile?.focusSkill ?? 'Listening'} pack`}</strong>
-                <small>{currentMissionLesson?.practicalGoal ?? profile?.learningGoal ?? '1 aula visual + 2 desafios curtos'}</small>
+            <div className="hero-quick-grid hero-story-grid">
+              <article className="hero-quick-card hero-story-card">
+                <span>Tensão da cena</span>
+                <strong>{currentMissionLesson?.tensionLabel ?? 'Urgência moderada'}</strong>
+                <small>{currentMissionLesson?.urgencyNote ?? 'Existe uma pressão prática leve para você responder sem travar.'}</small>
               </article>
-              <article className="hero-quick-card">
-                <span>Confiança percebida</span>
-                <strong>{emotionalPulse.confidence}% de confiança</strong>
-                <small>Fluidez {emotionalPulse.fluency}% • hesitação {emotionalPulse.hesitation}%</small>
+              <article className="hero-quick-card hero-story-card">
+                <span>Meta emocional</span>
+                <strong>{currentMissionLesson?.confidenceTarget ?? 'Responder com segurança'}</strong>
+                <small>{currentMissionLesson?.emotionalGoal ?? 'A missão quer que você sinta progresso antes do final da cena.'}</small>
               </article>
-              <article className="hero-quick-card">
-                <span>Próxima cena</span>
+              <article className="hero-quick-card hero-story-card">
+                <span>Próxima virada</span>
                 <strong>{currentMissionLesson?.nextMissionHook ?? currentMissionArc[1] ?? 'Continue a jornada'}</strong>
-                <small>{currentMissionLesson?.urgencyNote ?? 'Sua narrativa continua de forma contextual.'}</small>
+                <small>{currentMissionLesson?.practicalGoal ?? 'Cada microvitória empurra a história para o próximo contexto.'}</small>
               </article>
             </div>
 
@@ -1406,7 +1574,7 @@ function App() {
 
             <div className={`mascot-console mascot-console-${mascotMood}`}>
               <div className="mascot-console-avatar">
-                <img src="/pollinations/sidebar-mascot.png" alt="Spark reagindo à sua sessão" className="mascot-console-image" />
+                <img src="/pollinations/sidebar-mascot.png" alt="Spark reagindo à sua missão" className="mascot-console-image" />
               </div>
               <div className="mascot-console-copy">
                 <span>Spark ao vivo</span>
@@ -1433,14 +1601,14 @@ function App() {
 
             <div className="hero-highlight-row">
               <article className="hero-highlight hero-highlight-gold">
-                <p>Tensão da missão</p>
-                <strong>{currentMissionLesson?.emotionalContext ?? 'Complete 3 atividades hoje'}</strong>
-                <span>{currentMissionLesson?.confidenceTarget ?? 'Ganhe uma caixa surpresa e mantenha sua streak viva.'}</span>
+                <p>Pressão narrativa</p>
+                <strong>{currentMissionLesson?.emotionalContext ?? 'Você precisa agir antes que a cena esfrie.'}</strong>
+                <span>{currentMissionLesson?.confidenceTarget ?? 'Ganhe segurança suficiente para responder sem hesitar.'}</span>
               </article>
               <article className="hero-highlight hero-highlight-soft">
                 <p>Adaptação invisível</p>
-                <strong>{profile?.dailyMinutes ?? 5} minutos por sessão</strong>
-                <span>{emotionalPulse.weakSkills.length ? `Spark vai reforçar ${emotionalPulse.weakSkills.join(' e ')} sem quebrar a fluidez.` : 'Perfeito para estudar entre tarefas sem perder o ritmo.'}</span>
+                <strong>{profile?.dailyMinutes ?? 5} minutos para virar avanço real</strong>
+                <span>{emotionalPulse.weakSkills.length ? `Spark vai reforçar ${emotionalPulse.weakSkills.join(' e ')} sem quebrar a fluidez da missão.` : 'O sistema vai manter a sessão curta, emocional e com sensação clara de avanço.'}</span>
               </article>
             </div>
           </div>
@@ -1452,7 +1620,11 @@ function App() {
               <div className="hero-orb hero-orb-right" />
               <div className="hero-speech hero-speech-top">Let&apos;s learn!</div>
               <div className="hero-scene-image-wrap">
-                <img src="/pollinations/hero-scene.png" alt="Cena principal do SparkLingo com mascote em palco lilás" className="hero-scene-image" />
+                <img
+                  src={currentMissionVisual}
+                  alt={`Cena da missão ${currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'ativa'}`}
+                  className="hero-scene-image"
+                />
               </div>
               <div className="hero-stat-card hero-stat-card-top">
                 <Zap size={16} />
@@ -1461,99 +1633,192 @@ function App() {
                   <span>Semana passada</span>
                 </div>
               </div>
+              <div className="hero-scene-note hero-scene-note-left">
+                <span>Urgência leve</span>
+                <strong>{currentMissionLesson?.tensionLabel ?? 'Missão viva'}</strong>
+              </div>
             </div>
             <div className="hero-scene-footer">
               <article className="scene-mini-card">
-                <span className="scene-mini-kicker"><Star size={14} /> Destaque</span>
-                <strong>Sessão com streak viva</strong>
+                <span className="scene-mini-kicker"><Star size={14} /> Confiança</span>
+                <strong>{emotionalPulse.confidence}% • fluidez {emotionalPulse.fluency}%</strong>
               </article>
               <article className="scene-mini-card">
-                <span className="scene-mini-kicker"><Target size={14} /> Meta</span>
-                <strong>Missões do dia em progresso</strong>
+                <span className="scene-mini-kicker"><Target size={14} /> Listening</span>
+                <strong>{emotionalPulse.listeningConfidence}% de leitura do áudio</strong>
               </article>
             </div>
           </div>
         </section>
 
-        <section className="journey-section">
+        <section className="quick-challenges-section">
           <div className="section-heading-row">
             <div className="section-heading-copy">
-              <p className="micro-label">Sua trilha</p>
-              <h2>Continue sua jornada</h2>
+              <p className="micro-label">Quick XP challenges</p>
+              <h2>Escolha um microdesafio e mantenha a aventura em movimento</h2>
+            </div>
+            <button className="ghost-link" type="button" onClick={launchRun}>Ver todos</button>
+          </div>
+
+          <div className="quick-challenge-grid">
+            {quickChallenges.map((challenge) => {
+              const Icon = challenge.Icon
+
+              return (
+                <button
+                  key={challenge.id}
+                  type="button"
+                  className={`quick-challenge-card tone-${challenge.tone}${challenge.done ? ' is-done' : ''}`}
+                  onClick={() => {
+                    setActiveFilter(challenge.tag)
+                    playUiSound('click')
+                  }}
+                >
+                  <div className="quick-challenge-head">
+                    <div className="quick-challenge-icon">
+                      <Icon size={18} />
+                    </div>
+                    <span>{challenge.label}</span>
+                    <strong>+{challenge.reward} XP</strong>
+                  </div>
+                  <h3>{challenge.title}</h3>
+                  <p>{challenge.caption}</p>
+                  <div className="quick-challenge-foot">
+                    <small>{challenge.duration}</small>
+                    <small>{challenge.done ? 'Concluído' : challenge.tag}</small>
+                  </div>
+                </button>
+              )
+            })}
+          </div>
+        </section>
+
+        <section className="memory-engine-section">
+          <div className="section-heading-row">
+            <div className="section-heading-copy">
+              <p className="micro-label">Emotional memory engine</p>
+              <h2>Spark lembra como você aprende e ajusta a próxima virada</h2>
             </div>
             <div className="journey-meta-pill">
               <Sparkles size={16} />
-              <span>Escolha uma aula com mais cara de aventura</span>
+              <span>Insights vivos da sua jornada</span>
             </div>
           </div>
 
-          <div className="lesson-showcase">
-            {lessonsCatalog.map((lesson, index) => (
-              <article
-                key={lesson.title}
-                className={`lesson-card lesson-tone-${lesson.tone}${index === 0 ? ' is-featured' : ''}${index === 1 ? ' is-mid' : ''}`}
-              >
-                <div className="lesson-copy">
-                  <span>{lesson.category}</span>
-                  <strong>{lesson.title}</strong>
-                  <p className="lesson-description">{lesson.blurb}</p>
-                </div>
-                <img src={lesson.image} alt={lesson.title} className="lesson-card-image" />
-                <div className="track soft">
-                  <div className="track-fill green" style={{ width: `${lesson.progress}%` }} />
-                </div>
-                <small>{lesson.progress}% concluído</small>
+          <div className="memory-engine-grid">
+            <article className="memory-lead-card">
+              <div className="memory-lead-avatar">
+                <img src="/pollinations/sidebar-mascot.png" alt="Spark lendo sua memória de aprendizado" className="memory-lead-image" />
+              </div>
+              <div className="memory-lead-copy">
+                <span>Coach emocional</span>
+                <strong>{emotionalPulse.weakSkills.length ? `Hoje Spark vai destravar ${emotionalPulse.weakSkills.join(' e ')}.` : 'Hoje o foco é manter a confiança enquanto a missão sobe de contexto.'}</strong>
+                <p>{currentMissionLesson?.emotionalGoal ?? 'A IA está combinando memória, confiança e repertório para manter a jornada com sensação de evolução real.'}</p>
+              </div>
+              <div className="memory-chip-row">
+                <span>Confiança {emotionalPulse.confidence}%</span>
+                <span>Speaking {emotionalPulse.speakingConfidence}%</span>
+                <span>Listening {emotionalPulse.listeningConfidence}%</span>
+              </div>
+            </article>
+
+            {emotionalInsights.map((insight) => (
+              <article key={insight.title} className={`memory-card tone-${insight.tone}`}>
+                <span>{insight.meta}</span>
+                <strong>{insight.title}</strong>
+                <p>{insight.body}</p>
               </article>
             ))}
           </div>
         </section>
 
-        <section className="mission-band mission-band-standalone">
-          <div className="mission-band-head">
-            <div>
-              <p className="micro-label">Missões do dia</p>
-              <h2>Blocos rápidos para manter ritmo</h2>
+        <section className="adventure-section">
+          <div className="section-heading-row">
+            <div className="section-heading-copy">
+              <p className="micro-label">Adventure progress</p>
+              <h2>Seu mundo de inglês continua entre cenas, checkpoints e pequenas vitórias</h2>
             </div>
-            <button className="ghost-link">Ver todas</button>
+            <div className="journey-meta-pill">
+              <Target size={16} />
+              <span>{adventureProgress.filter((step) => step.state === 'done').length}/{adventureProgress.length} checkpoints vivos</span>
+            </div>
           </div>
 
-          <div className="mission-grid">
-            {dailyMissions.map((mission) => {
-              const Icon = mission.icon
-              return (
-                <article key={mission.title} className="mission-tile">
-                  <div className="mission-icon">
-                    <Icon size={18} />
+          <div className="adventure-shell">
+            <div className="adventure-track">
+              {adventureProgress.map((step) => (
+                <article key={step.id} className={`adventure-node adventure-node-${step.state}`}>
+                  <div className="adventure-node-step">{step.step}</div>
+                  <div className="adventure-node-visual">
+                    <img src={step.image} alt={step.title} />
                   </div>
-                  <div className="mission-content">
-                    <strong>{mission.title}</strong>
-                    <span>{mission.progress}</span>
-                  </div>
-                  <div className="mission-bottom">
-                    <div className="micro-track">
-                      <span style={{ width: `${mission.progressValue}%` }} />
-                    </div>
-                    <small>{mission.xp} XP</small>
+                  <div className="adventure-node-copy">
+                    <span>{step.label}</span>
+                    <strong>{step.missionTitle ?? step.title}</strong>
+                    <p>{step.cue}</p>
                   </div>
                 </article>
-              )
-            })}
+              ))}
+            </div>
+
+            <article className="adventure-focus-card">
+              <div className="adventure-focus-media">
+                <img src={currentMissionVisual} alt={currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Missão atual'} />
+              </div>
+              <div className="adventure-focus-copy">
+                <p className="micro-label">Checkpoint em andamento</p>
+                <h3>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Continue sua jornada'}</h3>
+                <p>{currentMissionLesson?.practicalGoal ?? 'Use frases curtas, reaja rápido e leve essa confiança para a próxima cena.'}</p>
+                <div className="track soft">
+                  <div className="track-fill green" style={{ width: `${currentMissionLesson?.progress ?? 0}%` }} />
+                </div>
+                <small>{currentMissionLesson?.progress ?? 0}% desta missão concluído</small>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section className="moments-section">
+          <div className="section-heading-row">
+            <div className="section-heading-copy">
+              <p className="micro-label">Real-life moments</p>
+              <h2>Treine em situações rápidas, vivas e fáceis de continuar depois</h2>
+            </div>
+            <button className="ghost-link" type="button" onClick={launchRun}>Praticar agora</button>
+          </div>
+
+          <div className="moments-grid">
+            {realLifeMoments.map((moment) => (
+              <article key={moment.id} className="moment-card">
+                <img src={moment.image} alt={moment.title} className="moment-card-image" />
+                <div className="moment-card-overlay" />
+                <div className="moment-card-copy">
+                  <span>{moment.badge}</span>
+                  <strong>{moment.title}</strong>
+                  <p>{moment.context}</p>
+                  <div className="moment-card-foot">
+                    <small>{moment.duration}</small>
+                    <small>{moment.hook}</small>
+                  </div>
+                </div>
+              </article>
+            ))}
           </div>
         </section>
 
         <section className="quiz-zone">
           <div className="quiz-zone-hero">
             <div className="quiz-zone-copy-block">
-              <p className="micro-label">Escolha seu quiz</p>
-              <h2>Aprender com cara de jogo, não de formulário</h2>
+              <p className="micro-label">Continue a cena</p>
+              <h2>Toda resposta muda a próxima situação da sua jornada</h2>
               <p className="quiz-zone-copy">
-                Um catálogo de desafios com visuais vivos, feedback imediato e microvitórias espalhadas pela jornada.
+                Você não está preenchendo formulários. Está destravando confiança, repertório e fluidez dentro da missão que Spark montou para você.
               </p>
             </div>
 
             <div className="quiz-zone-chip">
               <Target size={18} />
-              <span>Desafios curtos, ritmo alto, impacto visual maior</span>
+              <span>{currentMissionLesson?.nextMissionHook ?? 'Responda bem aqui para abrir a próxima situação real.'}</span>
             </div>
           </div>
 
@@ -1856,38 +2121,48 @@ function App() {
 
             <aside className="dashboard-rail">
               <article className="rail-card progress-card">
-                <h3>Seu progresso</h3>
+                <h3>Confiança atual</h3>
                 <div className="progress-ring">
                   <div className="ring-core">
-                    <strong>{Math.min(100, Math.round((profileXp / 650) * 100))}%</strong>
-                    <span>do nível {profileLevel}</span>
+                    <strong>{emotionalPulse.confidence}%</strong>
+                    <span>domínio percebido</span>
                   </div>
                 </div>
-                <p>XP persistido no Firestore e sincronizado com sua conta.</p>
-                <button>Ver progresso</button>
+                <p>Spark está combinando fluidez, hesitação e memória recente para calibrar a próxima virada.</p>
+                <button>Ver leitura emocional</button>
               </article>
 
               <article className="rail-card streak-rail">
                 <Flame size={44} />
-                <strong>{streakDays}</strong>
-                <span>dias</span>
-                <small>Incrível</small>
+                <strong>{emotionalPulse.emotionalStreak}</strong>
+                <span>combo</span>
+                <small>streak emocional</small>
               </article>
 
               <article className="rail-card ranking-card">
-                <h3>Ranking semanal</h3>
+                <h3>Memória ativa</h3>
                 <ul>
-                  {leaderboard.map((player, index) => (
-                    <li key={player.name} className={player.highlighted ? 'is-you' : ''}>
-                      <span>{index + 1}. {player.name}</span>
-                      <strong>{player.xp}</strong>
-                    </li>
-                  ))}
+                  <li className={emotionalPulse.reviewPressure > 55 ? 'is-you' : ''}>
+                    <span>Listening pressure</span>
+                    <strong>{emotionalPulse.reviewPressure}%</strong>
+                  </li>
+                  <li className={emotionalPulse.speakingConfidence < 45 ? 'is-you' : ''}>
+                    <span>Speaking fear</span>
+                    <strong>{Math.max(0, 100 - emotionalPulse.speakingConfidence)}%</strong>
+                  </li>
+                  <li>
+                    <span>Weak skills</span>
+                    <strong>{emotionalPulse.weakSkills.length ? emotionalPulse.weakSkills.join(' • ') : 'estáveis'}</strong>
+                  </li>
+                  <li>
+                    <span>Favorite loop</span>
+                    <strong>{emotionalPulse.favoriteModes[0] ?? profile?.focusSkill ?? 'Listening'}</strong>
+                  </li>
                 </ul>
               </article>
 
               <article className="rail-card badges-card">
-                <h3>Conquistas recentes</h3>
+                <h3>Vitórias recentes</h3>
                 <div className="badge-row">
                   {achievementCatalog.slice(0, 3).map((achievement) => (
                     <span key={achievement.id} className="badge" title={achievement.title}>
@@ -1897,19 +2172,19 @@ function App() {
                     </span>
                   ))}
                 </div>
-                <small>{completedCount} de {runtimeExercises.length} desafios concluídos</small>
+                <small>{completedCount} de {runtimeExercises.length} momentos resolvidos nesta run</small>
               </article>
 
               <article className="challenge-card">
                 <div className="challenge-head">
                   <Trophy size={28} />
-                  <span>Desafio especial</span>
+                  <span>Próxima recompensa</span>
                 </div>
-                <strong>Complete {Math.min(5, Math.max(3, quizCatalogCount))} quizzes esta semana e ganhe 100 gemas!</strong>
+                <strong>Feche {Math.min(5, Math.max(3, quizCatalogCount))} cenas esta semana e destrave um boost de 100 gemas.</strong>
                 <div className="track dark">
                   <div className="track-fill gold" style={{ width: '40%' }} />
                 </div>
-                <button>Quero ganhar!</button>
+                <button>Continuar missão</button>
               </article>
             </aside>
           </div>

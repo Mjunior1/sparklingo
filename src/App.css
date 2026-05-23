@@ -178,6 +178,10 @@
 .footer-card,
 .mission-band,
 .journey-section,
+.quick-challenges-section,
+.memory-engine-section,
+.adventure-section,
+.moments-section,
 .quiz-zone {
   border: 1px solid rgba(147, 127, 243, 0.16);
   box-shadow: 0 20px 58px rgba(115, 98, 186, 0.1);
@@ -290,17 +294,56 @@
   max-width: 48rem;
 }
 
+.hero-intro-mission {
+  gap: 12px;
+  max-width: 54rem;
+}
+
+.hero-story-kicker {
+  display: inline-flex;
+  width: fit-content;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(119, 90, 239, 0.1);
+  color: #694bda;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.hero-title-cinematic {
+  max-width: 12ch !important;
+  font-size: clamp(2.7rem, 4.8vw, 4.7rem) !important;
+  line-height: 0.94 !important;
+}
+
+.hero-subtitle-mission {
+  max-width: 56ch;
+  font-size: 1.04rem;
+}
+
 .hero-status {
   flex-wrap: wrap;
   justify-content: flex-start;
   gap: 10px;
-  max-width: 430px;
+  max-width: 540px;
 }
 
 .hero-quick-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+}
+
+.hero-story-grid {
+  gap: 14px;
+}
+
+.hero-story-card strong {
+  font-size: 1.16rem;
 }
 
 .hero-quick-card {
@@ -903,6 +946,37 @@
   top: 22px;
 }
 
+.hero-scene-note {
+  position: absolute;
+  left: 26px;
+  bottom: 26px;
+  z-index: 4;
+  padding: 12px 16px;
+  border-radius: 18px;
+  background: rgba(39, 27, 76, 0.78);
+  color: #fff;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 16px 30px rgba(32, 20, 71, 0.2);
+}
+
+.hero-scene-note span,
+.hero-scene-note strong {
+  display: block;
+}
+
+.hero-scene-note span {
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
+.hero-scene-note strong {
+  margin-top: 4px;
+  font-size: 1rem;
+}
+
 .hero-scene-footer {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -938,6 +1012,387 @@
   color: #2a2054;
   font-size: 1.05rem;
   line-height: 1.25;
+}
+
+.quick-challenges-section,
+.memory-engine-section,
+.adventure-section,
+.moments-section {
+  padding: 22px;
+  border-radius: 36px;
+  background:
+    radial-gradient(circle at top right, rgba(231, 242, 255, 0.42), transparent 20%),
+    radial-gradient(circle at top left, rgba(246, 237, 255, 0.72), transparent 24%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.98), rgba(246, 242, 255, 0.93));
+}
+
+.quick-challenge-grid,
+.moments-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.quick-challenge-card {
+  border: 0;
+  padding: 18px;
+  border-radius: 28px;
+  text-align: left;
+  display: grid;
+  gap: 14px;
+  min-height: 196px;
+  color: #fff;
+  box-shadow: 0 24px 48px rgba(89, 70, 167, 0.18);
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.quick-challenge-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 28px 54px rgba(89, 70, 167, 0.24);
+}
+
+.quick-challenge-card h3,
+.quick-challenge-card p,
+.quick-challenge-card small,
+.quick-challenge-card span,
+.quick-challenge-card strong {
+  margin: 0;
+  display: block;
+}
+
+.quick-challenge-card h3 {
+  font-size: 1.24rem;
+  line-height: 1.08;
+}
+
+.quick-challenge-card p {
+  color: rgba(255, 255, 255, 0.88);
+  line-height: 1.45;
+}
+
+.quick-challenge-head,
+.quick-challenge-foot {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
+}
+
+.quick-challenge-head span {
+  margin-right: auto;
+  font-weight: 800;
+}
+
+.quick-challenge-head strong {
+  font-size: 0.92rem;
+}
+
+.quick-challenge-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.16);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.26);
+}
+
+.quick-challenge-foot small {
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: 700;
+}
+
+.quick-challenge-card.is-done {
+  outline: 2px solid rgba(255, 255, 255, 0.32);
+}
+
+.tone-lime {
+  background: linear-gradient(180deg, #3fcf83 0%, #249c6c 100%);
+}
+
+.tone-sky {
+  background: linear-gradient(180deg, #53b4ff 0%, #2d7ff5 100%);
+}
+
+.tone-berry {
+  background: linear-gradient(180deg, #ff73a8 0%, #df4c8b 100%);
+}
+
+.tone-violet {
+  background: linear-gradient(180deg, #9468ff 0%, #7448ee 100%);
+}
+
+.tone-gold {
+  background: linear-gradient(180deg, #ffbf4f 0%, #f79b35 100%);
+}
+
+.tone-coral {
+  background: linear-gradient(180deg, #ff8a70 0%, #f05b58 100%);
+}
+
+.memory-engine-grid {
+  display: grid;
+  grid-template-columns: 1.12fr repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.memory-lead-card,
+.memory-card,
+.adventure-focus-card {
+  border-radius: 30px;
+  border: 1px solid rgba(126, 92, 255, 0.14);
+  box-shadow: 0 20px 46px rgba(110, 93, 184, 0.1);
+}
+
+.memory-lead-card {
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.68), transparent 22%),
+    linear-gradient(135deg, rgba(238, 231, 255, 0.98), rgba(228, 243, 255, 0.92));
+}
+
+.memory-lead-avatar {
+  width: 76px;
+  height: 76px;
+  border-radius: 24px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.memory-lead-image {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  transform: scale(1.08);
+}
+
+.memory-lead-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.memory-lead-copy span,
+.memory-card span {
+  color: #7a6db0;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
+.memory-lead-copy strong,
+.memory-card strong,
+.adventure-focus-copy h3 {
+  color: #241b48;
+}
+
+.memory-lead-copy strong {
+  font-size: 1.36rem;
+  line-height: 1.16;
+}
+
+.memory-lead-copy p,
+.memory-card p,
+.adventure-node-copy p,
+.adventure-focus-copy p,
+.moment-card-copy p {
+  margin: 0;
+  color: #655c91;
+  line-height: 1.5;
+}
+
+.memory-chip-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.memory-chip-row span {
+  padding: 9px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: #514285;
+  font-weight: 800;
+}
+
+.memory-card {
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.adventure-shell {
+  display: grid;
+  gap: 18px;
+}
+
+.adventure-track {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.adventure-node {
+  position: relative;
+  padding: 16px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.88);
+  border: 1px solid rgba(126, 92, 255, 0.12);
+  display: grid;
+  gap: 12px;
+}
+
+.adventure-node-active {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.74), transparent 24%),
+    linear-gradient(135deg, rgba(116, 76, 255, 0.18), rgba(93, 214, 255, 0.12));
+  box-shadow: 0 24px 48px rgba(107, 89, 185, 0.14);
+}
+
+.adventure-node-done {
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.74), transparent 24%),
+    linear-gradient(135deg, rgba(103, 222, 143, 0.22), rgba(255, 255, 255, 0.9));
+}
+
+.adventure-node-locked {
+  opacity: 0.72;
+}
+
+.adventure-node-step {
+  width: 42px;
+  height: 42px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, #7b5cff, #9d6bff);
+  color: #fff;
+  font-weight: 900;
+  box-shadow: 0 16px 28px rgba(123, 92, 255, 0.2);
+}
+
+.adventure-node-visual {
+  border-radius: 22px;
+  overflow: hidden;
+  aspect-ratio: 1.2 / 0.88;
+}
+
+.adventure-node-visual img,
+.adventure-focus-media img,
+.moment-card-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.adventure-node-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.adventure-node-copy span {
+  color: #7a6dad;
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 800;
+}
+
+.adventure-node-copy strong {
+  color: #261d49;
+  font-size: 1.1rem;
+  line-height: 1.12;
+}
+
+.adventure-focus-card {
+  display: grid;
+  grid-template-columns: minmax(240px, 0.95fr) minmax(0, 1.05fr);
+  gap: 18px;
+  padding: 18px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 255, 255, 0.7), transparent 22%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.96), rgba(241, 237, 255, 0.94));
+}
+
+.adventure-focus-media {
+  border-radius: 28px;
+  overflow: hidden;
+  min-height: 240px;
+}
+
+.adventure-focus-copy {
+  display: grid;
+  align-content: center;
+  gap: 12px;
+}
+
+.moments-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.moment-card {
+  position: relative;
+  min-height: 320px;
+  overflow: hidden;
+  border-radius: 30px;
+  border: 1px solid rgba(126, 92, 255, 0.14);
+  box-shadow: 0 24px 50px rgba(107, 90, 180, 0.14);
+}
+
+.moment-card-image {
+  position: absolute;
+  inset: 0;
+}
+
+.moment-card-overlay {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(23, 15, 58, 0.06) 0%, rgba(23, 15, 58, 0.72) 88%);
+}
+
+.moment-card-copy {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  display: grid;
+  align-content: end;
+  gap: 8px;
+  padding: 18px;
+}
+
+.moment-card-copy span {
+  width: fit-content;
+  padding: 8px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.16);
+  backdrop-filter: blur(10px);
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.moment-card-copy strong {
+  color: #fff;
+  font-size: 1.45rem;
+  line-height: 1.05;
+}
+
+.moment-card-copy p,
+.moment-card-foot small {
+  color: rgba(255, 255, 255, 0.88);
+}
+
+.moment-card-foot {
+  display: flex;
+  gap: 10px;
+  justify-content: space-between;
+  align-items: flex-end;
 }
 
 .journey-section {
@@ -1273,7 +1728,7 @@
 
 .quiz-zone-hero h2 {
   font-size: clamp(1.75rem, 2.6vw, 2.55rem);
-  max-width: 18ch;
+  max-width: 16ch;
 }
 
 .quiz-zone-copy {
@@ -1288,7 +1743,7 @@
 }
 
 .quiz-zone-copy-block {
-  max-width: 72rem;
+  max-width: 62rem;
 }
 
 .dashboard-layout {
@@ -2278,6 +2733,10 @@
   }
 
   .lesson-showcase,
+  .quick-challenge-grid,
+  .memory-engine-grid,
+  .adventure-track,
+  .moments-grid,
   .exercise-grid,
   .mission-grid,
   .stats-footer {
@@ -2296,6 +2755,10 @@
   .dashboard-rail .challenge-card {
     transform: none;
   }
+
+  .adventure-focus-card {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 860px) {
@@ -2304,6 +2767,10 @@
   .hero-quick-grid,
   .quest-rail,
   .lesson-showcase,
+  .quick-challenge-grid,
+  .memory-engine-grid,
+  .adventure-track,
+  .moments-grid,
   .exercise-grid,
   .mission-grid,
   .dashboard-rail,
@@ -2344,6 +2811,10 @@
   .sidebar,
   .hero-card,
   .journey-section,
+  .quick-challenges-section,
+  .memory-engine-section,
+  .adventure-section,
+  .moments-section,
   .mission-band,
   .quiz-zone,
   .exercise-card,
@@ -2386,6 +2857,10 @@
 
   .hero-card,
   .journey-section,
+  .quick-challenges-section,
+  .memory-engine-section,
+  .adventure-section,
+  .moments-section,
   .mission-band,
   .quiz-zone {
     padding: 16px;
@@ -2413,7 +2888,7 @@
   .quiz-zone-hero h2,
   .section-heading-row h2 {
     font-size: clamp(1.7rem, 7vw, 2.2rem);
-    max-width: 9ch;
+    max-width: 12ch;
   }
 
   .hero-subtitle,
@@ -2436,6 +2911,10 @@
 
   .hero-quick-card {
     padding: 13px 14px;
+  }
+
+  .moment-card {
+    min-height: 280px;
   }
 
   .hero-actions {
