@@ -1,435 +1,613 @@
-# 🟣 SparkLingo — Product Blueprint
+# SparkLingo — UX Experience Master Blueprint
 
-## Vision
-SparkLingo is not just an English learning platform.
-It is a gamified emotional learning experience focused on retention, immersion, micro-progress, dopamine-balanced engagement and AI-assisted educational creation.
+## Filosofia Central do Produto
 
-The product should feel:
-- alive
-- premium
-- playful
-- emotionally rewarding
-- modern
-- highly visual
-- mobile-first
+O SparkLingo NÃO é:
 
-The goal is:
-"I will study for 5 minutes"
-→ user stays 30+ minutes.
+* um LMS
+* um app de quizzes
+* um curso de inglês tradicional
+* um dashboard gamificado
 
----
+O SparkLingo É:
 
-# Core Product Pillars
+* uma aventura emocional adaptativa
+* uma jornada contextual de fluência
+* uma experiência narrativa viva
+* um sistema emocional de retenção
+* um mundo onde o inglês é necessário para avançar
 
-## 1. Emotional Learning
-- instant feedback
-- celebration moments
-- micro-victories
-- character companionship
-- visual progression
+O usuário nunca deve sentir:
 
-## 2. Gameplay First
-Learning should feel like:
-- mini games
-- quests
-- adventures
-- progression systems
+* “vou estudar inglês”
 
-NOT:
-- forms
-- EAD platform
-- traditional LMS
+O usuário deve sentir:
 
-## 3. AI Assisted Creation
-Admins should curate content.
-AI should generate:
-- lessons
-- quizzes
-- questions
-- variations
-- learning paths
-
-## 4. Retention Engine
-- streaks
-- XP
-- combo systems
-- daily quests
-- achievements
-- progression loops
-- social features
+* “vou continuar minha jornada”
 
 ---
 
-# Product Layers (Roadmap)
+# Objetivo Estratégico
 
-# PHASE 0 — Identity & Experience
-Status: IN PROGRESS
+Transformar aprendizado em:
 
-## Goals
-- premium UI
-- game feel
-- emotional feedback
-- interactive exercises
-- visual identity
-- animated interface
+* continuidade
+* curiosidade
+* sobrevivência contextual
+* progresso emocional
+* pequenas vitórias frequentes
+* construção de confiança
 
-## Deliverables
-- Spark mascot
-- dashboard journey
-- animated cards
-- drag/drop interactions
-- XP system visuals
-- responsive UI
-- microinteractions
+O sistema deve reduzir:
+
+* medo de errar
+* vergonha de speaking
+* ansiedade
+* sobrecarga cognitiva
+
+E aumentar:
+
+* confiança
+* fluidez
+* coragem social
+* retenção diária
+* vínculo emocional
 
 ---
 
-# PHASE 1 — Foundation
-Status: NEXT
+# Estrutura Macro do Produto
 
-## Tech Stack
-Frontend:
-- React
-- Vite
-- TailwindCSS
-- Framer Motion
-
-Backend:
-- Firebase Authentication
-- Firestore
-- Firebase Storage
-- Firebase Functions
-- Firebase Hosting
-
-## Authentication
-- Google Login
-- Apple Login (future)
-- Discord Login (future)
-
-## User Structure
-```json
-{
-  "uid": "",
-  "name": "",
-  "email": "",
-  "photoURL": "",
-  "provider": "google",
-  "level": "beginner",
-  "xp": 0,
-  "streak": 0,
-  "hearts": 5,
-  "createdAt": "",
-  "lastLogin": ""
-}
+```text
+MUNDO
+ └── Capítulos
+      └── Missões
+           └── Cenas
+                └── Desafios
 ```
 
 ---
 
-# PHASE 2 — CMS / Admin Refactor
-Status: PRIORITY
+# O Que o Usuário Enxerga
 
-## Problem
-Current admin is:
-- too vertical
-- too form-heavy
-- not scalable
-- cognitively exhausting
+O usuário NÃO deve ver:
 
-## Goal
-Transform admin into:
-- modular CMS
-- creative tool
-- scalable content engine
+* quizzes
+* questões
+* tipos de exercícios
+* estrutura pedagógica
+* taxonomia interna
 
-## Admin Sidebar
-- Dashboard
-- Lessons
-- Quizzes
-- Questions
-- Achievements
-- Media Library
-- Users
-- Analytics
-- AI Assistant
-- Settings
+O usuário deve ver:
 
-## Architecture
-LESSON
-└── QUIZZES
-    └── QUESTIONS
-
-## IDs
-Lessons:
-- LS-001
-
-Quizzes:
-- QZ-001
-
-Questions:
-- QT-MC-001
-- QT-DD-001
-- QT-LS-001
-
-## UX Rules
-- avoid giant forms
-- use drawers/modals
-- searchable tables
-- filters
-- preview before publish
-- compact operation flow
+* missão
+* situação
+* cena
+* objetivo
+* consequência
+* progresso
+* continuidade
+* checkpoints
 
 ---
 
-# PHASE 3 — Gameplay Systems
+# Loop Principal do Produto
 
-## Systems
-- XP persistence
-- streak persistence
-- achievements
-- combo system
-- daily missions
-- progression map
-- hearts/lives system
-- level progression
+```text
+Abrir aplicativo
+↓
+Continuar missão
+↓
+Entrar em cena narrativa
+↓
+Resolver micro desafio
+↓
+Receber feedback emocional
+↓
+Ganhar progresso
+↓
+Desbloquear próxima cena
+↓
+Continuar jornada
+```
 
-## Feedback
-Correct answer:
-- bounce animation
-- XP particles
-- progress animation
-- glow
-- sound feedback
+Esse loop deve durar:
 
-Wrong answer:
-- friendly shake
-- emotional support
-- quick explanation
+* 30 segundos até 5 minutos
 
----
+Nunca:
 
-# PHASE 4 — AI Layer
-
-## Vision
-AI is NOT a chatbot.
-AI is a pedagogical co-pilot.
-
-## AI Responsibilities
-- generate lessons
-- generate quizzes
-- generate questions
-- generate variations
-- generate learning paths
-- adapt difficulty
-- avoid repetition
-
-## Human Responsibilities
-- review
-- validate
-- publish
-
-## AI Flow
-AI generates
-→ preview screen
-→ admin reviews
-→ optional edit
-→ manual save
-
-## AI Assistant
-"Spark AI"
-
-Examples:
-- Create 5 beginner quizzes about beach vocabulary.
-- Generate listening exercises for airport English.
-- Build a complete intermediate work English path.
-
-## AI Rules
-- contextual generation
-- pedagogical coherence
-- structural diversity
-- memory/context awareness
-- avoid repetitive questions
-- adapt by difficulty level
+* sessões longas obrigatórias
+* excesso de leitura
+* excesso de navegação
 
 ---
 
-# PHASE 5 — Speaking & Pronunciation
+# Filosofia de UX
 
-## Features
-- speech recognition
-- pronunciation scoring
-- repeat-after-me mode
-- AI speaking evaluation
-- live speaking quests
-- pronunciation heatmap
+O produto deve:
 
-## Beginner Flow
-- visual word
-- hear pronunciation
-- repeat
-- receive score
-- retry if needed
+* puxar o usuário para frente
+* reduzir esforço mental
+* esconder complexidade
+* revelar funcionalidades aos poucos
+* parecer um mundo vivo
 
----
+O produto NÃO deve:
 
-# PHASE 6 — Social Layer
-
-## Features
-- rankings
-- friends
-- clans
-- social streaks
-- weekly challenges
-- multiplayer missions
-- XP races
+* mostrar tudo ao mesmo tempo
+* parecer dashboard
+* parecer ERP
+* parecer CMS
+* parecer plataforma corporativa
+* parecer grid infinito de cards
 
 ---
 
-# PHASE 7 — Analytics & Intelligence
+# Hierarquia Visual
 
-## Student Analytics
-- weak skills
-- retention metrics
-- completion rates
-- speaking evolution
-- learning velocity
+## Regra Principal
 
-## AI Analytics
-AI should identify:
-- difficult lessons
-- repetitive mistakes
-- weak grammar areas
-- suggested reinforcements
+Toda tela precisa ter:
 
----
+1. protagonista claro
+2. ação principal clara
+3. continuidade clara
 
-# Frontend Principles
+Nunca permitir:
 
-## UI Philosophy
-- premium
-- soft
-- emotional
-- modern
-- animated
-- clean
-- game-inspired
-
-## Avoid
-- enterprise feel
-- ERP feeling
-- excessive forms
-- visual pollution
-
-## Inspirations
-- Duolingo
-- Monument Valley
-- Nintendo polish
-- Headspace
-- Superhuman
-- modern mobile games
+* múltiplos protagonistas
+* excesso de widgets
+* excesso de métricas
+* excesso de módulos competindo
 
 ---
 
-# Backend Architecture
+# Arquitetura da Home
 
-## Firestore Collections
-- users
-- lessons
-- quizzes
-- questions
-- achievements
-- missions
-- streaks
-- progress
-- analytics
-- ai_generations
-- media
+## A Home NÃO é:
 
----
+* catálogo
+* dashboard
+* hub administrativo
 
-# Retention Engine
+## A Home É:
 
-## Core Retention Mechanics
-- streak system
-- daily quests
-- XP loops
-- progression bars
-- rewards
-- surprise unlocks
-- mascot reactions
-- visual evolution
+* continuidade da aventura
+* ponto de retomada
+* entrada rápida na jornada
 
 ---
 
-# Monetization Ideas
+# Estrutura Ideal da Home
 
-## Free Tier
-- limited hearts
-- limited AI
-- limited speaking
+## 1. Hero Mission
 
-## Premium
-- unlimited speaking
-- advanced AI tutor
-- premium lessons
-- advanced analytics
-- social features
+Objetivo:
 
-## Family Plan
-- family leaderboard
-- shared challenges
-- kids mode
+* contextualizar emocionalmente
+* puxar o usuário para continuar
 
----
+Conteúdo:
 
-# Future Ideas
+* situação atual
+* personagem
+* contexto emocional
+* progresso resumido
+* CTA dominante
 
-## Future Features
-- AI-generated stories
-- AI roleplay conversations
-- AR pronunciation mode
-- Voice adventure mode
-- Interactive worlds
-- Dynamic difficulty adaptation
-- AI emotional companion
+Exemplo:
+
+"Você perdeu seu voo em Londres."
+
+Botão:
+"Continuar missão"
 
 ---
 
-# Prompt Library
+## 2. Mini Mapa da Jornada
 
-## ADMIN REFACTOR PROMPT
-Use the dedicated admin modularization prompt.
+Objetivo:
 
-## AI LAYER PROMPT
-Use the dedicated AI generation prompt.
+* mostrar direção
+* mostrar progresso
+* gerar curiosidade
 
-## GAME FEEL PROMPT
-Use the motion/gamefeel enhancement prompt.
+Características:
 
----
+* horizontal
+* simples
+* poucos nós visíveis
+* linear com pequenas ramificações
 
-# Technical Decisions
+Nunca:
 
-## Rules
-- AI never auto-saves.
-- Human validation is mandatory.
-- Quiz belongs to a lesson.
-- Questions belong to quizzes.
-- Mobile-first architecture.
-- Motion is part of UX.
-- Gameplay > dashboard.
-- Emotional retention > information density.
+* mapa gigante
+* excesso de informação
+* excesso de zoom
+* dezenas de capítulos simultâneos
 
 ---
 
-# Final Product Goal
+## 3. Quick XP Challenges
 
-SparkLingo should feel like:
-- a premium game
-- an emotional learning companion
-- an AI-powered education engine
-- a scalable startup-level product
+Objetivo:
 
-NOT:
-- a traditional LMS
-- a static course platform
-- a quiz generator.
+* retenção rápida
+* sessões curtas
+* entrada sem esforço
+
+Tipos:
+
+* Speak Up
+* Listening Fast
+* Shadowing
+* Match It
+* Reflex Choice
+* Mini Survival
+
+Tempo:
+
+* 30 segundos até 3 minutos
+
+---
+
+## 4. Emotional Insight
+
+Objetivo:
+
+* fazer o usuário sentir que o sistema o entende
+
+Exemplos:
+
+* “Você hesitou menos hoje.”
+* “Seu speaking está mais natural.”
+* “Você respondeu mais rápido em situações sociais.”
+
+Nunca:
+
+* analytics frios
+* gráficos corporativos
+* métricas excessivas
+
+---
+
+# O Mapa
+
+## O mapa é:
+
+* principal elemento de progressão
+* organizador cognitivo
+* estrutura narrativa
+
+## O mapa NÃO é:
+
+* decorativo
+* complexo
+* sandbox aberto
+
+---
+
+# Estrutura do Mapa
+
+## Exemplo:
+
+```text
+Travel English
+ ├── Airport Arrival
+ ├── Taxi Ride
+ ├── Hotel Check-in
+ ├── Restaurant Survival
+ ├── Asking for Help
+ ├── Shopping Time
+ └── New Friends
+```
+
+---
+
+# Filosofia Narrativa
+
+Cada capítulo deve representar:
+
+* uma situação real
+* um contexto emocional
+* um objetivo humano
+
+Nunca:
+
+* tópicos gramaticais secos
+
+---
+
+# Exemplo Correto
+
+❌ Present Perfect
+
+✅ You need to explain what happened yesterday.
+
+---
+
+# Estrutura de Missão
+
+## Missão =
+
+* situação contextual
+* objetivo emocional
+* conjunto de cenas
+* progressão narrativa
+
+---
+
+# Estrutura de Cena
+
+## Cena =
+
+* momento curto
+* interação rápida
+* tensão leve
+* resposta do usuário
+* consequência
+
+---
+
+# Estrutura de Desafio
+
+Desafios devem ser invisíveis pedagogicamente.
+
+O usuário não deve sentir:
+
+* “estou fazendo um exercício”
+
+O usuário deve sentir:
+
+* “preciso resolver isso”
+
+---
+
+# Tipos de Experiência
+
+## Speaking
+
+Situações sociais rápidas.
+
+## Listening
+
+Anúncios, diálogos, contexto real.
+
+## Shadowing
+
+Repetição emocional contextual.
+
+## Reflex
+
+Resposta rápida sob pressão leve.
+
+## Match
+
+Construção de associação contextual.
+
+## Survival Choice
+
+Escolha da resposta correta para continuar.
+
+---
+
+# O Mascote
+
+## O mascote NÃO é:
+
+* professor
+* chatbot
+* tutorial ambulante
+* personagem infantil exagerado
+
+## O mascote É:
+
+* companion emocional
+* presença viva
+* suporte emocional
+* parceiro de jornada
+
+---
+
+# Funções do Mascote
+
+* celebrar progresso
+* reduzir ansiedade
+* incentivar
+* comentar evolução
+* apoiar após erros
+* manter vínculo emocional
+
+---
+
+# Exemplos Corretos
+
+❌ “Great job learning Present Perfect!”
+
+✅ “Você conseguiu pedir ajuda sem travar.”
+
+---
+
+# Emotional Memory Engine
+
+Objetivo:
+
+* personalizar a experiência emocional
+* adaptar progressão
+* detectar padrões emocionais
+
+---
+
+# O sistema deve rastrear:
+
+* medo de speaking
+* hesitação
+* abandono
+* velocidade de resposta
+* confiança
+* fluidez
+* listening pressure
+* recovery rate
+
+---
+
+# Adaptação Inteligente
+
+A IA deve:
+
+* reduzir pressão quando necessário
+* aumentar desafio gradualmente
+* mudar ritmo
+* variar contexto
+* adaptar speaking/listening
+
+Nunca:
+
+* repetir padrões excessivamente
+* gerar sensação robótica
+
+---
+
+# Filosofia Mobile-First
+
+O produto deve nascer:
+
+* mobile-first
+* vertical-first
+* thumb-friendly
+
+Nunca:
+
+* desktop-first
+* dashboards largos
+* grids pesados
+* excesso de colunas
+
+---
+
+# Filosofia de UI
+
+## O produto deve parecer:
+
+* cinematográfico
+* emocional
+* premium
+* vivo
+* caloroso
+* moderno
+* respirável
+
+---
+
+# O produto NÃO deve parecer:
+
+* corporativo
+* enterprise
+* LMS
+* ERP
+* template genérico
+* cassino de dopamina
+
+---
+
+# Referências de Sensação
+
+Inspirar-se em:
+
+* Pixar
+* Journey
+* Monument Valley
+* Sky
+* Nintendo UI
+* Life is Strange
+* Animal Crossing
+
+Evitar:
+
+* Coin Master
+* Candy Crush
+* dashboards SaaS
+* templates admin
+
+---
+
+# Filosofia de Retenção
+
+Retenção NÃO deve vir de:
+
+* spam de notificações
+* streak agressivo
+* ansiedade artificial
+
+Retenção deve vir de:
+
+* continuidade
+* curiosidade
+* apego emocional
+* progressão clara
+* pequenas vitórias
+
+---
+
+# O Produto Ideal
+
+O usuário deve sentir:
+
+"Vou continuar minha aventura por alguns minutos."
+
+E NÃO:
+
+"Vou estudar inglês agora."
+
+---
+
+# Filosofia Técnica
+
+## Backend First
+
+Toda UI deve nascer de:
+
+* estado real
+* memória real
+* progressão real
+* narrativa real
+* contexto real
+
+Nunca criar:
+
+* widgets fake
+* dados mockados permanentes
+* componentes sem função emocional
+
+---
+
+# Papel da IA
+
+A IA NÃO é:
+
+* gerador de quizzes
+* chatbot genérico
+
+A IA É:
+
+* motor adaptativo emocional
+* diretor de continuidade
+* copiloto pedagógico
+* gerador contextual
+
+---
+
+# Resultado Final Esperado
+
+O SparkLingo deve parecer:
+
+* uma aventura emocional interativa
+* um jogo casual premium
+* um mundo vivo de aprendizado
+* uma experiência cinematográfica adaptativa
+
+E NÃO:
+
+* plataforma educacional tradicional
+* LMS gamificado
+* dashbo
