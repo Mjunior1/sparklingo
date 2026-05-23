@@ -22,13 +22,11 @@ import { getUserProgress, saveUserProgress, type UserProgress } from './services
 import { saveSkillProgress } from './services/skillProgress'
 import { completeStudySession, startStudySession } from './services/studySessions'
 import {
-  Bell,
   BookOpen,
   CalendarDays,
   Crown,
   Flame,
   Gamepad2,
-  Gem,
   Gift,
   Grip,
   Headphones,
@@ -40,7 +38,6 @@ import {
   RotateCcw,
   Search,
   Sparkles,
-  Star,
   Store,
   Target,
   Trophy,
@@ -419,13 +416,6 @@ const toRuntimeExercises = (questions: QuizQuestionItem[], quizzes: QuizCatalogI
   return mapped.length ? mapped : exercises
 }
 
-const mascotTitles: Record<MascotMood, string> = {
-  guide: 'Spark está guiando sua missão',
-  cheer: 'Spark sentiu seu avanço',
-  oops: 'Spark detectou um ponto de apoio',
-  streak: 'Spark entrou no modo combo',
-}
-
 const getExerciseMode = (exercise: Exercise) => {
   if (exercise.kind === 'drag-fill') return 'Drag challenge'
   if (exercise.kind === 'ordering') return 'Word shuffle'
@@ -491,8 +481,8 @@ function App() {
   const [speakingCompletions, setSpeakingCompletions] = useState<Record<string, boolean>>({})
   const [orderWordMap, setOrderWordMap] = useState<Record<string, string[]>>({})
   const [sessionStreak, setSessionStreak] = useState(0)
-  const [mascotMood, setMascotMood] = useState<MascotMood>('guide')
-  const [mascotLine, setMascotLine] = useState('Escolha um mini desafio e deixa comigo o ritmo da jornada.')
+  const [, setMascotMood] = useState<MascotMood>('guide')
+  const [, setMascotLine] = useState('Escolha um mini desafio e deixa comigo o ritmo da jornada.')
   const [activeReaction, setActiveReaction] = useState<ActiveReaction | null>(null)
   const [progressHydrated, setProgressHydrated] = useState(false)
   const [progressSnapshot, setProgressSnapshot] = useState<UserProgress | null>(null)
@@ -517,8 +507,6 @@ function App() {
     () => toRuntimeExercises(quizQuestionCatalog, quizCatalog),
     [quizCatalog, quizQuestionCatalog],
   )
-  const quizCatalogCount = quizCatalog.length || runtimeExercises.length
-
   const orderingSolved = useMemo(() => {
     return runtimeExercises.some(
       (exercise) =>
@@ -554,11 +542,6 @@ function App() {
   const profileLevel = progressSnapshot?.level ?? profile?.level ?? 1
   const heroXp = Math.min(650, 350 + profileXp)
   const heroXpWidth = `${(heroXp / 650) * 100}%`
-  const questFlow = [
-    { label: 'Warm-up', done: completedCount >= 1 },
-    { label: 'Flow', done: completedCount >= 3 },
-    { label: 'Boss', done: completedCount >= 5 },
-  ]
   const playTitle = completedCount === 0 ? 'Play agora' : completedCount < 3 ? 'Continuar run' : 'Fechar streak'
   const playCaption = completedCount === 0 ? '5 min de aventura guiada' : completedCount < 3 ? 'Você já engatou o ritmo' : 'Últimos desafios do combo'
   const sessionIntensity = Math.min(100, Math.round((totalXp / totalAvailableXp) * 100))
@@ -571,10 +554,6 @@ function App() {
       .sort((a, b) => (b.progress ?? 0) - (a.progress ?? 0))
     return unfinished[0] ?? lessonsCatalog[0]
   }, [lessonsCatalog])
-  const currentMissionArc = useMemo(
-    () => currentMissionLesson?.journeyArc?.length ? currentMissionLesson.journeyArc : [currentMissionLesson?.title ?? ''],
-    [currentMissionLesson],
-  )
   const emotionalPulse = useMemo<EmotionalPulse>(() => {
     const base = progressSnapshot?.emotional ?? {
       confidence: 18,
@@ -676,7 +655,7 @@ function App() {
 
   const quickChallenges = useMemo(
     () =>
-      runtimeExercises.slice(0, 5).map((exercise, index) => {
+      runtimeExercises.slice(0, 4).map((exercise, index) => {
         const Icon =
           exercise.kind === 'speaking'
             ? Mic
@@ -770,11 +749,18 @@ function App() {
     [currentMissionIndex, lessonsCatalog],
   )
 
+  const visibleAdventureProgress = useMemo(() => {
+    if (adventureProgress.length <= 4) return adventureProgress
+
+    const start = Math.max(0, Math.min(currentMissionIndex - 1, adventureProgress.length - 4))
+    return adventureProgress.slice(start, start + 4)
+  }, [adventureProgress, currentMissionIndex])
+
   const realLifeMoments = useMemo(() => {
-    const source = (currentMissionQuizzes.length ? currentMissionQuizzes : quizCatalog).slice(0, 4)
+    const source = (currentMissionQuizzes.length ? currentMissionQuizzes : quizCatalog).slice(0, 3)
 
     if (!source.length) {
-      return lessonsCatalog.slice(0, 4).map((lesson, index) => ({
+      return lessonsCatalog.slice(0, 3).map((lesson, index) => ({
         id: lesson.id,
         title: lesson.missionTitle ?? lesson.title,
         context: lesson.emotionalContext ?? lesson.blurb,
@@ -1489,9 +1475,9 @@ function App() {
             </div>
 
             <div className="hero-status">
-              <div className="status-pill"><Flame size={16} /> 25</div>
-              <div className="status-pill"><Gem size={16} /> 340</div>
-              <div className="status-pill"><Bell size={16} /> 1</div>
+              <div className="status-pill"><Target size={16} /> missão ativa</div>
+              <div className="status-pill"><Flame size={16} /> {streakDays} dias</div>
+              <div className="status-pill"><Medal size={16} /> confiança {emotionalPulse.confidence}%</div>
               <div className={`status-pill sync-pill sync-pill-${syncState}`}>
                 <Zap size={16} />
                 {syncState === 'saving' ? 'salvando' : syncState === 'saved' ? 'sincronizado' : syncState === 'error' ? 'erro' : 'local'}
@@ -1506,24 +1492,6 @@ function App() {
             </div>
 
             <p className={`sync-caption sync-caption-${syncState}`}>{syncMessage}</p>
-
-            <div className="hero-quick-grid hero-story-grid">
-              <article className="hero-quick-card hero-story-card">
-                <span>Tensão da cena</span>
-                <strong>{currentMissionLesson?.tensionLabel ?? 'Urgência moderada'}</strong>
-                <small>{currentMissionLesson?.urgencyNote ?? 'Existe uma pressão prática leve para você responder sem travar.'}</small>
-              </article>
-              <article className="hero-quick-card hero-story-card">
-                <span>Meta emocional</span>
-                <strong>{currentMissionLesson?.confidenceTarget ?? 'Responder com segurança'}</strong>
-                <small>{currentMissionLesson?.emotionalGoal ?? 'A missão quer que você sinta progresso antes do final da cena.'}</small>
-              </article>
-              <article className="hero-quick-card hero-story-card">
-                <span>Próxima virada</span>
-                <strong>{currentMissionLesson?.nextMissionHook ?? currentMissionArc[1] ?? 'Continue a jornada'}</strong>
-                <small>{currentMissionLesson?.practicalGoal ?? 'Cada microvitória empurra a história para o próximo contexto.'}</small>
-              </article>
-            </div>
 
             <div className="hero-progress-row">
               <div className="level-chip">
@@ -1548,16 +1516,16 @@ function App() {
 
             <div className="hero-badges">
               <div className="hero-badge">
-                <Star size={16} />
-                <span>{streakDays} dias seguidos</span>
+                <Sparkles size={16} />
+                <span>{currentMissionLesson?.tensionLabel ?? 'Urgência moderada'}</span>
               </div>
               <div className="hero-badge">
-                <Sparkles size={16} />
-                <span>{currentMissionLesson?.tensionLabel ?? `${quizCatalogCount} desafios no catálogo`}</span>
+                <Target size={16} />
+                <span>{currentMissionLesson?.confidenceTarget ?? 'Responder com segurança'}</span>
               </div>
               <div className="hero-badge">
                 <Medal size={16} />
-                <span>Confiança {emotionalPulse.confidence}%</span>
+                <span>{currentMissionLesson?.nextMissionHook ?? 'A próxima cena depende deste avanço'}</span>
               </div>
             </div>
 
@@ -1570,46 +1538,6 @@ function App() {
                 </span>
               </button>
               <button className="hero-secondary" onClick={() => playUiSound('click')}>Ver trilha</button>
-            </div>
-
-            <div className={`mascot-console mascot-console-${mascotMood}`}>
-              <div className="mascot-console-avatar">
-                <img src="/pollinations/sidebar-mascot.png" alt="Spark reagindo à sua missão" className="mascot-console-image" />
-              </div>
-              <div className="mascot-console-copy">
-                <span>Spark ao vivo</span>
-                <strong>{mascotTitles[mascotMood]}</strong>
-                <p>{mascotLine} {currentMissionLesson?.emotionalGoal ? `Objetivo emocional: ${currentMissionLesson.emotionalGoal}.` : ''}</p>
-              </div>
-              <div className="mascot-console-stats">
-                <span>Domínio percebido</span>
-                <strong>{emotionalPulse.confidence}%</strong>
-              </div>
-            </div>
-
-            <div className="quest-rail">
-              {questFlow.map((step, index) => (
-                <div key={step.label} className={`quest-node${step.done ? ' done' : ''}${index === completedCount % questFlow.length ? ' live' : ''}`}>
-                  <div className="quest-node-dot">{index + 1}</div>
-                  <div className="quest-node-copy">
-                    <strong>{step.label}</strong>
-                    <span>{step.done ? 'Concluído' : currentMissionArc[index] ?? 'Próximo passo'}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="hero-highlight-row">
-              <article className="hero-highlight hero-highlight-gold">
-                <p>Pressão narrativa</p>
-                <strong>{currentMissionLesson?.emotionalContext ?? 'Você precisa agir antes que a cena esfrie.'}</strong>
-                <span>{currentMissionLesson?.confidenceTarget ?? 'Ganhe segurança suficiente para responder sem hesitar.'}</span>
-              </article>
-              <article className="hero-highlight hero-highlight-soft">
-                <p>Adaptação invisível</p>
-                <strong>{profile?.dailyMinutes ?? 5} minutos para virar avanço real</strong>
-                <span>{emotionalPulse.weakSkills.length ? `Spark vai reforçar ${emotionalPulse.weakSkills.join(' e ')} sem quebrar a fluidez da missão.` : 'O sistema vai manter a sessão curta, emocional e com sensação clara de avanço.'}</span>
-              </article>
             </div>
           </div>
 
@@ -1626,28 +1554,57 @@ function App() {
                   className="hero-scene-image"
                 />
               </div>
-              <div className="hero-stat-card hero-stat-card-top">
-                <Zap size={16} />
-                <div>
-                  <strong>+120 XP</strong>
-                  <span>Semana passada</span>
-                </div>
-              </div>
               <div className="hero-scene-note hero-scene-note-left">
                 <span>Urgência leve</span>
                 <strong>{currentMissionLesson?.tensionLabel ?? 'Missão viva'}</strong>
               </div>
             </div>
-            <div className="hero-scene-footer">
-              <article className="scene-mini-card">
-                <span className="scene-mini-kicker"><Star size={14} /> Confiança</span>
-                <strong>{emotionalPulse.confidence}% • fluidez {emotionalPulse.fluency}%</strong>
-              </article>
-              <article className="scene-mini-card">
-                <span className="scene-mini-kicker"><Target size={14} /> Listening</span>
-                <strong>{emotionalPulse.listeningConfidence}% de leitura do áudio</strong>
-              </article>
+          </div>
+        </section>
+
+        <section className="adventure-section">
+          <div className="section-heading-row">
+            <div className="section-heading-copy">
+              <p className="micro-label">Adventure progress</p>
+              <h2>Seu caminho principal agora tem checkpoints claros e continuidade entre missões</h2>
             </div>
+            <div className="journey-meta-pill">
+              <Target size={16} />
+              <span>{adventureProgress.filter((step) => step.state === 'done').length}/{adventureProgress.length} checkpoints vivos</span>
+            </div>
+          </div>
+
+          <div className="adventure-shell">
+            <div className="adventure-track">
+              {visibleAdventureProgress.map((step) => (
+                <article key={step.id} className={`adventure-node adventure-node-${step.state}`}>
+                  <div className="adventure-node-step">{step.step}</div>
+                  <div className="adventure-node-visual">
+                    <img src={step.image} alt={step.title} />
+                  </div>
+                  <div className="adventure-node-copy">
+                    <span>{step.label}</span>
+                    <strong>{step.missionTitle ?? step.title}</strong>
+                    <p>{step.cue}</p>
+                  </div>
+                </article>
+              ))}
+            </div>
+
+            <article className="adventure-focus-card">
+              <div className="adventure-focus-media">
+                <img src={currentMissionVisual} alt={currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Missão atual'} />
+              </div>
+              <div className="adventure-focus-copy">
+                <p className="micro-label">Checkpoint em andamento</p>
+                <h3>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Continue sua jornada'}</h3>
+                <p>{currentMissionLesson?.practicalGoal ?? 'Use frases curtas, reaja rápido e leve essa confiança para a próxima cena.'}</p>
+                <div className="track soft">
+                  <div className="track-fill green" style={{ width: `${currentMissionLesson?.progress ?? 0}%` }} />
+                </div>
+                <small>{currentMissionLesson?.progress ?? 0}% desta missão concluído</small>
+              </div>
+            </article>
           </div>
         </section>
 
@@ -1655,9 +1612,9 @@ function App() {
           <div className="section-heading-row">
             <div className="section-heading-copy">
               <p className="micro-label">Quick XP challenges</p>
-              <h2>Escolha um microdesafio e mantenha a aventura em movimento</h2>
+              <h2>Microdesafios que mantêm a missão viva sem parecer lista de exercícios</h2>
             </div>
-            <button className="ghost-link" type="button" onClick={launchRun}>Ver todos</button>
+            <button className="ghost-link" type="button" onClick={launchRun}>Continuar jornada</button>
           </div>
 
           <div className="quick-challenge-grid">
@@ -1691,182 +1648,50 @@ function App() {
               )
             })}
           </div>
-        </section>
-
-        <section className="memory-engine-section">
-          <div className="section-heading-row">
-            <div className="section-heading-copy">
-              <p className="micro-label">Emotional memory engine</p>
-              <h2>Spark lembra como você aprende e ajusta a próxima virada</h2>
-            </div>
-            <div className="journey-meta-pill">
-              <Sparkles size={16} />
-              <span>Insights vivos da sua jornada</span>
-            </div>
-          </div>
-
-          <div className="memory-engine-grid">
-            <article className="memory-lead-card">
-              <div className="memory-lead-avatar">
-                <img src="/pollinations/sidebar-mascot.png" alt="Spark lendo sua memória de aprendizado" className="memory-lead-image" />
+          <div className="quick-challenge-workspace">
+            <div className="run-state-bar">
+              <div className="run-stat run-stat-primary">
+                <Play size={16} fill="currentColor" />
+                <span>Missão ativa</span>
+                <strong>{completedCount}/{runtimeExercises.length}</strong>
               </div>
-              <div className="memory-lead-copy">
-                <span>Coach emocional</span>
-                <strong>{emotionalPulse.weakSkills.length ? `Hoje Spark vai destravar ${emotionalPulse.weakSkills.join(' e ')}.` : 'Hoje o foco é manter a confiança enquanto a missão sobe de contexto.'}</strong>
-                <p>{currentMissionLesson?.emotionalGoal ?? 'A IA está combinando memória, confiança e repertório para manter a jornada com sensação de evolução real.'}</p>
+              <div className="run-stat">
+                <Flame size={16} />
+                <span>Combo</span>
+                <strong>x{Math.max(sessionStreak, 1)}</strong>
               </div>
-              <div className="memory-chip-row">
-                <span>Confiança {emotionalPulse.confidence}%</span>
-                <span>Speaking {emotionalPulse.speakingConfidence}%</span>
-                <span>Listening {emotionalPulse.listeningConfidence}%</span>
+              <div className="run-stat">
+                <Zap size={16} />
+                <span>XP sessão</span>
+                <strong>{totalXp}</strong>
               </div>
-            </article>
-
-            {emotionalInsights.map((insight) => (
-              <article key={insight.title} className={`memory-card tone-${insight.tone}`}>
-                <span>{insight.meta}</span>
-                <strong>{insight.title}</strong>
-                <p>{insight.body}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="adventure-section">
-          <div className="section-heading-row">
-            <div className="section-heading-copy">
-              <p className="micro-label">Adventure progress</p>
-              <h2>Seu mundo de inglês continua entre cenas, checkpoints e pequenas vitórias</h2>
-            </div>
-            <div className="journey-meta-pill">
-              <Target size={16} />
-              <span>{adventureProgress.filter((step) => step.state === 'done').length}/{adventureProgress.length} checkpoints vivos</span>
-            </div>
-          </div>
-
-          <div className="adventure-shell">
-            <div className="adventure-track">
-              {adventureProgress.map((step) => (
-                <article key={step.id} className={`adventure-node adventure-node-${step.state}`}>
-                  <div className="adventure-node-step">{step.step}</div>
-                  <div className="adventure-node-visual">
-                    <img src={step.image} alt={step.title} />
-                  </div>
-                  <div className="adventure-node-copy">
-                    <span>{step.label}</span>
-                    <strong>{step.missionTitle ?? step.title}</strong>
-                    <p>{step.cue}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <article className="adventure-focus-card">
-              <div className="adventure-focus-media">
-                <img src={currentMissionVisual} alt={currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Missão atual'} />
-              </div>
-              <div className="adventure-focus-copy">
-                <p className="micro-label">Checkpoint em andamento</p>
-                <h3>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Continue sua jornada'}</h3>
-                <p>{currentMissionLesson?.practicalGoal ?? 'Use frases curtas, reaja rápido e leve essa confiança para a próxima cena.'}</p>
+              <div className="run-energy">
+                <span>Energia da missão</span>
                 <div className="track soft">
-                  <div className="track-fill green" style={{ width: `${currentMissionLesson?.progress ?? 0}%` }} />
-                </div>
-                <small>{currentMissionLesson?.progress ?? 0}% desta missão concluído</small>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section className="moments-section">
-          <div className="section-heading-row">
-            <div className="section-heading-copy">
-              <p className="micro-label">Real-life moments</p>
-              <h2>Treine em situações rápidas, vivas e fáceis de continuar depois</h2>
-            </div>
-            <button className="ghost-link" type="button" onClick={launchRun}>Praticar agora</button>
-          </div>
-
-          <div className="moments-grid">
-            {realLifeMoments.map((moment) => (
-              <article key={moment.id} className="moment-card">
-                <img src={moment.image} alt={moment.title} className="moment-card-image" />
-                <div className="moment-card-overlay" />
-                <div className="moment-card-copy">
-                  <span>{moment.badge}</span>
-                  <strong>{moment.title}</strong>
-                  <p>{moment.context}</p>
-                  <div className="moment-card-foot">
-                    <small>{moment.duration}</small>
-                    <small>{moment.hook}</small>
-                  </div>
-                </div>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        <section className="quiz-zone">
-          <div className="quiz-zone-hero">
-            <div className="quiz-zone-copy-block">
-              <p className="micro-label">Continue a cena</p>
-              <h2>Toda resposta muda a próxima situação da sua jornada</h2>
-              <p className="quiz-zone-copy">
-                Você não está preenchendo formulários. Está destravando confiança, repertório e fluidez dentro da missão que Spark montou para você.
-              </p>
-            </div>
-
-            <div className="quiz-zone-chip">
-              <Target size={18} />
-              <span>{currentMissionLesson?.nextMissionHook ?? 'Responda bem aqui para abrir a próxima situação real.'}</span>
-            </div>
-          </div>
-
-          <div className="dashboard-layout">
-            <div className="dashboard-main">
-              <div className="run-state-bar">
-                <div className="run-stat run-stat-primary">
-                  <Play size={16} fill="currentColor" />
-                  <span>Run ativa</span>
-                  <strong>{completedCount}/{runtimeExercises.length}</strong>
-                </div>
-                <div className="run-stat">
-                  <Flame size={16} />
-                  <span>Combo</span>
-                  <strong>x{Math.max(sessionStreak, 1)}</strong>
-                </div>
-                <div className="run-stat">
-                  <Zap size={16} />
-                  <span>XP sessão</span>
-                  <strong>{totalXp}</strong>
-                </div>
-                <div className="run-energy">
-                  <span>Energia da run</span>
-                  <div className="track soft">
-                    <div className="track-fill" style={{ width: `${sessionIntensity}%` }} />
-                  </div>
+                  <div className="track-fill" style={{ width: `${sessionIntensity}%` }} />
                 </div>
               </div>
+            </div>
 
-              <div className="filter-row">
-                {filters.map((filter) => (
-                  <button
-                    key={filter}
-                    className={`filter-chip${filter === activeFilter ? ' active' : ''}`}
-                    onClick={() => {
-                      setActiveFilter(filter)
-                      playUiSound('click')
-                    }}
-                  >
-                    {filter}
-                  </button>
-                ))}
-                <button className="icon-chip" aria-label="Pesquisa" onClick={() => playUiSound('click')}>
-                  <Search size={16} />
+            <div className="filter-row">
+              {filters.map((filter) => (
+                <button
+                  key={filter}
+                  className={`filter-chip${filter === activeFilter ? ' active' : ''}`}
+                  onClick={() => {
+                    setActiveFilter(filter)
+                    playUiSound('click')
+                  }}
+                >
+                  {filter}
                 </button>
-              </div>
+              ))}
+              <button className="icon-chip" aria-label="Pesquisa" onClick={() => playUiSound('click')}>
+                <Search size={16} />
+              </button>
+            </div>
 
-              <div className="exercise-grid">
+            <div className="exercise-grid">
                 {visibleExercises.map((exercise) => {
                   const exerciseTagClass = exercise.tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, '-')
 
@@ -2116,110 +1941,71 @@ function App() {
                     </article>
                   )
                 })}
-              </div>
             </div>
-
-            <aside className="dashboard-rail">
-              <article className="rail-card progress-card">
-                <h3>Confiança atual</h3>
-                <div className="progress-ring">
-                  <div className="ring-core">
-                    <strong>{emotionalPulse.confidence}%</strong>
-                    <span>domínio percebido</span>
-                  </div>
-                </div>
-                <p>Spark está combinando fluidez, hesitação e memória recente para calibrar a próxima virada.</p>
-                <button>Ver leitura emocional</button>
-              </article>
-
-              <article className="rail-card streak-rail">
-                <Flame size={44} />
-                <strong>{emotionalPulse.emotionalStreak}</strong>
-                <span>combo</span>
-                <small>streak emocional</small>
-              </article>
-
-              <article className="rail-card ranking-card">
-                <h3>Memória ativa</h3>
-                <ul>
-                  <li className={emotionalPulse.reviewPressure > 55 ? 'is-you' : ''}>
-                    <span>Listening pressure</span>
-                    <strong>{emotionalPulse.reviewPressure}%</strong>
-                  </li>
-                  <li className={emotionalPulse.speakingConfidence < 45 ? 'is-you' : ''}>
-                    <span>Speaking fear</span>
-                    <strong>{Math.max(0, 100 - emotionalPulse.speakingConfidence)}%</strong>
-                  </li>
-                  <li>
-                    <span>Weak skills</span>
-                    <strong>{emotionalPulse.weakSkills.length ? emotionalPulse.weakSkills.join(' • ') : 'estáveis'}</strong>
-                  </li>
-                  <li>
-                    <span>Favorite loop</span>
-                    <strong>{emotionalPulse.favoriteModes[0] ?? profile?.focusSkill ?? 'Listening'}</strong>
-                  </li>
-                </ul>
-              </article>
-
-              <article className="rail-card badges-card">
-                <h3>Vitórias recentes</h3>
-                <div className="badge-row">
-                  {achievementCatalog.slice(0, 3).map((achievement) => (
-                    <span key={achievement.id} className="badge" title={achievement.title}>
-                      {achievement.icon === 'headphones' && <Headphones size={22} />}
-                      {achievement.icon === 'star' && <Star size={22} />}
-                      {achievement.icon === 'target' && <Target size={22} />}
-                    </span>
-                  ))}
-                </div>
-                <small>{completedCount} de {runtimeExercises.length} momentos resolvidos nesta run</small>
-              </article>
-
-              <article className="challenge-card">
-                <div className="challenge-head">
-                  <Trophy size={28} />
-                  <span>Próxima recompensa</span>
-                </div>
-                <strong>Feche {Math.min(5, Math.max(3, quizCatalogCount))} cenas esta semana e destrave um boost de 100 gemas.</strong>
-                <div className="track dark">
-                  <div className="track-fill gold" style={{ width: '40%' }} />
-                </div>
-                <button>Continuar missão</button>
-              </article>
-            </aside>
           </div>
         </section>
 
-        <section className="stats-footer">
-          <article className="footer-card">
-            <p>XP da sessão</p>
-            <strong>{totalXp} XP</strong>
-            <div className="dot-row">
-              <span className="on" />
-              <span className="on" />
-              <span className="on" />
-              <span className="on" />
-              <span className="off" />
-              <span className="off" />
+        <section className="moments-section">
+          <div className="section-heading-row">
+            <div className="section-heading-copy">
+              <p className="micro-label">Real-life moments</p>
+              <h2>Treine em situações rápidas, concretas e fáceis de retomar depois</h2>
             </div>
-          </article>
-          <article className="footer-card">
-            <p>Weekly goal</p>
-            <strong>70 / 100 estrelas</strong>
-            <div className="track soft">
-              <div className="track-fill" style={{ width: '70%' }} />
+            <button className="ghost-link" type="button" onClick={launchRun}>Praticar agora</button>
+          </div>
+
+          <div className="moments-grid">
+            {realLifeMoments.map((moment) => (
+              <article key={moment.id} className="moment-card">
+                <img src={moment.image} alt={moment.title} className="moment-card-image" />
+                <div className="moment-card-overlay" />
+                <div className="moment-card-copy">
+                  <span>{moment.badge}</span>
+                  <strong>{moment.title}</strong>
+                  <p>{moment.context}</p>
+                  <div className="moment-card-foot">
+                    <small>{moment.duration}</small>
+                    <small>{moment.hook}</small>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section className="memory-engine-section">
+          <div className="section-heading-row">
+            <div className="section-heading-copy">
+              <p className="micro-label">Emotional insight</p>
+              <h2>Spark interpreta sua memória recente para manter o próximo passo leve e contínuo</h2>
             </div>
-          </article>
-          <article className="footer-card">
-            <p>Streak</p>
-            <strong>{streakDays} dias seguidos</strong>
-            <div className="mini-pills">
-              <span>Mon</span>
-              <span>Tue</span>
-              <span>Wed</span>
-              <span>Thu</span>
-            </div>
-          </article>
+          </div>
+
+          <div className="memory-engine-grid">
+            <article className="memory-lead-card">
+              <div className="memory-lead-avatar">
+                <img src="/pollinations/sidebar-mascot.png" alt="Spark lendo sua memória de aprendizado" className="memory-lead-image" />
+              </div>
+              <div className="memory-lead-copy">
+                <span>Coach emocional</span>
+                <strong>{emotionalPulse.weakSkills.length ? `Hoje Spark vai destravar ${emotionalPulse.weakSkills.join(' e ')}.` : 'Hoje o foco é manter a confiança enquanto a missão sobe de contexto.'}</strong>
+                <p>{currentMissionLesson?.emotionalGoal ?? 'A IA está combinando memória, confiança e repertório para manter a jornada com sensação de evolução real.'}</p>
+              </div>
+              <div className="memory-chip-row">
+                <span>Confiança {emotionalPulse.confidence}%</span>
+                <span>Speaking {emotionalPulse.speakingConfidence}%</span>
+                <span>Listening {emotionalPulse.listeningConfidence}%</span>
+              </div>
+            </article>
+
+            {emotionalInsights.slice(0, 2).map((insight) => (
+              <article key={insight.title} className={`memory-card tone-${insight.tone}`}>
+                <span>{insight.meta}</span>
+                <strong>{insight.title}</strong>
+                <p>{insight.body}</p>
+              </article>
+            ))}
+          </div>
         </section>
 
         <footer className="bottom-dock">
