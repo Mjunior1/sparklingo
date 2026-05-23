@@ -44,7 +44,7 @@ service cloud.firestore {
         (resource.data.uid == request.auth.uid || isAdmin());
     }
 
-    match /platform/runtime {
+    match /platform/{docId} {
       allow read: if signedIn();
       allow write: if isAdmin();
     }
@@ -72,6 +72,10 @@ service cloud.firestore {
     match /generatedMedia/{assetId} {
       allow read: if signedIn();
       allow write: if isAdmin();
+    }
+
+    match /aiDrafts/{draftId} {
+      allow read, write: if isAdmin();
     }
   }
 }
