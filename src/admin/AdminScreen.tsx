@@ -45,7 +45,12 @@ import {
   type QuizCatalogItem,
   type QuizQuestionItem,
 } from '../services/catalog'
-import { generateMediaToStorage, type GeneratedMediaAsset } from '../services/media'
+import {
+  generateMediaToFirestore,
+  getGeneratedMediaCatalog,
+  markGeneratedMediaApplied,
+  type GeneratedMediaAsset,
+} from '../services/media'
 import { defaultPlatformConfig, savePlatformConfig, type PlatformConfig } from '../services/platform'
 
 type AdminScreenProps = {
@@ -262,6 +267,7 @@ export function AdminScreen({
   const [mediaAiGenerated, setMediaAiGenerated] = useState<GeneratedMediaAsset[]>([])
   const [mediaAiSelectedId, setMediaAiSelectedId] = useState('')
   const [mediaAiGenerating, setMediaAiGenerating] = useState(false)
+  const [generatedMediaLibrary, setGeneratedMediaLibrary] = useState<GeneratedMediaAsset[]>([])
 
   const debouncedLessonSearch = useDebouncedValue(lessonSearch)
   const debouncedQuizSearch = useDebouncedValue(quizSearch)
@@ -432,6 +438,18 @@ export function AdminScreen({
   }, [mediaAiStyle, mediaAiTarget, selectedMediaLesson?.category, selectedMediaQuestion?.kind, selectedMediaQuestion?.tag, selectedMediaQuiz?.kind, selectedMediaQuiz?.tag, selectedMediaTarget])
 
   const generatedMediaAssets = useMemo<GeneratedMediaAsset[]>(() => mediaAiGenerated.slice(0, 3), [mediaAiGenerated])
+  const mediaPickerAssets = useMemo<MediaAsset[]>(
+    () => [
+      ...generatedMediaLibrary.map((asset) => ({
+        id: asset.id,
+        label: asset.label,
+        path: asset.path,
+        tone: asset.tone,
+      })),
+      ...mediaLibrary,
+    ],
+    [generatedMediaLibrary],
+  )
 
   const selectedGeneratedMedia = useMemo(
     () => generatedMediaAssets.find((asset) => asset.id === mediaAiSelectedId) ?? generatedMediaAssets[0] ?? null,
@@ -448,6 +466,12 @@ export function AdminScreen({
       setMediaAiSelectedId(generatedMediaAssets[0].id)
     }
   }, [generatedMediaAssets, mediaAiSelectedId])
+
+  useEffect(() => {
+    getGeneratedMediaCatalog()
+      .then(setGeneratedMediaLibrary)
+      .catch(() => undefined)
+  }, [])
 
   const openDrawer = (kind: DrawerKind, mode: DrawerMode) => setDrawer({ open: true, kind, mode })
   const closeDrawer = () => setDrawer({ open: false })
@@ -486,9 +510,10 @@ export function AdminScreen({
             ? mediaLibrary.find((asset) => asset.path === selectedMediaQuestion?.art)?.tone
             : mediaLibrary.find((asset) => asset.path === selectedMediaQuiz?.coverArt)?.tone
 
-      const variants = await generateMediaToStorage({
+      const variants = await generateMediaToFirestore({
         prompt: basePrompt,
         scope: mediaAiTarget,
+        targetId: mediaAiTargetId,
         style: mediaAiStyle,
         label: selectedMediaTarget?.label ?? 'Conteúdo',
         tone: targetTone ?? 'violet',
@@ -496,9 +521,10 @@ export function AdminScreen({
       })
 
       setMediaAiGenerated(variants)
+      setGeneratedMediaLibrary((current) => [...variants, ...current].slice(0, 36))
       setMediaAiSelectedId(variants[0]?.id ?? '')
       setMediaAiGenerating(false)
-      showToast('success', `${variants.length} variações geradas, salvas no Firebase Storage e prontas para uso.`)
+      showToast('success', `${variants.length} variações geradas e registradas no Firestore.`)
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Não foi possível gerar imagens com IA.'
       setMediaAiGenerating(false)
@@ -506,9 +532,11 @@ export function AdminScreen({
     }
   }
 
-  const applyGeneratedMedia = async (path: string) => {
+  const applyGeneratedMedia = async (asset: GeneratedMediaAsset) => {
+    const path = asset.path
     if (mediaAiTarget === 'lesson' && drawer.open && drawer.kind === 'lesson') {
       setLessonDraft((current) => ({ ...current, image: path }))
+      await markGeneratedMediaApplied(asset.id, { scope: 'lesson', targetId: lessonIdPreview })
       showToast('success', 'Asset aplicado na lição atual.')
       setMediaAiOpen(false)
       return
@@ -516,6 +544,7 @@ export function AdminScreen({
 
     if (mediaAiTarget === 'question' && drawer.open && drawer.kind === 'question') {
       setQuestionDraft((current) => ({ ...current, art: path }))
+      await markGeneratedMediaApplied(asset.id, { scope: 'question', targetId: questionIdPreview })
       showToast('success', 'Asset aplicado na questão atual.')
       setMediaAiOpen(false)
       return
@@ -523,6 +552,7 @@ export function AdminScreen({
 
     if (mediaAiTarget === 'quiz' && drawer.open && drawer.kind === 'quiz') {
       setQuizDraft((current) => ({ ...current, coverArt: path }))
+      await markGeneratedMediaApplied(asset.id, { scope: 'quiz', targetId: quizIdPreview })
       showToast('success', 'Asset aplicado no quiz atual.')
       setMediaAiOpen(false)
       return
@@ -533,6 +563,7 @@ export function AdminScreen({
         const lesson = lessons.find((item) => item.id === mediaAiTargetId)
         if (!lesson) throw new Error('Selecione uma lição válida para aplicar a mídia.')
         await upsertLesson({ ...lesson, image: path })
+        await markGeneratedMediaApplied(asset.id, { scope: 'lesson', targetId: mediaAiTargetId })
         return
       }
 
@@ -540,12 +571,14 @@ export function AdminScreen({
         const quiz = quizzes.find((item) => item.id === mediaAiTargetId)
         if (!quiz) throw new Error('Selecione um quiz válido para aplicar a mídia.')
         await upsertQuiz({ ...quiz, coverArt: path })
+        await markGeneratedMediaApplied(asset.id, { scope: 'quiz', targetId: mediaAiTargetId })
         return
       }
 
       const question = questions.find((item) => item.id === mediaAiTargetId)
       if (!question) throw new Error('Selecione uma questão válida para aplicar a mídia.')
       await upsertQuizQuestion({ ...question, art: path })
+      await markGeneratedMediaApplied(asset.id, { scope: 'question', targetId: mediaAiTargetId })
     })
 
     setMediaAiOpen(false)
@@ -725,7 +758,7 @@ export function AdminScreen({
                 </select>
               </label>
             </div>
-            <MediaPicker selected={lessonDraft.image} onPick={applyMediaAsset} onGenerateAi={openMediaAiModal} />
+            <MediaPicker selected={lessonDraft.image} onPick={applyMediaAsset} onGenerateAi={openMediaAiModal} assets={mediaPickerAssets} />
           </div>
 
           <div className="admin-drawer-footer">
@@ -776,7 +809,7 @@ export function AdminScreen({
                 <input type="number" value={quizDraft.reward} onChange={(event) => setQuizDraft((current) => ({ ...current, reward: Number(event.target.value) || 0 }))} />
               </label>
             </div>
-            <MediaPicker selected={quizDraft.coverArt ?? null} onPick={(path) => setQuizDraft((current) => ({ ...current, coverArt: path }))} onGenerateAi={openMediaAiModal} />
+            <MediaPicker selected={quizDraft.coverArt ?? null} onPick={(path) => setQuizDraft((current) => ({ ...current, coverArt: path }))} onGenerateAi={openMediaAiModal} assets={mediaPickerAssets} />
           </div>
 
           <div className="admin-drawer-footer">
@@ -908,7 +941,7 @@ export function AdminScreen({
               <strong>{questionDraft.title || 'Prévia do desafio'}</strong>
               <p>{questionDraft.prompt || 'Monte a questão visualmente e veja como ela vai aparecer na home.'}</p>
               <QuestionPreviewStage draft={questionDraft} fallbackText={questionPreview} />
-              <MediaPicker selected={questionDraft.art} onPick={applyMediaAsset} compact onGenerateAi={openMediaAiModal} />
+              <MediaPicker selected={questionDraft.art} onPick={applyMediaAsset} compact onGenerateAi={openMediaAiModal} assets={mediaPickerAssets} />
             </div>
           </div>
 
@@ -1285,7 +1318,7 @@ export function AdminScreen({
                   Gerar mídia com IA
                 </button>
               </div>
-              <MediaPicker selected={null} onPick={applyMediaAsset} />
+              <MediaPicker selected={null} onPick={applyMediaAsset} assets={mediaPickerAssets} />
             </section>
           </section>
         )}
@@ -1378,7 +1411,7 @@ export function AdminScreen({
               <div>
                 <span className="admin-drawer-kicker">✨ Gerar mídia com IA</span>
                 <h3>Gerar imagem contextual</h3>
-                <p>Gere imagens reais com Pollinations, salve no Firebase Storage e aplique o asset diretamente no conteúdo atual.</p>
+                <p>Gere imagens reais com Pollinations, registre no Firestore e aplique o asset diretamente no conteúdo atual.</p>
               </div>
               <button type="button" className="drawer-close" onClick={() => setMediaAiOpen(false)}><X size={18} /></button>
             </div>
@@ -1478,7 +1511,7 @@ export function AdminScreen({
                     type="button"
                     className="admin-secondary media-ai-apply"
                     disabled={!selectedGeneratedMedia}
-                    onClick={() => selectedGeneratedMedia && applyGeneratedMedia(selectedGeneratedMedia.path)}
+                    onClick={() => selectedGeneratedMedia && applyGeneratedMedia(selectedGeneratedMedia)}
                   >
                     Aplicar asset selecionado
                   </button>
@@ -1511,11 +1544,13 @@ function MediaPicker({
   onPick,
   compact = false,
   onGenerateAi,
+  assets = mediaLibrary,
 }: {
   selected: string | null
   onPick: (path: string) => void
   compact?: boolean
   onGenerateAi?: () => void
+  assets?: MediaAsset[]
 }) {
   return (
     <div className={`media-picker${compact  ? ' compact' : ''}`}>
@@ -1532,7 +1567,7 @@ function MediaPicker({
         )}
       </div>
       <div className="media-grid">
-        {mediaLibrary.map((asset) => (
+        {assets.map((asset) => (
           <button
             key={asset.id}
             type="button"
