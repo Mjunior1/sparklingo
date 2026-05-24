@@ -432,7 +432,77 @@ Requisitos PWA:
 
 ---
 
-# Visual Slot System
+# VISUAL DNA RULES
+
+Toda arte do SparkLingo deve seguir:
+- consistência emocional
+- composição cinematográfica
+- mobile-first
+- foco narrativo
+- safe areas claras
+- leitura rápida
+- atmosfera premium
+
+As imagens NÃO devem conter:
+- textos
+- botões
+- overlays
+- HUD
+- cards
+- progresso
+- labels
+- elementos de interface
+
+As imagens devem ser:
+- assets reutilizáveis de produção
+- cinematográficas
+- limpas
+- emocionalmente legíveis
+- compatíveis com overlays dinâmicos do frontend
+
+---
+
+# SAFE AREA RULES
+
+## TOP SAFE AREA
+Reservado para:
+- título da missão
+- HUD
+- streak
+- XP
+- contexto
+
+Nunca posicionar:
+- rostos
+- elementos críticos
+- narrativa principal
+
+---
+
+## CENTER SAFE AREA
+Reservado para:
+- interação emocional
+- narrativa principal
+- personagens
+- gameplay visual
+
+---
+
+## BOTTOM SAFE AREA
+Reservado para:
+- respostas
+- speaking UI
+- CTA
+- progressão
+
+Nunca posicionar:
+- rostos
+- mãos importantes
+- props críticos
+
+---
+
+# VISUAL SLOT SYSTEM
 
 O frontend NÃO deve possuir imagens hardcoded.
 
@@ -448,23 +518,49 @@ Cada bloco visual deve expor:
 - safe area
 - compatibilidade com overlay
 
-Exemplo:
+---
 
-Hero Mission
-- 1920x1080
-- 16:9
+# PADRÃO OFICIAL DOS ASSETS
 
-Adventure Node
-- 512x512
-- 1:1
+## HERO ASSETS
 
-Quick Play
-- 640x360
-- 16:9
+### MOBILE
+1080x1920
+Aspect Ratio: 9:16
+
+Uso:
+- Home mobile
+- Hero principal
+- PWA intro
+- Missão principal
 
 ---
 
-# Visual System Admin
+### DESKTOP
+1920x1080
+Aspect Ratio: 16:9
+
+Uso:
+- Landing pages
+- Hero desktop
+- Marketing sections
+
+---
+
+# GAMEPLAY ASSETS
+
+## MOBILE GAMEPLAY
+1080x1920
+Aspect Ratio: 9:16
+
+Distribuição:
+- Top 20% → HUD e missão
+- Center 45% → interação emocional
+- Bottom 35% → respostas e speaking UI
+
+---
+
+# VISUAL SYSTEM ADMIN
 
 O Admin deve possuir:
 Configurações → Visual System
@@ -478,8 +574,92 @@ Permitir:
 - upload de capas de quick challenges
 - configuração de temas dark/light
 - configuração de mood packs
+- configuração de overlays
+- configuração de safe areas
 
 O frontend deve consumir tudo dinamicamente.
+
+---
+
+# ASSET NAMING CONVENTION
+
+Formato oficial:
+
+sparklingo_[tipo]_[contexto]_[platform]_v[number].png
+
+Exemplos:
+- sparklingo_hero_airport_intro_mobile_v1.png
+- sparklingo_scene_airport_immigration_mobile_v1.png
+- sparklingo_scene_coffee_ordering_mobile_v1.png
+- sparklingo_map_airport_node_v1.png
+- sparklingo_quickchallenge_shadowing_v1.png
+
+---
+
+# CORE GAMEPLAY LOOP
+
+Fluxo oficial da experiência:
+
+1. Hero Mission
+2. Primeira interação emocional
+3. Primeiro speaking moment
+4. Primeiro reward moment
+5. Progressão narrativa
+6. Novo desbloqueio
+7. Quick challenge opcional
+8. Continuação da jornada
+
+O usuário deve sempre sentir:
+- continuidade
+- evolução
+- conforto
+- progresso
+- recompensa emocional
+
+---
+
+# MVP VISUAL PROGRESSION
+
+## Assets Oficiais Criados
+
+### HERO
+- HERO_MISSION_AIRPORT_MOBILE_V2
+
+### SCENES
+- AIRPORT_IMMIGRATION_SCENE_V1
+- AIRPORT_WAITING_SCENE_V1
+
+---
+
+## Próximos Assets Oficiais
+
+1. COFFEE_ORDERING_SCENE
+2. FIRST_REWARD_MOMENT
+3. ADVENTURE_MAP_NODE
+4. QUICK_CHALLENGE_SCENE
+5. EMOTIONAL_INSIGHT_SCENE
+
+---
+
+# MOMENTO DE PARADA
+
+Parar geração de assets quando existir:
+
+- Hero principal
+- Primeira interação
+- Primeiro speaking moment
+- Primeiro reward moment
+- Primeira progressão visual
+- Primeiro map node
+- Primeiro quick challenge
+- Primeiro emotional insight
+
+Após isso:
+- congelar direção visual
+- consolidar frontend
+- validar UX
+- validar gameplay emocional
+- validar retenção
 
 ---
 
