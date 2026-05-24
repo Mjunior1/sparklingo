@@ -1,0 +1,23 @@
+{
+  "name": "SparkLingo",
+  "short_name": "SparkLingo",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#17103e",
+  "theme_color": "#17103e",
+  "description": "Aventura adaptativa de inglês com missões, memória emocional e progressão viva.",
+  "icons": [
+    {
+      "src": "/pollinations/sidebar-mascot.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/pollinations/sidebar-mascot.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}

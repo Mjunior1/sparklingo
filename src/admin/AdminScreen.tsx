@@ -50,6 +50,8 @@ import {
   type FilterKey,
   type LessonCatalogItem,
   type LessonTone,
+  type MediaSlotKey,
+  type MediaSlots,
   type QuizCatalogItem,
   type QuizQuestionItem,
 } from '../services/catalog'
@@ -135,6 +137,14 @@ type MediaAsset = {
   tone: LessonTone
 }
 
+type MediaSlotGuide = {
+  key: MediaSlotKey
+  label: string
+  ratio: string
+  resolution: string
+  safeArea: string
+}
+
 const tagOptions: Exclude<FilterKey, 'Todos'>[] = ['Gramática', 'Vocabulário', 'Listening', 'Reading', 'Speaking']
 type ToastState = {
   tone: 'success' | 'error' | 'info'
@@ -167,12 +177,35 @@ const mediaLibrary: MediaAsset[] = [
   { id: 'storm', label: 'Storm', path: '/pollinations/storm-card.png', tone: 'violet' },
 ]
 
+const lessonMediaGuides: MediaSlotGuide[] = [
+  { key: 'heroImageDesktop', label: 'Hero desktop', resolution: '1600x900', ratio: '16:9', safeArea: 'Mantenha rosto, CTA e tensão no centro.' },
+  { key: 'heroImageMobile', label: 'Hero mobile', resolution: '900x1600', ratio: '9:16', safeArea: 'Deixe a ação no miolo para thumb navigation.' },
+  { key: 'thumbnail', label: 'Thumbnail da missão', resolution: '1200x700', ratio: '16:9', safeArea: 'Evite texto nas bordas.' },
+  { key: 'nodeImage', label: 'Nó do mapa', resolution: '800x800', ratio: '1:1', safeArea: 'Use foco central para crop circular.' },
+  { key: 'nodeCompletedImage', label: 'Nó concluído', resolution: '800x800', ratio: '1:1', safeArea: 'Versão com sensação de checkpoint vencido.' },
+  { key: 'emotionalBackground', label: 'Fundo emocional', resolution: '1440x1800', ratio: '4:5', safeArea: 'Priorize atmosfera e profundidade.' },
+  { key: 'mascotImage', label: 'Mascote / companion', resolution: '1200x1600', ratio: '3:4', safeArea: 'Silhueta limpa, ideal para recorte seguro.' },
+]
+
+const quizMediaGuides: MediaSlotGuide[] = [
+  { key: 'challengeCardImage', label: 'Card do desafio', resolution: '1200x700', ratio: '16:9', safeArea: 'Título e ação devem sobreviver ao crop.' },
+  { key: 'challengeIcon', label: 'Ícone do desafio', resolution: '512x512', ratio: '1:1', safeArea: 'Ícone central com fundo simples.' },
+  { key: 'scenarioThumbnail', label: 'Thumbnail de cenário', resolution: '900x1200', ratio: '3:4', safeArea: 'Foco narrativo no centro da cena.' },
+]
+
+const questionMediaGuides: MediaSlotGuide[] = [
+  { key: 'scenarioThumbnail', label: 'Cenário da questão', resolution: '900x1200', ratio: '3:4', safeArea: 'Contexto visível sem poluição lateral.' },
+  { key: 'emotionalThumbnail', label: 'Thumbnail emocional', resolution: '900x1200', ratio: '3:4', safeArea: 'Realce tensão, urgência ou recompensa.' },
+  { key: 'challengeIcon', label: 'Ícone da ação', resolution: '512x512', ratio: '1:1', safeArea: 'Funciona bem em chips e cards compactos.' },
+]
+
 const emptyLesson: LessonCatalogItem = {
   id: '',
   category: 'Vocabulário',
   title: '',
   blurb: '',
   image: mediaLibrary[0].path,
+  mediaSlots: {},
   tone: 'sky',
   progress: 0,
 }
@@ -183,6 +216,7 @@ const emptyQuiz: QuizCatalogItem = {
   tag: 'Vocabulário',
   title: '',
   coverArt: '',
+  mediaSlots: {},
   difficulty: 'Fácil',
   reward: 25,
   kind: 'multiple-choice',
@@ -202,6 +236,7 @@ const emptyQuestion: QuizQuestionItem = {
   prompt: '',
   art: mediaLibrary[0].path,
   artAlt: '',
+  mediaSlots: {},
   reward: 25,
   active: true,
   options: ['', '', '', ''],
@@ -871,6 +906,36 @@ export function AdminScreen({
     }
   }
 
+  const updateLessonMediaSlot = (key: MediaSlotKey, path: string) => {
+    setLessonDraft((current) => ({
+      ...current,
+      mediaSlots: {
+        ...(current.mediaSlots ?? {}),
+        [key]: { path },
+      },
+    }))
+  }
+
+  const updateQuizMediaSlot = (key: MediaSlotKey, path: string) => {
+    setQuizDraft((current) => ({
+      ...current,
+      mediaSlots: {
+        ...(current.mediaSlots ?? {}),
+        [key]: { path },
+      },
+    }))
+  }
+
+  const updateQuestionMediaSlot = (key: MediaSlotKey, path: string) => {
+    setQuestionDraft((current) => ({
+      ...current,
+      mediaSlots: {
+        ...(current.mediaSlots ?? {}),
+        [key]: { path },
+      },
+    }))
+  }
+
   const applyTemplatePreset = (template: MissionTemplate) => {
     const preset = {
       ...aiComposerDefaults,
@@ -1088,6 +1153,14 @@ export function AdminScreen({
               </label>
             </div>
             <MediaPicker selected={lessonDraft.image} onPick={applyMediaAsset} onGenerateAi={openMediaAiModal} assets={mediaPickerAssets} />
+            <MediaSlotEditor
+              title="Mission media slots"
+              description="Defina os slots visuais que alimentam hero, mapa e thumbnails da jornada."
+              slots={lessonDraft.mediaSlots}
+              guides={lessonMediaGuides}
+              assets={mediaPickerAssets}
+              onChange={updateLessonMediaSlot}
+            />
           </div>
 
           <div className="admin-drawer-footer">
@@ -1139,6 +1212,14 @@ export function AdminScreen({
               </label>
             </div>
             <MediaPicker selected={quizDraft.coverArt ?? null} onPick={(path) => setQuizDraft((current) => ({ ...current, coverArt: path }))} onGenerateAi={openMediaAiModal} assets={mediaPickerAssets} />
+            <MediaSlotEditor
+              title="Challenge media slots"
+              description="Cada quiz pode expor capa, ícone e thumbnail de cenário para cards, quick XP e momentos reais."
+              slots={quizDraft.mediaSlots}
+              guides={quizMediaGuides}
+              assets={mediaPickerAssets}
+              onChange={updateQuizMediaSlot}
+            />
           </div>
 
           <div className="admin-drawer-footer">
@@ -1271,6 +1352,15 @@ export function AdminScreen({
               <p>{questionDraft.prompt || 'Monte a questão visualmente e veja como ela vai aparecer na home.'}</p>
               <QuestionPreviewStage draft={questionDraft} fallbackText={questionPreview} />
               <MediaPicker selected={questionDraft.art} onPick={applyMediaAsset} compact onGenerateAi={openMediaAiModal} assets={mediaPickerAssets} />
+              <MediaSlotEditor
+                title="Question media slots"
+                description="Defina a imagem de cenário, reforço emocional e ícone compacto desta interação."
+                slots={questionDraft.mediaSlots}
+                guides={questionMediaGuides}
+                assets={mediaPickerAssets}
+                onChange={updateQuestionMediaSlot}
+                compact
+              />
             </div>
           </div>
 
@@ -2118,6 +2208,23 @@ export function AdminScreen({
                 </button>
               </div>
               <MediaPicker selected={null} onPick={applyMediaAsset} assets={mediaPickerAssets} />
+              <div className="media-slot-stack">
+                <div className="media-slot-head">
+                  <strong>Media Slot Architecture</strong>
+                  <span>Use os mesmos guides nos drawers para manter crop, safe area e prioridade mobile consistentes.</span>
+                </div>
+                <div className="media-slot-grid media-slot-grid-guide">
+                  {[...lessonMediaGuides.slice(0, 3), ...quizMediaGuides.slice(0, 2), ...questionMediaGuides.slice(0, 1)].map((guide) => (
+                    <article key={guide.key} className="media-slot-card media-slot-card-guide">
+                      <div className="media-slot-meta">
+                        <strong>{guide.label}</strong>
+                        <span>{guide.resolution} • {guide.ratio}</span>
+                        <small>{guide.safeArea}</small>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
             </section>
           </section>
         )}
@@ -2377,6 +2484,66 @@ function MediaPicker({
             <span>{asset.label}</span>
           </button>
         ))}
+      </div>
+    </div>
+  )
+}
+
+function MediaSlotEditor({
+  title,
+  description,
+  slots,
+  guides,
+  assets,
+  onChange,
+  compact = false,
+}: {
+  title: string
+  description: string
+  slots?: MediaSlots
+  guides: MediaSlotGuide[]
+  assets: MediaAsset[]
+  onChange: (key: MediaSlotKey, path: string) => void
+  compact?: boolean
+}) {
+  return (
+    <div className={`media-slot-stack${compact ? ' is-compact' : ''}`}>
+      <div className="media-slot-head">
+        <strong>{title}</strong>
+        <span>{description}</span>
+      </div>
+      <div className="media-slot-grid">
+        {guides.map((guide) => {
+          const currentPath = slots?.[guide.key]?.path ?? ''
+
+          return (
+            <article key={guide.key} className="media-slot-card">
+              <div className="media-slot-preview">
+                {currentPath ? (
+                  <img src={currentPath} alt={guide.label} />
+                ) : (
+                  <div className="media-slot-preview-empty">
+                    <Image size={16} />
+                    <span>Sem asset</span>
+                  </div>
+                )}
+              </div>
+              <div className="media-slot-meta">
+                <strong>{guide.label}</strong>
+                <span>{guide.resolution} • {guide.ratio}</span>
+                <small>{guide.safeArea}</small>
+              </div>
+              <select value={currentPath} onChange={(event) => onChange(guide.key, event.target.value)}>
+                <option value="">Selecionar asset</option>
+                {assets.map((asset) => (
+                  <option key={`${guide.key}-${asset.id}`} value={asset.path}>
+                    {asset.label}
+                  </option>
+                ))}
+              </select>
+            </article>
+          )
+        })}
       </div>
     </div>
   )

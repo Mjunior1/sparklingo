@@ -5,12 +5,17 @@ import { AuthEntry } from './auth/AuthEntry'
 import { useAuth } from './auth/AuthProvider'
 import { OnboardingScreen } from './auth/OnboardingScreen'
 import {
+  defaultLessonsCatalog,
+  defaultQuizCatalog,
+  defaultQuizQuestions,
   getAchievementCatalog,
   getLessonsCatalog,
   getQuizCatalog,
   getQuizQuestions,
   type AchievementCatalogItem,
   type LessonCatalogItem,
+  type MediaSlotKey,
+  type MediaSlots,
   type QuizCatalogItem,
   type QuizQuestionItem,
 } from './services/catalog'
@@ -27,7 +32,6 @@ import {
   Crown,
   Flame,
   Gamepad2,
-  Gift,
   Grip,
   Headphones,
   Home,
@@ -162,35 +166,7 @@ const navItems: NavItem[] = [
   { label: 'Perfil', icon: UserRound },
 ]
 
-const lessonCards: LessonCatalogItem[] = [
-  {
-    category: 'Vocabulário',
-    title: 'At the Airport',
-    id: 'lesson-airport',
-    progress: 60,
-    image: '/pollinations/airport-card.png',
-    tone: 'sky',
-    blurb: 'Palavras visuais, objetos reais e micro-histórias para memorizar sem esforço.',
-  },
-  {
-    category: 'Gramática',
-    title: 'Present Simple',
-    id: 'lesson-present-simple',
-    progress: 40,
-    image: '/pollinations/grammar-card.png',
-    tone: 'violet',
-    blurb: 'Regra rápida, exemplos vivos e desafios curtos que fixam o padrão.',
-  },
-  {
-    category: 'Listening',
-    title: 'Daily Routines',
-    id: 'lesson-daily-routines',
-    progress: 20,
-    image: '/pollinations/listening-card.png',
-    tone: 'mint',
-    blurb: 'Áudios curtos e repetição inteligente para treinar ouvido e confiança.',
-  },
-]
+const lessonCards: LessonCatalogItem[] = defaultLessonsCatalog
 
 const filters: FilterKey[] = ['Todos', 'Gramática', 'Vocabulário', 'Listening', 'Reading', 'Speaking']
 
@@ -330,7 +306,11 @@ const toRuntimeExercises = (questions: QuizQuestionItem[], quizzes: QuizCatalogI
     .sort((a, b) => a.id.localeCompare(b.id, undefined, { numeric: true }))
     .flatMap<Exercise>((question) => {
       const linkedQuiz = quizzes.find((quiz) => quiz.id === question.quizId)
-      const art = linkedQuiz?.coverArt || question.art
+      const art =
+        getFirstSlotPath(question.mediaSlots, ['scenarioThumbnail', 'emotionalThumbnail', 'challengeCardImage'], '') ||
+        getFirstSlotPath(linkedQuiz?.mediaSlots, ['challengeCardImage', 'scenarioThumbnail', 'emotionalThumbnail'], '') ||
+        linkedQuiz?.coverArt ||
+        question.art
 
       if (question.kind === 'multiple-choice' && question.options?.length && question.correct) {
         return [{
@@ -457,6 +437,17 @@ const getChallengeTone = (index: number) => {
   return tones[index % tones.length]
 }
 
+const getSlotPath = (slots: MediaSlots | undefined, key: MediaSlotKey) => slots?.[key]?.path ?? ''
+
+const getFirstSlotPath = (slots: MediaSlots | undefined, keys: MediaSlotKey[], fallback = '') => {
+  for (const key of keys) {
+    const path = getSlotPath(slots, key)
+    if (path) return path
+  }
+
+  return fallback
+}
+
 const isExerciseSolved = (
   exercise: Exercise,
   choiceAnswers: Record<string, string | null>,
@@ -489,6 +480,7 @@ function App() {
   const { status, user, profile, signOut, platformConfig, patchProfile } = useAuth()
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
   const [activeFilter, setActiveFilter] = useState<FilterKey>('Todos')
+  const [activeChallengeId, setActiveChallengeId] = useState<string | null>(null)
   const [choiceAnswers, setChoiceAnswers] = useState<Record<string, string | null>>({})
   const [dragFillAnswers, setDragFillAnswers] = useState<Record<string, string | null>>({})
   const [speakingCompletions, setSpeakingCompletions] = useState<Record<string, boolean>>({})
@@ -500,9 +492,9 @@ function App() {
   const [progressHydrated, setProgressHydrated] = useState(false)
   const [progressSnapshot, setProgressSnapshot] = useState<UserProgress | null>(null)
   const [lessonsCatalog, setLessonsCatalog] = useState<LessonCatalogItem[]>(lessonCards)
-  const [quizCatalog, setQuizCatalog] = useState<QuizCatalogItem[]>([])
+  const [quizCatalog, setQuizCatalog] = useState<QuizCatalogItem[]>(defaultQuizCatalog)
   const [achievementCatalog, setAchievementCatalog] = useState<AchievementCatalogItem[]>([])
-  const [quizQuestionCatalog, setQuizQuestionCatalog] = useState<QuizQuestionItem[]>([])
+  const [quizQuestionCatalog, setQuizQuestionCatalog] = useState<QuizQuestionItem[]>(defaultQuizQuestions)
   const [, setLeaderboard] = useState<LeaderboardEntry[]>(fallbackLeaderboard)
   const [syncState, setSyncState] = useState<SyncState>('idle')
   const [syncMessage, setSyncMessage] = useState('Progresso local pronto para sincronizar.')
@@ -536,6 +528,10 @@ function App() {
     if (activeFilter === 'Todos') return runtimeExercises
     return runtimeExercises.filter((exercise) => exercise.tag === activeFilter)
   }, [activeFilter, runtimeExercises])
+  const activeExercise = useMemo(
+    () => visibleExercises.find((exercise) => exercise.id === activeChallengeId) ?? visibleExercises[0] ?? null,
+    [activeChallengeId, visibleExercises],
+  )
 
   const completedCount = useMemo(() => {
     return runtimeExercises.filter((exercise) => isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions)).length
@@ -663,11 +659,29 @@ function App() {
   )
 
   const currentMissionVisual = useMemo(
-    () =>
-      currentMissionQuizzes.find((quiz) => quiz.coverArt)?.coverArt ||
-      currentMissionLesson?.image ||
-      '/pollinations/hero-scene.png',
+    () => {
+      const heroSlot = getFirstSlotPath(currentMissionLesson?.mediaSlots, ['heroImageDesktop', 'heroImageMobile', 'emotionalBackground', 'thumbnail'], '')
+      const quizSlot = currentMissionQuizzes
+        .map((quiz) => getFirstSlotPath(quiz.mediaSlots, ['challengeCardImage', 'scenarioThumbnail'], ''))
+        .find(Boolean)
+
+      return heroSlot || quizSlot || currentMissionQuizzes.find((quiz) => quiz.coverArt)?.coverArt || currentMissionLesson?.image || '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png'
+    },
     [currentMissionLesson, currentMissionQuizzes],
+  )
+  const currentMissionHeroDesktop = useMemo(
+    () =>
+      getFirstSlotPath(currentMissionLesson?.mediaSlots, ['heroImageDesktop', 'emotionalBackground', 'thumbnail'], currentMissionVisual),
+    [currentMissionLesson, currentMissionVisual],
+  )
+  const currentMissionHeroMobile = useMemo(
+    () =>
+      getFirstSlotPath(currentMissionLesson?.mediaSlots, ['heroImageMobile', 'heroImageDesktop', 'thumbnail'], currentMissionHeroDesktop),
+    [currentMissionHeroDesktop, currentMissionLesson],
+  )
+  const currentMissionMascot = useMemo(
+    () => getFirstSlotPath(currentMissionLesson?.mediaSlots, ['mascotImage'], '/Images/Mascote/Sparklingo.png'),
+    [currentMissionLesson],
   )
 
   const quickChallenges = useMemo(
@@ -750,6 +764,12 @@ function App() {
 
         return {
           ...lesson,
+          image:
+            state === 'done'
+              ? getFirstSlotPath(lesson.mediaSlots, ['nodeCompletedImage', 'nodeImage', 'thumbnail'], lesson.image)
+              : state === 'locked'
+                ? getFirstSlotPath(lesson.mediaSlots, ['nodeLockedImage', 'nodeImage', 'thumbnail'], lesson.image)
+                : getFirstSlotPath(lesson.mediaSlots, ['nodeImage', 'thumbnail'], lesson.image),
           step: index + 1,
           state,
           label:
@@ -783,7 +803,7 @@ function App() {
         context: lesson.emotionalContext ?? lesson.blurb,
         hook: lesson.practicalGoal ?? lesson.confidenceTarget ?? 'Treine em uma situação rápida e real.',
         duration: `${Math.max(2, 5 - index)} min`,
-        image: lesson.image,
+        image: getFirstSlotPath(lesson.mediaSlots, ['thumbnail', 'nodeImage', 'heroImageMobile'], lesson.image),
         badge: lesson.category,
       }))
     }
@@ -797,7 +817,12 @@ function App() {
           context: linkedLesson?.emotionalContext ?? quiz.objective ?? linkedLesson?.blurb ?? 'Situação curta com urgência leve.',
           hook: quiz.objective ?? linkedLesson?.practicalGoal ?? 'Resolva a cena e avance com segurança.',
           duration: `${Math.max(1, Math.min(5, Math.round((quiz.reward ?? 24) / 10)))} min`,
-          image: quiz.coverArt || linkedLesson?.image || '/pollinations/hero-scene.png',
+          image:
+            getFirstSlotPath(quiz.mediaSlots, ['scenarioThumbnail', 'emotionalThumbnail', 'challengeCardImage'], '') ||
+            quiz.coverArt ||
+            getFirstSlotPath(linkedLesson?.mediaSlots, ['thumbnail', 'nodeImage'], '') ||
+            linkedLesson?.image ||
+            '/pollinations/hero-scene.png',
           badge: quiz.tag || linkedLesson?.category || 'Missão',
         }
       })
@@ -818,6 +843,17 @@ function App() {
         .map((exercise) => exercise.id),
     [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises, speakingCompletions],
   )
+
+  useEffect(() => {
+    if (!visibleExercises.length) {
+      setActiveChallengeId(null)
+      return
+    }
+
+    if (!activeChallengeId || !visibleExercises.some((exercise) => exercise.id === activeChallengeId)) {
+      setActiveChallengeId(visibleExercises[0].id)
+    }
+  }, [activeChallengeId, visibleExercises])
 
   const progressSyncPayload = useMemo(
     () => ({
@@ -1609,7 +1645,7 @@ function App() {
           </p>
           <strong>{streakDays} dias!</strong>
           <div className="sidebar-creature">
-            <img src="/pollinations/sidebar-mascot.png" alt="Spark, mascote do SparkLingo" className="sidebar-mascot-image" />
+            <img src="/Images/Mascote/Sparklingo.png" alt="Spark, mascote do SparkLingo" className="sidebar-mascot-image" />
           </div>
           <button>Keep going!</button>
         </div>
@@ -1617,6 +1653,32 @@ function App() {
 
       <main className="main-panel">
         <section className="hero-card">
+          <div className="hero-mobile-bar">
+            <div className="hero-mobile-brand">
+              <div className="hero-mobile-brand-mark">
+                <WandSparkles size={16} strokeWidth={2.2} />
+              </div>
+              <strong>SparkLingo</strong>
+            </div>
+            <div className="hero-mobile-stats">
+              <div className="hero-mobile-pill">
+                <Flame size={14} />
+                <strong>{streakDays}</strong>
+              </div>
+              <div className="hero-mobile-pill">
+                <Medal size={14} />
+                <strong>{heroXp}</strong>
+              </div>
+              <button className="hero-mobile-avatar" onClick={() => signOut()} title="Sair" type="button">
+                {profile?.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt={profile.displayName} className="avatar-image" />
+                ) : (
+                  <UserRound size={16} />
+                )}
+              </button>
+            </div>
+          </div>
+
           <div className="hero-copy">
             <div className="hero-intro hero-intro-mission">
               <p className="micro-label">Hey, {firstName}! • missão em andamento</p>
@@ -1650,41 +1712,32 @@ function App() {
 
             <p className={`sync-caption sync-caption-${syncState}`}>{syncMessage}</p>
 
-            <div className="hero-progress-row">
-              <div className="level-chip">
-                <span>Nível</span>
-                <strong>{profileLevel}</strong>
+            <article className="hero-mission-panel">
+              <div className="hero-mission-panel-head">
+                <span className="micro-label">Current mission</span>
+                <span className="hero-mission-stage">Scene {Math.min(currentMissionIndex + 1, Math.max(adventureProgress.length, 1))} of {Math.max(adventureProgress.length, 1)}</span>
               </div>
-
-              <div className="hero-progress-panel">
-                <div className="hero-progress-head">
-                  <span>XP</span>
-                  <span>{heroXp} / 650</span>
+              <div className="hero-mission-panel-body">
+                <div className="hero-mission-panel-copy">
+                  <strong>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Continue mission'}</strong>
+                  <p>{currentMissionLesson?.emotionalGoal ?? 'Spark vai reduzir hesitação e manter sua resposta viva em contexto real.'}</p>
                 </div>
-                <div className="track">
-                  <div className="track-fill track-fill-hero" style={{ width: heroXpWidth }} />
+                <div className="hero-mission-panel-meta">
+                  <span>{currentMissionLesson?.tensionLabel ?? 'Urgência moderada'}</span>
+                  <span>Nível {profileLevel}</span>
+                  <span>{currentMissionLesson?.confidenceTarget ?? 'Responder com segurança'}</span>
+                </div>
+                <div className="hero-progress-panel hero-progress-panel-mission">
+                  <div className="hero-progress-head">
+                    <span>Capítulo {currentMissionIndex + 1}</span>
+                    <span>{heroXp} / 650 XP</span>
+                  </div>
+                  <div className="track dark">
+                    <div className="track-fill track-fill-hero" style={{ width: heroXpWidth }} />
+                  </div>
                 </div>
               </div>
-
-              <div className="gift-chip">
-                <Gift size={22} />
-              </div>
-            </div>
-
-            <div className="hero-badges">
-              <div className="hero-badge">
-                <Sparkles size={16} />
-                <span>{currentMissionLesson?.tensionLabel ?? 'Urgência moderada'}</span>
-              </div>
-              <div className="hero-badge">
-                <Target size={16} />
-                <span>{currentMissionLesson?.confidenceTarget ?? 'Responder com segurança'}</span>
-              </div>
-              <div className="hero-badge">
-                <Medal size={16} />
-                <span>{currentMissionLesson?.nextMissionHook ?? 'A próxima cena depende deste avanço'}</span>
-              </div>
-            </div>
+            </article>
 
             <div className="hero-actions">
               <button className="hero-primary hero-primary-play" onClick={launchRun}>
@@ -1703,17 +1756,24 @@ function App() {
             <div className="hero-scene-panel">
               <div className="hero-orb hero-orb-left" />
               <div className="hero-orb hero-orb-right" />
-              <div className="hero-speech hero-speech-top">Let&apos;s learn!</div>
+              <div className="hero-speech hero-speech-top">Current mission</div>
               <div className="hero-scene-image-wrap">
-                <img
-                  src={currentMissionVisual}
-                  alt={`Cena da missão ${currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'ativa'}`}
-                  className="hero-scene-image"
-                />
+                <picture>
+                  <source media="(max-width: 760px)" srcSet={currentMissionHeroMobile} />
+                  <img
+                    src={currentMissionHeroDesktop}
+                    alt={`Cena da missão ${currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'ativa'}`}
+                    className="hero-scene-image"
+                    loading="eager"
+                  />
+                </picture>
+              </div>
+              <div className="hero-scene-mascot">
+                <img src={currentMissionMascot} alt="Spark acompanha a missão atual" />
               </div>
               <div className="hero-scene-note hero-scene-note-left">
-                <span>Urgência leve</span>
-                <strong>{currentMissionLesson?.tensionLabel ?? 'Missão viva'}</strong>
+                <span>Missão atual</span>
+                <strong>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Missão viva'}</strong>
               </div>
             </div>
           </div>
@@ -1722,12 +1782,12 @@ function App() {
         <section className="adventure-section">
           <div className="section-heading-row">
             <div className="section-heading-copy">
-              <p className="micro-label">Adventure progress</p>
-              <h2>Seu caminho principal agora tem checkpoints claros e continuidade entre missões</h2>
+              <p className="micro-label">Your adventure map</p>
+              <h2>Um checkpoint claro para saber onde você está e o que vem depois</h2>
             </div>
             <div className="journey-meta-pill">
               <Target size={16} />
-              <span>{adventureProgress.filter((step) => step.state === 'done').length}/{adventureProgress.length} checkpoints vivos</span>
+              <span>{adventureProgress.filter((step) => step.state === 'done').length}/{adventureProgress.length} checkpoints</span>
             </div>
           </div>
 
@@ -1748,20 +1808,23 @@ function App() {
               ))}
             </div>
 
-            <article className="adventure-focus-card">
-              <div className="adventure-focus-media">
-                <img src={currentMissionVisual} alt={currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Missão atual'} />
+            <div className="adventure-summary-strip">
+              <div className="adventure-summary-copy">
+                <span className="micro-label">Checkpoint atual</span>
+                <strong>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Continue sua jornada'}</strong>
+                <p>{currentMissionLesson?.practicalGoal ?? 'Use frases curtas, responda com confiança e avance para a próxima cena.'}</p>
               </div>
-              <div className="adventure-focus-copy">
-                <p className="micro-label">Checkpoint em andamento</p>
-                <h3>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Continue sua jornada'}</h3>
-                <p>{currentMissionLesson?.practicalGoal ?? 'Use frases curtas, reaja rápido e leve essa confiança para a próxima cena.'}</p>
+              <div className="adventure-summary-progress">
+                <div className="adventure-summary-head">
+                  <span>Progresso da missão</span>
+                  <strong>{currentMissionLesson?.progress ?? 0}%</strong>
+                </div>
                 <div className="track soft">
                   <div className="track-fill green" style={{ width: `${currentMissionLesson?.progress ?? 0}%` }} />
                 </div>
-                <small>{currentMissionLesson?.progress ?? 0}% desta missão concluído</small>
+                <small>{currentMissionLesson?.nextMissionHook ?? 'Cada checkpoint mantém a continuidade da sua aventura.'}</small>
               </div>
-            </article>
+            </div>
           </div>
         </section>
 
@@ -1785,6 +1848,7 @@ function App() {
                   className={`quick-challenge-card tone-${challenge.tone}${challenge.done ? ' is-done' : ''}`}
                   onClick={() => {
                     setActiveFilter(challenge.tag)
+                    setActiveChallengeId(challenge.id)
                     playUiSound('click')
                   }}
                 >
@@ -1848,8 +1912,8 @@ function App() {
               </button>
             </div>
 
-            <div className="exercise-grid">
-                {visibleExercises.map((exercise) => {
+            <div className="exercise-grid exercise-grid-focus">
+                {(activeExercise ? [activeExercise] : []).map((exercise) => {
                   const exerciseTagClass = exercise.tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, '-')
 
                   if (exercise.kind === 'multiple-choice' || exercise.kind === 'listening') {
@@ -2106,13 +2170,13 @@ function App() {
           <div className="section-heading-row">
             <div className="section-heading-copy">
               <p className="micro-label">Real-life moments</p>
-              <h2>Treine em situações rápidas, concretas e fáceis de retomar depois</h2>
+              <h2>Situações curtas para continuar a jornada mesmo quando você só tem alguns minutos</h2>
             </div>
             <button className="ghost-link" type="button" onClick={launchRun}>Praticar agora</button>
           </div>
 
           <div className="moments-grid">
-            {realLifeMoments.map((moment) => (
+            {realLifeMoments.slice(0, 3).map((moment) => (
               <article key={moment.id} className="moment-card">
                 <img src={moment.image} alt={moment.title} className="moment-card-image" />
                 <div className="moment-card-overlay" />
@@ -2155,7 +2219,7 @@ function App() {
               </div>
             </article>
 
-            {emotionalInsights.slice(0, 2).map((insight) => (
+            {emotionalInsights.slice(0, 1).map((insight) => (
               <article key={insight.title} className={`memory-card tone-${insight.tone}`}>
                 <span>{insight.meta}</span>
                 <strong>{insight.title}</strong>
