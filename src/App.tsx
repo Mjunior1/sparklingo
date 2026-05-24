@@ -30,7 +30,6 @@ import {
   ArrowRight,
   BookOpen,
   ChevronRight,
-  Crown,
   Flame,
   Gamepad2,
   Grip,
@@ -636,15 +635,6 @@ function App() {
     }
   }, [choiceAnswers, completedCount, dragFillAnswers, orderWordMap, progressSnapshot?.emotional, runtimeExercises, sessionStreak, speakingCompletions, streakDays])
 
-  const lessonMap = useMemo<Record<string, LessonCatalogItem>>(
-    () =>
-      lessonsCatalog.reduce<Record<string, LessonCatalogItem>>((acc, lesson) => {
-        acc[lesson.id] = lesson
-        return acc
-      }, {}),
-    [lessonsCatalog],
-  )
-
   const currentMissionQuizzes = useMemo(
     () =>
       currentMissionLesson
@@ -674,11 +664,6 @@ function App() {
       getFirstSlotPath(currentMissionLesson?.mediaSlots, ['heroImageMobile', 'heroImageDesktop', 'thumbnail'], currentMissionHeroDesktop),
     [currentMissionHeroDesktop, currentMissionLesson],
   )
-  const currentMissionMascot = useMemo(
-    () => getFirstSlotPath(currentMissionLesson?.mediaSlots, ['mascotImage'], '/Images/Mascote/Sparklingo.png'),
-    [currentMissionLesson],
-  )
-
   const heroPortraitImage = useMemo(
     () => normalizeScenePath(currentMissionHeroMobile, storyMedia.airport.hero),
     [currentMissionHeroMobile],
@@ -696,11 +681,6 @@ function App() {
 
     return normalizeScenePath(previewSource, storyMedia.airport.checkin)
   }, [currentMissionLesson, currentMissionVisual])
-
-  const missionMascotImage = useMemo(
-    () => normalizeScenePath(currentMissionMascot, storyMedia.mascot),
-    [currentMissionMascot],
-  )
 
   const quickChallenges = useMemo(
     () =>
@@ -840,7 +820,7 @@ function App() {
     }
 
     return source.map((quiz, index) => {
-      const linkedLesson = lessonMap[quiz.lessonId] ?? currentMissionLesson ?? lessonsCatalog[index]
+      const linkedLesson = currentMissionLesson ?? lessonsCatalog[index]
 
       return {
         id: quiz.id,
@@ -857,7 +837,7 @@ function App() {
         badge: quiz.tag || linkedLesson?.category || 'Missão',
       }
     })
-  }, [currentMissionLesson, currentMissionQuizzes, lessonMap, lessonsCatalog, quizCatalog])
+  }, [currentMissionLesson, currentMissionQuizzes, lessonsCatalog, quizCatalog])
 
   const homeMomentCards = useMemo(() => {
     const fallbackMoments = [
@@ -873,6 +853,7 @@ function App() {
     }))
   }, [realLifeMoments])
 
+  const primaryMoment = homeMomentCards[0] ?? null
   const featuredInsight = emotionalInsights[0] ?? null
 
   const adventureCompletionCount = useMemo(
@@ -1628,13 +1609,6 @@ function App() {
 
   return (
     <div className="spark-home-shell">
-      {isAdmin && (
-        <button className="spark-admin-pill" type="button" onClick={() => setView('admin')}>
-          <Crown size={16} />
-          Admin
-        </button>
-      )}
-
       <main className="spark-home-stage">
         <section className="spark-phone-frame">
           <header className="spark-phone-topbar">
@@ -1669,15 +1643,16 @@ function App() {
           </header>
 
           <section className="spark-hero-panel">
+            <img
+              src={heroPortraitImage}
+              alt={currentMissionLesson?.missionTitle ?? 'Current mission hero'}
+              className="spark-hero-background"
+            />
+            <div className="spark-hero-dim" />
             <div className="spark-hero-copy">
               <p className="spark-greeting">{greeting}, {firstName}! 👋</p>
               <h1>Continue your adventure</h1>
               <p>Every conversation moves you closer to fluency.</p>
-            </div>
-
-            <div className="spark-hero-art">
-              <img src={heroPortraitImage} alt={currentMissionLesson?.missionTitle ?? 'Current mission hero'} />
-              <div className="spark-hero-art-glow" />
             </div>
 
             <article className="spark-current-mission">
@@ -1706,7 +1681,7 @@ function App() {
             <div className="spark-section-head">
               <div>
                 <span className="spark-section-label">Your adventure map</span>
-                <strong>Follow your next checkpoint.</strong>
+                <strong>Follow your next checkpoint</strong>
               </div>
               <button type="button" className="spark-link-button" onClick={() => playUiSound('click')}>
                 View all <ChevronRight size={15} />
@@ -1732,7 +1707,7 @@ function App() {
             <div className="spark-section-head">
               <div>
                 <span className="spark-section-label">Quick XP challenges</span>
-                <strong>Short boosts to keep momentum.</strong>
+                <strong>Keep the run alive</strong>
               </div>
               <button type="button" className="spark-link-button" onClick={launchRun}>
                 See all <ChevronRight size={15} />
@@ -1766,47 +1741,44 @@ function App() {
             </div>
           </section>
 
-          {homeMomentCards.length > 0 && (
+          {primaryMoment && currentMissionIndex < 0 && (
             <section className="spark-home-section">
               <div className="spark-section-head">
                 <div>
                   <span className="spark-section-label">Real-life moments</span>
-                  <strong>Practice anytime, anywhere.</strong>
+                  <strong>Practice real conversations</strong>
                 </div>
                 <button type="button" className="spark-link-button" onClick={launchRun}>
                   See all <ChevronRight size={15} />
                 </button>
               </div>
 
-              <div className="spark-moment-list">
-                {homeMomentCards.slice(0, 1).map((moment) => (
-                  <article key={moment.id} className="spark-moment-card">
-                    <img src={moment.image} alt={moment.title} className="spark-moment-image" />
-                    <div className="spark-moment-dim" />
-                    <div className="spark-moment-body">
-                      <span>{moment.badge}</span>
-                      <strong>{moment.title}</strong>
-                      <p>{moment.hook}</p>
-                      <div className="spark-moment-foot">
-                        <small>{moment.duration}</small>
-                        <button type="button" aria-label="Open moment" onClick={launchRun}>
-                          <ArrowRight size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  </article>
-                ))}
-              </div>
+              <article className="spark-real-life-card">
+                <div className="spark-real-life-media">
+                  <img src={primaryMoment.image} alt={primaryMoment.title} />
+                </div>
+                <div className="spark-real-life-copy">
+                  <span>{primaryMoment.badge}</span>
+                  <strong>{primaryMoment.title}</strong>
+                  <p>{primaryMoment.hook}</p>
+                  <div className="spark-moment-foot">
+                    <small>{primaryMoment.duration}</small>
+                    <button type="button" aria-label="Open moment" onClick={launchRun}>
+                      <ArrowRight size={16} />
+                    </button>
+                  </div>
+                </div>
+              </article>
             </section>
           )}
 
           {featuredInsight && (
             <section className="spark-home-section">
               <div className="spark-section-head">
-                <div>
-                  <span className="spark-section-label">Emotional insight</span>
-                  <strong>Based on your recent sessions.</strong>
-                </div>
+              <div>
+                <span className="spark-section-label">Emotional insight</span>
+                <strong>Based on your conversations</strong>
+              </div>
               </div>
 
               <article className="spark-insight-card">
@@ -1853,7 +1825,7 @@ function App() {
           <div className="spark-companion-label">MISSION SCENE (EXAMPLE)</div>
           <article className="spark-scene-card">
             <header className="spark-scene-topbar">
-              <button type="button" className="spark-circle-icon" onClick={() => playUiSound('click')}>
+              <button type="button" className="spark-circle-icon is-back" onClick={() => playUiSound('click')}>
                 <ChevronRight size={18} />
               </button>
               <div>
@@ -1869,14 +1841,11 @@ function App() {
             <div className="spark-scene-stage">
               <img src={missionSceneImage} alt={currentMissionLesson?.title ?? 'Mission scene'} className="spark-scene-bg" />
               <div className="spark-scene-overlay" />
-              <div className="spark-scene-mascot">
-                <img src={missionMascotImage} alt="Spark companion" />
-              </div>
             </div>
 
             <div className="spark-scene-prompt">
               <div>
-                <span>{activeQuickChallenge?.title ?? 'Current challenge'}</span>
+                <span>{currentMissionLesson?.tensionLabel ?? 'Current mission'}</span>
                 <strong>{activeExercise?.prompt ?? currentMissionLesson?.practicalGoal ?? 'Move the mission forward.'}</strong>
               </div>
               <Volume2 size={16} />
@@ -1935,7 +1904,7 @@ function App() {
             <header className="spark-map-screen-head">
               <div>
                 <strong>Your Adventure</strong>
-                <span>Chapter {currentMissionIndex + 1} · {currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Current path'}</span>
+                <span>Chapter {currentMissionIndex + 1} - {currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Current path'}</span>
               </div>
               <button type="button" className="spark-circle-icon" onClick={() => playUiSound('click')}>
                 <Map size={16} />
@@ -1972,7 +1941,7 @@ function App() {
           <div className="spark-preview-stack">
             <article className="spark-preview-card">
               <div className="spark-preview-thumb">
-                <img src={heroPortraitImage} alt="Home mobile preview" />
+                <img src={storyMedia.airport.hero} alt="Home mobile preview" />
               </div>
               <strong>Home</strong>
             </article>
@@ -1995,25 +1964,9 @@ function App() {
         </aside>
       </main>
 
-      <section className="spark-home-values">
-        <div className="spark-home-values-lead">
-          <div className="spark-home-values-icon">
-            <Sparkles size={18} />
-          </div>
-          <div>
-            <strong>SparkLingo adapts to you.</strong>
-            <p>Every conversation. Every choice. Every day.</p>
-          </div>
-        </div>
-        <div className="spark-home-values-grid">
-          <span>Personalized Learning</span>
-          <span>Emotional Memory</span>
-          <span>Real-Life Situations</span>
-          <span>Meaningful Progress</span>
-        </div>
-      </section>
     </div>
   )
 }
 
 export default App
+
