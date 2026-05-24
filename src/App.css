@@ -3295,7 +3295,1128 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .dock-primary {
-    grid-column: 1 / -1;
+.dock-primary {
+  grid-column: 1 / -1;
+}
+}
+
+/* Experience rebuild */
+
+.experience-shell {
+  min-height: 100vh;
+  padding: 28px;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(255, 161, 86, 0.16), transparent 20%),
+    radial-gradient(circle at 100% 0%, rgba(130, 102, 255, 0.24), transparent 24%),
+    linear-gradient(180deg, #081129 0%, #0d1734 44%, #081129 100%);
+  color: #fff;
+}
+
+.experience-admin-pill {
+  position: fixed;
+  top: 24px;
+  right: 24px;
+  z-index: 30;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(14, 20, 47, 0.82);
+  color: #fff;
+  border-radius: 999px;
+  padding: 12px 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 18px 32px rgba(7, 12, 29, 0.26);
+}
+
+.experience-home {
+  width: min(1440px, 100%);
+  margin: 0 auto;
+  display: grid;
+  gap: 26px;
+}
+
+.experience-stage {
+  display: grid;
+  grid-template-columns: minmax(360px, 470px) minmax(0, 1fr);
+  gap: 30px;
+  align-items: start;
+}
+
+.phone-home,
+.companion-scene-card,
+.companion-map-card,
+.mini-preview-card,
+.experience-values {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 32px 70px rgba(5, 10, 27, 0.36);
+}
+
+.phone-home {
+  position: relative;
+  overflow: hidden;
+  border-radius: 36px;
+  padding: 22px 22px calc(112px + env(safe-area-inset-bottom));
+  background:
+    radial-gradient(circle at 50% -12%, rgba(255, 177, 92, 0.22), transparent 28%),
+    radial-gradient(circle at 100% 0%, rgba(138, 101, 255, 0.26), transparent 30%),
+    linear-gradient(180deg, #12193d 0%, #111734 100%);
+  display: grid;
+  gap: 18px;
+}
+
+.phone-topbar,
+.phone-brand-block,
+.phone-status-cluster,
+.phone-status-pill,
+.mission-current-meta,
+.phone-section-head,
+.phone-link-button,
+.phone-moment-foot,
+.companion-scene-topbar,
+.companion-heart-pill,
+.companion-map-progress,
+.experience-values-lead,
+.experience-values-grid {
+  display: flex;
+  align-items: center;
+}
+
+.phone-topbar,
+.phone-section-head,
+.companion-scene-topbar,
+.companion-map-progress {
+  justify-content: space-between;
+}
+
+.phone-topbar {
+  gap: 14px;
+}
+
+.phone-menu-button,
+.phone-avatar-button,
+.companion-icon-button {
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  backdrop-filter: blur(18px);
+}
+
+.phone-brand-block {
+  gap: 12px;
+  margin-right: auto;
+}
+
+.phone-brand-mark {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, rgba(255, 188, 77, 0.24), rgba(255, 255, 255, 0.08));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.phone-brand-block strong {
+  font-size: 1.85rem;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.phone-status-cluster {
+  gap: 10px;
+}
+
+.phone-status-pill {
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px);
+}
+
+.phone-status-pill strong,
+.phone-status-pill span,
+.mission-current-meta span,
+.mission-current-meta strong,
+.phone-link-button,
+.phone-section-head small,
+.companion-label,
+.companion-scene-title span,
+.companion-map-progress span,
+.companion-map-progress strong,
+.companion-map-node span,
+.mini-preview-progress span,
+.mini-preview-progress small,
+.phone-bottom-nav span,
+.phone-insight-score span {
+  display: block;
+}
+
+.phone-status-pill strong {
+  font-size: 0.95rem;
+}
+
+.phone-status-pill span {
+  color: rgba(228, 232, 255, 0.72);
+  font-size: 0.72rem;
+}
+
+.mission-hero-card {
+  position: relative;
+  min-height: 360px;
+  border-radius: 34px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.mission-hero-media,
+.mission-hero-media img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.mission-hero-media img {
+  object-fit: cover;
+}
+
+.mission-hero-gradient {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(180deg, rgba(8, 12, 31, 0.18) 0%, rgba(8, 12, 31, 0.54) 55%, rgba(8, 12, 31, 0.78) 100%),
+    radial-gradient(circle at 18% 12%, rgba(255, 183, 92, 0.24), transparent 26%);
+}
+
+.mission-hero-copy,
+.mission-hero-mascot,
+.phone-moment-copy,
+.companion-scene-character,
+.companion-bubble {
+  position: relative;
+  z-index: 1;
+}
+
+.mission-hero-copy {
+  display: grid;
+  gap: 14px;
+  align-content: end;
+  height: 100%;
+  padding: 26px;
+  max-width: 16rem;
+}
+
+.mission-greeting {
+  margin: 0;
+  color: rgba(243, 246, 255, 0.9);
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.mission-hero-copy h1 {
+  margin: 0;
+  max-width: 10ch;
+  font-size: clamp(3rem, 7vw, 4.25rem);
+  line-height: 0.94;
+  letter-spacing: -0.05em;
+}
+
+.mission-hero-copy p:last-child {
+  margin: 0;
+  max-width: 15ch;
+  color: rgba(237, 240, 255, 0.82);
+  font-size: 1.05rem;
+  line-height: 1.42;
+}
+
+.mission-hero-mascot {
+  position: absolute;
+  right: 18px;
+  bottom: 0;
+  width: min(44%, 190px);
+  filter: drop-shadow(0 30px 44px rgba(10, 12, 33, 0.4));
+}
+
+.mission-hero-mascot img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.mission-current-card {
+  position: relative;
+  padding: 18px;
+  border-radius: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background:
+    linear-gradient(180deg, rgba(22, 28, 62, 0.96), rgba(18, 24, 55, 0.98));
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  display: grid;
+  gap: 16px;
+}
+
+.mission-current-badge,
+.phone-section-label,
+.companion-label {
+  color: rgba(219, 210, 255, 0.78);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 800;
+}
+
+.mission-current-media {
+  border-radius: 24px;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.mission-current-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mission-current-copy {
+  display: grid;
+  gap: 10px;
+}
+
+.mission-current-copy h2,
+.phone-section-head strong,
+.phone-insight-copy strong,
+.companion-scene-title strong,
+.companion-map-head strong,
+.experience-values strong {
+  margin: 0;
+}
+
+.mission-current-copy h2 {
+  font-size: 2.1rem;
+  line-height: 1;
+}
+
+.mission-current-copy p,
+.phone-moment-copy p,
+.phone-insight-copy p,
+.companion-scene-title span,
+.companion-map-head span,
+.companion-map-node span,
+.experience-values p {
+  margin: 0;
+  color: rgba(232, 236, 255, 0.76);
+  line-height: 1.45;
+}
+
+.mission-current-meta {
+  flex-wrap: wrap;
+  gap: 12px;
+  color: rgba(219, 210, 255, 0.76);
+  font-size: 0.84rem;
+  font-weight: 700;
+}
+
+.mission-current-meta strong {
+  margin-left: auto;
+  color: #ffd775;
+}
+
+.mission-continue-button,
+.scene-option-button,
+.scene-reset-button,
+.scene-speaking-action,
+.phone-moment-foot button {
+  border: 0;
+  cursor: pointer;
+}
+
+.mission-continue-button {
+  width: 100%;
+  padding: 17px 20px;
+  border-radius: 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  background: linear-gradient(180deg, #855dff 0%, #6936f0 100%);
+  color: #fff;
+  font-size: 1.5rem;
+  font-weight: 800;
+  box-shadow: 0 26px 40px rgba(119, 77, 255, 0.3);
+}
+
+.phone-section {
+  display: grid;
+  gap: 16px;
+}
+
+.phone-section-head {
+  gap: 12px;
+}
+
+.phone-section-head strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.phone-section-head small {
+  margin-top: 4px;
+  color: rgba(219, 225, 255, 0.66);
+  font-size: 0.86rem;
+}
+
+.phone-link-button {
+  gap: 4px;
+  color: #fff;
+  background: transparent;
+  border: 0;
+  font-weight: 700;
+}
+
+.adventure-strip {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(110px, 1fr);
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+  scrollbar-width: none;
+}
+
+.adventure-strip::-webkit-scrollbar,
+.phone-challenge-row::-webkit-scrollbar {
+  display: none;
+}
+
+.adventure-strip-node {
+  position: relative;
+  display: grid;
+  gap: 10px;
+  min-width: 110px;
+}
+
+.adventure-strip-visual {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 16px 32px rgba(7, 12, 29, 0.32);
+}
+
+.adventure-strip-visual img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.adventure-strip-node.is-active .adventure-strip-visual {
+  border-color: #ffd775;
+  box-shadow: 0 0 0 6px rgba(255, 215, 117, 0.16);
+}
+
+.adventure-strip-node.is-done .adventure-strip-visual {
+  border-color: #8fe79d;
+}
+
+.adventure-strip-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.adventure-strip-copy strong {
+  font-size: 0.98rem;
+  line-height: 1.1;
+}
+
+.adventure-strip-copy span {
+  color: rgba(220, 226, 255, 0.68);
+  font-size: 0.76rem;
+}
+
+.adventure-strip-connector {
+  position: absolute;
+  left: calc(100% - 12px);
+  top: 44px;
+  width: 28px;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(181, 143, 255, 0.7), rgba(181, 143, 255, 0));
+}
+
+.phone-challenge-row {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(132px, 1fr);
+  gap: 12px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.phone-challenge-card {
+  min-height: 154px;
+  padding: 18px 16px;
+  border-radius: 22px;
+  display: grid;
+  gap: 10px;
+  color: #fff;
+  text-align: left;
+  box-shadow: 0 18px 34px rgba(7, 12, 29, 0.28);
+}
+
+.phone-challenge-card strong {
+  font-size: 1.06rem;
+}
+
+.phone-challenge-card span,
+.phone-challenge-card small {
+  color: rgba(255, 255, 255, 0.86);
+}
+
+.phone-challenge-card.is-active {
+  transform: translateY(-2px);
+  box-shadow: 0 24px 40px rgba(7, 12, 29, 0.34);
+}
+
+.phone-challenge-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.16);
+}
+
+.phone-moment-card {
+  position: relative;
+  min-height: 168px;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.phone-moment-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.phone-moment-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 13, 33, 0.08) 0%, rgba(10, 13, 33, 0.78) 100%);
+}
+
+.phone-moment-copy {
+  display: grid;
+  align-content: end;
+  gap: 8px;
+  min-height: 168px;
+  padding: 18px;
+}
+
+.phone-moment-copy span {
+  width: fit-content;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.phone-moment-copy strong {
+  font-size: 1.4rem;
+  line-height: 1.02;
+}
+
+.phone-moment-foot button {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  backdrop-filter: blur(12px);
+}
+
+.phone-insight-card {
+  padding: 18px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(30, 37, 79, 0.96), rgba(22, 28, 58, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.phone-insight-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 20px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, rgba(255, 133, 192, 0.28), rgba(255, 112, 158, 0.14));
+  color: #ff9cc7;
+}
+
+.phone-insight-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.phone-insight-copy strong {
+  font-size: 1.34rem;
+  line-height: 1.12;
+}
+
+.phone-insight-score {
+  text-align: right;
+}
+
+.phone-insight-score strong {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.phone-insight-score span {
+  color: rgba(232, 236, 255, 0.72);
+  font-size: 0.82rem;
+}
+
+.phone-bottom-nav {
+  position: sticky;
+  bottom: calc(env(safe-area-inset-bottom) + 8px);
+  z-index: 4;
+  margin-top: 8px;
+  padding: 10px 12px calc(10px + env(safe-area-inset-bottom));
+  border-radius: 28px;
+  background: rgba(13, 19, 46, 0.94);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 20px 42px rgba(5, 10, 27, 0.36);
+}
+
+.phone-bottom-nav button {
+  border: 0;
+  background: transparent;
+  color: rgba(224, 229, 255, 0.7);
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  border-radius: 18px;
+}
+
+.phone-bottom-nav button.is-active {
+  color: #fff;
+  background: linear-gradient(180deg, rgba(131, 91, 255, 0.26), rgba(120, 70, 255, 0.14));
+}
+
+.phone-bottom-nav span {
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.experience-companion {
+  display: grid;
+  gap: 18px;
+}
+
+.companion-label {
+  color: rgba(214, 206, 255, 0.78);
+}
+
+.companion-scene-card,
+.companion-map-card {
+  padding: 20px;
+  border-radius: 30px;
+  background: linear-gradient(180deg, rgba(15, 21, 46, 0.96), rgba(12, 18, 40, 0.98));
+  display: grid;
+  gap: 16px;
+}
+
+.companion-scene-topbar {
+  gap: 12px;
+}
+
+.companion-scene-title {
+  display: grid;
+  gap: 3px;
+  margin-right: auto;
+}
+
+.companion-scene-title strong {
+  font-size: 1.35rem;
+}
+
+.companion-scene-media {
+  position: relative;
+  min-height: 360px;
+  border-radius: 26px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.companion-scene-media > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.companion-scene-dim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(8, 12, 31, 0.1) 0%, rgba(8, 12, 31, 0.42) 100%);
+}
+
+.companion-scene-character {
+  position: absolute;
+  left: 26px;
+  bottom: 22px;
+  width: min(30%, 180px);
+}
+
+.companion-scene-character img {
+  width: 100%;
+  height: auto;
+  display: block;
+  filter: drop-shadow(0 24px 30px rgba(8, 12, 31, 0.42));
+}
+
+.companion-bubble {
+  margin-top: -72px;
+  margin-left: auto;
+  width: min(420px, 92%);
+  padding: 14px 18px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #231c47;
+  display: grid;
+  gap: 4px;
+  box-shadow: 0 22px 44px rgba(9, 13, 31, 0.3);
+}
+
+.companion-bubble span {
+  color: #786cab;
+  font-size: 0.8rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.companion-bubble strong {
+  font-size: 1.08rem;
+  line-height: 1.25;
+}
+
+.companion-bubble svg {
+  justify-self: end;
+}
+
+.companion-heart-pill {
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.companion-scene-options {
+  display: grid;
+  gap: 12px;
+}
+
+.scene-option-button {
+  padding: 17px 18px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  text-align: left;
+}
+
+.scene-option-button.is-selected,
+.scene-option-button:hover {
+  background: linear-gradient(180deg, rgba(123, 91, 255, 0.88), rgba(97, 51, 235, 0.88));
+}
+
+.scene-option-button.is-correct {
+  background: linear-gradient(180deg, rgba(65, 204, 113, 0.88), rgba(40, 165, 92, 0.88));
+}
+
+.scene-option-button.is-wrong {
+  background: linear-gradient(180deg, rgba(255, 123, 142, 0.88), rgba(226, 77, 108, 0.88));
+}
+
+.scene-drag-builder,
+.scene-order-builder,
+.scene-speaking-card {
+  padding: 16px;
+  border-radius: 22px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: grid;
+  gap: 14px;
+}
+
+.scene-drag-sentence {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: rgba(230, 235, 255, 0.86);
+  line-height: 1.5;
+}
+
+.scene-token-row,
+.scene-sort-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.scene-reset-button {
+  width: fit-content;
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.scene-speaking-card {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+}
+
+.scene-speaking-ring {
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.12), rgba(133, 91, 255, 0.16));
+}
+
+.scene-speaking-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.scene-speaking-copy p {
+  margin: 0;
+  color: rgba(230, 235, 255, 0.74);
+}
+
+.scene-speaking-action {
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #855dff 0%, #6936f0 100%);
+  color: #fff;
+  font-weight: 800;
+}
+
+.scene-speaking-action.is-done {
+  background: linear-gradient(180deg, #4dd17a 0%, #2aa05d 100%);
+}
+
+.companion-scene-footer,
+.scene-progress-meter {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  justify-content: space-between;
+}
+
+.scene-feedback-copy strong {
+  font-size: 1rem;
+}
+
+.scene-progress-meter strong {
+  color: #ffd775;
+}
+
+.scene-progress-bars {
+  display: grid;
+  grid-auto-flow: column;
+  gap: 6px;
+}
+
+.scene-progress-bars span {
+  width: 42px;
+  height: 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.scene-progress-bars span.is-filled {
+  background: linear-gradient(90deg, #8e6dff 0%, #cf73ff 100%);
+}
+
+.companion-map-card {
+  min-height: 380px;
+}
+
+.companion-map-head,
+.companion-map-node {
+  display: grid;
+  gap: 6px;
+}
+
+.companion-map-track {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+  padding: 18px;
+  border-radius: 24px;
+  background:
+    radial-gradient(circle at 50% 0%, rgba(97, 172, 255, 0.18), transparent 22%),
+    linear-gradient(180deg, #0d1731 0%, #101d3a 100%);
+  overflow: hidden;
+}
+
+.companion-map-track::before {
+  content: '';
+  position: absolute;
+  inset: 24px 18px;
+  border-radius: 999px;
+  border: 2px dashed rgba(199, 177, 255, 0.36);
+  pointer-events: none;
+}
+
+.companion-map-node {
+  position: relative;
+  z-index: 1;
+  padding: 14px;
+  border-radius: 22px;
+  background: rgba(15, 25, 56, 0.82);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.companion-map-node-image {
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 14px 26px rgba(6, 10, 27, 0.3);
+}
+
+.companion-map-node-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.companion-map-node.is-active .companion-map-node-image {
+  border-color: #ffd775;
+}
+
+.companion-map-node.is-done .companion-map-node-image {
+  border-color: #8fe79d;
+}
+
+.companion-mini-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.mini-preview-card {
+  padding: 14px;
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(17, 23, 49, 0.96), rgba(12, 18, 38, 0.98));
+  display: grid;
+  gap: 12px;
+}
+
+.mini-preview-image {
+  aspect-ratio: 9 / 16;
+  border-radius: 18px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mini-preview-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mini-preview-card strong {
+  font-size: 0.96rem;
+}
+
+.mini-preview-progress {
+  min-height: 180px;
+  display: grid;
+  align-content: center;
+  gap: 10px;
+}
+
+.experience-values {
+  padding: 18px 24px;
+  border-radius: 28px;
+  background: linear-gradient(180deg, rgba(20, 28, 61, 0.96), rgba(15, 23, 49, 0.98));
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.experience-values-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 18px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, rgba(133, 91, 255, 0.26), rgba(255, 191, 79, 0.18));
+}
+
+.experience-values p {
+  margin-top: 4px;
+}
+
+.experience-values-grid {
+  gap: 14px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.experience-values-grid span {
+  padding: 10px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.05);
+  color: rgba(235, 239, 255, 0.82);
+  font-weight: 700;
+}
+
+@media (max-width: 1180px) {
+  .experience-shell {
+    padding: 18px;
+  }
+
+  .experience-stage {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .experience-companion,
+  .experience-values {
+    display: none;
+  }
+
+  .phone-home {
+    max-width: 520px;
+    margin: 0 auto;
+  }
+}
+
+@media (max-width: 760px) {
+  .experience-shell {
+    padding: 0;
+  }
+
+  .experience-admin-pill {
+    top: 14px;
+    right: 14px;
+  }
+
+  .phone-home {
+    min-height: 100vh;
+    max-width: none;
+    border-radius: 0;
+    padding:
+      calc(14px + env(safe-area-inset-top))
+      14px
+      calc(118px + env(safe-area-inset-bottom))
+      14px;
+  }
+
+  .phone-topbar {
+    position: sticky;
+    top: calc(env(safe-area-inset-top) + 2px);
+    z-index: 5;
+    padding-bottom: 8px;
+    background: linear-gradient(180deg, rgba(18, 25, 61, 0.94), rgba(18, 25, 61, 0));
+  }
+
+  .phone-brand-block strong {
+    font-size: 1.5rem;
+  }
+
+  .phone-status-pill {
+    padding: 8px 10px;
+  }
+
+  .phone-status-pill span {
+    display: none;
+  }
+
+  .mission-hero-card {
+    min-height: 300px;
+  }
+
+  .mission-hero-copy {
+    max-width: 12rem;
+    padding: 20px;
+  }
+
+  .mission-hero-copy h1 {
+    font-size: clamp(2.45rem, 11vw, 3.5rem);
+  }
+
+  .mission-current-copy h2 {
+    font-size: 1.75rem;
+  }
+
+  .adventure-strip {
+    grid-auto-columns: 132px;
+  }
+
+  .phone-bottom-nav {
+    border-radius: 26px 26px 0 0;
+    margin-inline: -14px;
+    margin-bottom: calc(-1 * env(safe-area-inset-bottom));
+  }
+
+  .phone-insight-card {
+    grid-template-columns: auto 1fr;
+  }
+
+  .phone-insight-score {
+    grid-column: 2;
+    text-align: left;
   }
 }

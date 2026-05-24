@@ -27,25 +27,24 @@ import { getUserProgress, saveUserProgress, type UserProgress } from './services
 import { saveSkillProgress } from './services/skillProgress'
 import { completeStudySession, startStudySession } from './services/studySessions'
 import {
+  ArrowRight,
   BookOpen,
-  CalendarDays,
+  ChevronRight,
   Crown,
   Flame,
   Gamepad2,
   Grip,
   Headphones,
+  Heart,
   Home,
   Map,
   Medal,
+  Menu,
   Mic,
-  Play,
   RotateCcw,
-  Search,
   Sparkles,
-  Store,
-  Target,
-  Trophy,
   UserRound,
+  Volume2,
   WandSparkles,
   Zap,
 } from 'lucide-react'
@@ -55,12 +54,6 @@ import { CSS } from '@dnd-kit/utilities'
 
 type FilterKey = 'Todos' | 'Gramática' | 'Vocabulário' | 'Listening' | 'Reading' | 'Speaking'
 type Difficulty = 'Fácil' | 'Médio'
-
-type NavItem = {
-  label: string
-  icon: typeof Home
-  active?: boolean
-}
 
 type MultipleChoiceExercise = {
   id: string
@@ -155,20 +148,7 @@ type EmotionalPulse = {
 
 type SyncState = 'idle' | 'saving' | 'saved' | 'error'
 
-const navItems: NavItem[] = [
-  { label: 'Início', icon: Home, active: true },
-  { label: 'Missões', icon: Target },
-  { label: 'Aulas', icon: BookOpen },
-  { label: 'Quizzes', icon: Gamepad2 },
-  { label: 'Desafios', icon: Flame },
-  { label: 'Ranking', icon: Trophy },
-  { label: 'Coleção', icon: Sparkles },
-  { label: 'Perfil', icon: UserRound },
-]
-
 const lessonCards: LessonCatalogItem[] = defaultLessonsCatalog
-
-const filters: FilterKey[] = ['Todos', 'Gramática', 'Vocabulário', 'Listening', 'Reading', 'Speaking']
 
 const exercises: Exercise[] = [
   {
@@ -266,10 +246,6 @@ const exercises: Exercise[] = [
 ]
 
 const normalizeTokenOrder = (words: string[]) => words.map((word) => word.toLowerCase()).join('|')
-const formatSentence = (words: string[]) => {
-  const sentence = words.join(' ').replace(/\s([?.!,;:])/g, '$1')
-  return sentence.charAt(0).toUpperCase() + sentence.slice(1)
-}
 const clampPercent = (value: number) => Math.min(100, Math.max(0, Math.round(value)))
 const normalizeForSignature = (value: unknown): unknown => {
   if (Array.isArray(value)) return value.map((item) => normalizeForSignature(item))
@@ -409,13 +385,6 @@ const toRuntimeExercises = (questions: QuizQuestionItem[], quizzes: QuizCatalogI
   return mapped.length ? mapped : exercises
 }
 
-const getExerciseMode = (exercise: Exercise) => {
-  if (exercise.kind === 'drag-fill') return 'Drag challenge'
-  if (exercise.kind === 'ordering') return 'Word shuffle'
-  if (exercise.tag === 'Listening') return 'Audio sprint'
-  return 'XP rush'
-}
-
 const getChallengeDuration = (exercise: Exercise) => {
   if (exercise.kind === 'speaking') return '15s'
   if (exercise.kind === 'listening') return '45s'
@@ -496,8 +465,8 @@ function App() {
   const [achievementCatalog, setAchievementCatalog] = useState<AchievementCatalogItem[]>([])
   const [quizQuestionCatalog, setQuizQuestionCatalog] = useState<QuizQuestionItem[]>(defaultQuizQuestions)
   const [, setLeaderboard] = useState<LeaderboardEntry[]>(fallbackLeaderboard)
-  const [syncState, setSyncState] = useState<SyncState>('idle')
-  const [syncMessage, setSyncMessage] = useState('Progresso local pronto para sincronizar.')
+  const [, setSyncState] = useState<SyncState>('idle')
+  const [, setSyncMessage] = useState('Progresso local pronto para sincronizar.')
   const [view, setView] = useState<'home' | 'admin'>('home')
   const [sessionId, setSessionId] = useState<string | null>(null)
   const [sessionStartedAt, setSessionStartedAt] = useState<number | null>(null)
@@ -549,15 +518,11 @@ function App() {
     return xp
   }, [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises, speakingCompletions])
 
-  const totalAvailableXp = useMemo(() => runtimeExercises.reduce((sum, exercise) => sum + exercise.reward, 0), [runtimeExercises])
   const profileXp = progressSnapshot?.totalXp ?? profile?.xp ?? totalXp
   const streakDays = progressSnapshot?.streakDays ?? profile?.streak ?? 0
   const profileLevel = progressSnapshot?.level ?? profile?.level ?? 1
   const heroXp = Math.min(650, 350 + profileXp)
   const heroXpWidth = `${(heroXp / 650) * 100}%`
-  const playTitle = completedCount === 0 ? 'Play agora' : completedCount < 3 ? 'Continuar run' : 'Fechar streak'
-  const playCaption = completedCount === 0 ? '5 min de aventura guiada' : completedCount < 3 ? 'Você já engatou o ritmo' : 'Últimos desafios do combo'
-  const sessionIntensity = Math.min(100, Math.round((totalXp / totalAvailableXp) * 100))
   const firstName = profile?.displayName?.split(' ')[0] ?? user?.displayName?.split(' ')[0] ?? 'learner'
   const isAdmin = profile?.role === 'admin'
   const currentMissionLesson = useMemo(() => {
@@ -745,6 +710,31 @@ function App() {
     [currentMissionLesson?.emotionalGoal, emotionalPulse, profile?.focusSkill],
   )
 
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours()
+    if (hour < 12) return 'Good morning'
+    if (hour < 18) return 'Good afternoon'
+    return 'Good evening'
+  }, [])
+
+  const activeQuickChallenge = useMemo(
+    () => quickChallenges.find((challenge) => challenge.id === activeExercise?.id) ?? quickChallenges[0] ?? null,
+    [activeExercise?.id, quickChallenges],
+  )
+
+  const sceneOrderingWords = useMemo(
+    () => (activeExercise?.kind === 'ordering' ? orderWordMap[activeExercise.id] ?? activeExercise.scrambled : []),
+    [activeExercise, orderWordMap],
+  )
+
+  const sceneSolved = useMemo(
+    () =>
+      activeExercise
+        ? isExerciseSolved(activeExercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions)
+        : false,
+    [activeExercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions],
+  )
+
   const currentMissionIndex = useMemo(() => {
     const index = lessonsCatalog.findIndex((lesson) => lesson.id === currentMissionLesson?.id)
     return index >= 0 ? index : 0
@@ -811,22 +801,35 @@ function App() {
     return source.map((quiz, index) => {
       const linkedLesson = lessonMap[quiz.lessonId] ?? currentMissionLesson ?? lessonsCatalog[index]
 
-        return {
-          id: quiz.id,
-          title: quiz.storyBeat ?? linkedLesson?.missionTitle ?? quiz.title,
-          context: linkedLesson?.emotionalContext ?? quiz.objective ?? linkedLesson?.blurb ?? 'Situação curta com urgência leve.',
-          hook: quiz.objective ?? linkedLesson?.practicalGoal ?? 'Resolva a cena e avance com segurança.',
-          duration: `${Math.max(1, Math.min(5, Math.round((quiz.reward ?? 24) / 10)))} min`,
-          image:
-            getFirstSlotPath(quiz.mediaSlots, ['scenarioThumbnail', 'emotionalThumbnail', 'challengeCardImage'], '') ||
-            quiz.coverArt ||
-            getFirstSlotPath(linkedLesson?.mediaSlots, ['thumbnail', 'nodeImage'], '') ||
-            linkedLesson?.image ||
-            '/pollinations/hero-scene.png',
-          badge: quiz.tag || linkedLesson?.category || 'Missão',
-        }
-      })
+      return {
+        id: quiz.id,
+        title: quiz.storyBeat ?? linkedLesson?.missionTitle ?? quiz.title,
+        context: linkedLesson?.emotionalContext ?? quiz.objective ?? linkedLesson?.blurb ?? 'Situação curta com urgência leve.',
+        hook: quiz.objective ?? linkedLesson?.practicalGoal ?? 'Resolva a cena e avance com segurança.',
+        duration: `${Math.max(1, Math.min(5, Math.round((quiz.reward ?? 24) / 10)))} min`,
+        image:
+          getFirstSlotPath(quiz.mediaSlots, ['scenarioThumbnail', 'emotionalThumbnail', 'challengeCardImage'], '') ||
+          quiz.coverArt ||
+          getFirstSlotPath(linkedLesson?.mediaSlots, ['thumbnail', 'nodeImage'], '') ||
+          linkedLesson?.image ||
+          '/pollinations/hero-scene.png',
+        badge: quiz.tag || linkedLesson?.category || 'Missão',
+      }
+    })
   }, [currentMissionLesson, currentMissionQuizzes, lessonMap, lessonsCatalog, quizCatalog])
+
+  const featuredMoment = realLifeMoments[0] ?? null
+  const featuredInsight = emotionalInsights[0] ?? null
+
+  const adventureCompletionCount = useMemo(
+    () => adventureProgress.filter((step) => step.state === 'done').length,
+    [adventureProgress],
+  )
+
+  const adventureCompletionPercent = useMemo(
+    () => (adventureProgress.length ? Math.round((adventureCompletionCount / adventureProgress.length) * 100) : 0),
+    [adventureCompletionCount, adventureProgress.length],
+  )
 
   const recentMissionTheme = currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? ''
   const {
@@ -1461,13 +1464,6 @@ function App() {
     })
   }
 
-  const resetChoice = (id: MultipleChoiceExercise['id']) => {
-    setChoiceAnswers((current) => ({ ...current, [id]: null }))
-    setMascotMood('guide')
-    setMascotLine('Boa. Respira e tenta de novo com calma.')
-    playUiSound('click')
-  }
-
   const clearDragFill = (exerciseId: string) => {
     setDragFillAnswers((current) => ({ ...current, [exerciseId]: null }))
   }
@@ -1608,634 +1604,436 @@ function App() {
   }
 
   return (
-    <div className="app-shell">
-      <aside className="sidebar">
-        <div className="brand-block">
-          <div className="brand-mark">
-            <WandSparkles size={20} strokeWidth={2.25} />
-          </div>
-          <div>
-            <strong>SparkLingo</strong>
-            <span>play to learn</span>
-          </div>
-        </div>
+    <div className="experience-shell">
+      {isAdmin && (
+        <button className="experience-admin-pill" type="button" onClick={() => setView('admin')}>
+          <Crown size={16} />
+          Admin
+        </button>
+      )}
 
-        <nav className="sidebar-nav">
-          {navItems.map((item) => {
-            const Icon = item.icon
-            return (
-              <button key={item.label} className={`nav-pill${item.active ? ' active' : ''}`}>
-                <Icon size={18} />
-                <span>{item.label}</span>
+      <main className="experience-home">
+        <section className="experience-stage">
+          <section className="phone-home">
+            <header className="phone-topbar">
+              <button className="phone-menu-button" type="button" onClick={() => playUiSound('click')} aria-label="Abrir menu">
+                <Menu size={18} />
               </button>
-            )
-          })}
-          {isAdmin && (
-            <button className={`nav-pill${view === 'admin' ? ' active' : ''}`} onClick={() => setView('admin')}>
-              <Crown size={18} />
-              <span>Admin</span>
-            </button>
-          )}
-        </nav>
-
-        <div className="sidebar-streak">
-          <p className="sidebar-streak-label">
-            <Flame size={16} />
-            Sequência
-          </p>
-          <strong>{streakDays} dias!</strong>
-          <div className="sidebar-creature">
-            <img src="/Images/Mascote/Sparklingo.png" alt="Spark, mascote do SparkLingo" className="sidebar-mascot-image" />
-          </div>
-          <button>Keep going!</button>
-        </div>
-      </aside>
-
-      <main className="main-panel">
-        <section className="hero-card">
-          <div className="hero-mobile-bar">
-            <div className="hero-mobile-brand">
-              <div className="hero-mobile-brand-mark">
-                <WandSparkles size={16} strokeWidth={2.2} />
-              </div>
-              <strong>SparkLingo</strong>
-            </div>
-            <div className="hero-mobile-stats">
-              <div className="hero-mobile-pill">
-                <Flame size={14} />
-                <strong>{streakDays}</strong>
-              </div>
-              <div className="hero-mobile-pill">
-                <Medal size={14} />
-                <strong>{heroXp}</strong>
-              </div>
-              <button className="hero-mobile-avatar" onClick={() => signOut()} title="Sair" type="button">
-                {profile?.avatarUrl ? (
-                  <img src={profile.avatarUrl} alt={profile.displayName} className="avatar-image" />
-                ) : (
-                  <UserRound size={16} />
-                )}
-              </button>
-            </div>
-          </div>
-
-          <div className="hero-copy">
-            <div className="hero-intro hero-intro-mission">
-              <p className="micro-label">Hey, {firstName}! • missão em andamento</p>
-              <span className="hero-story-kicker">{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Spark mission'}</span>
-              <h1 className="hero-title-cinematic">
-                {currentMissionLesson?.emotionalContext ?? platformConfig?.heroHeadline ?? 'Continue sua aventura de inglês em contexto real.'}
-              </h1>
-              <p className="hero-subtitle hero-subtitle-mission">
-                {currentMissionLesson?.practicalGoal ??
-                  platformConfig?.heroSubtitle ??
-                  'Spark usa sua memória, sua confiança e seu ritmo real para transformar a prática em progresso percebido.'}
-              </p>
-            </div>
-
-            <div className="hero-status">
-              <div className="status-pill"><Target size={16} /> missão ativa</div>
-              <div className="status-pill"><Flame size={16} /> {streakDays} dias</div>
-              <div className="status-pill"><Medal size={16} /> confiança {emotionalPulse.confidence}%</div>
-              <div className={`status-pill sync-pill sync-pill-${syncState}`}>
-                <Zap size={16} />
-                {syncState === 'saving' ? 'salvando' : syncState === 'saved' ? 'sincronizado' : syncState === 'error' ? 'erro' : 'local'}
-              </div>
-              <button className="avatar-pill avatar-action" onClick={() => signOut()} title="Sair" type="button">
-                {profile?.avatarUrl ? (
-                  <img src={profile.avatarUrl} alt={profile.displayName} className="avatar-image" />
-                ) : (
-                  <UserRound size={18} />
-                )}
-              </button>
-            </div>
-
-            <p className={`sync-caption sync-caption-${syncState}`}>{syncMessage}</p>
-
-            <article className="hero-mission-panel">
-              <div className="hero-mission-panel-head">
-                <span className="micro-label">Current mission</span>
-                <span className="hero-mission-stage">Scene {Math.min(currentMissionIndex + 1, Math.max(adventureProgress.length, 1))} of {Math.max(adventureProgress.length, 1)}</span>
-              </div>
-              <div className="hero-mission-panel-body">
-                <div className="hero-mission-panel-copy">
-                  <strong>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Continue mission'}</strong>
-                  <p>{currentMissionLesson?.emotionalGoal ?? 'Spark vai reduzir hesitação e manter sua resposta viva em contexto real.'}</p>
+              <div className="phone-brand-block">
+                <div className="phone-brand-mark">
+                  <WandSparkles size={16} strokeWidth={2.35} />
                 </div>
-                <div className="hero-mission-panel-meta">
-                  <span>{currentMissionLesson?.tensionLabel ?? 'Urgência moderada'}</span>
-                  <span>Nível {profileLevel}</span>
-                  <span>{currentMissionLesson?.confidenceTarget ?? 'Responder com segurança'}</span>
-                </div>
-                <div className="hero-progress-panel hero-progress-panel-mission">
-                  <div className="hero-progress-head">
-                    <span>Capítulo {currentMissionIndex + 1}</span>
-                    <span>{heroXp} / 650 XP</span>
-                  </div>
-                  <div className="track dark">
-                    <div className="track-fill track-fill-hero" style={{ width: heroXpWidth }} />
+                <strong>SparkLingo</strong>
+              </div>
+              <div className="phone-status-cluster">
+                <div className="phone-status-pill">
+                  <Flame size={14} />
+                  <div>
+                    <strong>{streakDays}</strong>
+                    <span>day streak</span>
                   </div>
                 </div>
+                <div className="phone-status-pill">
+                  <Medal size={14} />
+                  <div>
+                    <strong>{heroXp} +</strong>
+                    <span>XP</span>
+                  </div>
+                </div>
+                <button className="phone-avatar-button" onClick={() => signOut()} title="Sair" type="button">
+                  {profile?.avatarUrl ? (
+                    <img src={profile.avatarUrl} alt={profile.displayName} className="avatar-image" />
+                  ) : (
+                    <UserRound size={18} />
+                  )}
+                </button>
               </div>
+            </header>
+
+            <section className="mission-hero-card">
+              <picture className="mission-hero-media">
+                <source media="(max-width: 760px)" srcSet={currentMissionHeroMobile} />
+                <img
+                  src={currentMissionHeroDesktop}
+                  alt={`Missão atual ${currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'ativa'}`}
+                  loading="eager"
+                />
+              </picture>
+              <div className="mission-hero-gradient" />
+              <div className="mission-hero-copy">
+                <p className="mission-greeting">{greeting}, {firstName}! 👋</p>
+                <h1>Continue your adventure</h1>
+                <p>Every conversation moves you closer to fluency.</p>
+              </div>
+              <div className="mission-hero-mascot">
+                <img src={currentMissionMascot} alt="Spark acompanha sua missão" />
+              </div>
+            </section>
+
+            <article className="mission-current-card">
+              <div className="mission-current-badge">Current mission</div>
+              <div className="mission-current-media">
+                <img src={currentMissionVisual} alt={currentMissionLesson?.title ?? 'Current mission'} />
+              </div>
+              <div className="mission-current-copy">
+                <h2>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Airport Arrival'}</h2>
+                <p>{currentMissionLesson?.emotionalContext ?? "You just landed in Boston. Let's get you through immigration."}</p>
+                <div className="mission-current-meta">
+                  <span>Chapter {currentMissionIndex + 1}</span>
+                  <span>Scene {Math.min(currentMissionIndex + 1, Math.max(adventureProgress.length, 1))} of {Math.max(adventureProgress.length, 1)}</span>
+                  <strong>In progress</strong>
+                </div>
+              </div>
+              <button className="mission-continue-button" type="button" onClick={launchRun}>
+                <span>Continue Mission</span>
+                <ArrowRight size={18} />
+              </button>
             </article>
 
-            <div className="hero-actions">
-              <button className="hero-primary hero-primary-play" onClick={launchRun}>
-                <Play size={18} fill="currentColor" />
-                <span>
-                  <strong>{playTitle}</strong>
-                  <small>{playCaption}</small>
-                </span>
-              </button>
-              <button className="hero-secondary" onClick={() => playUiSound('click')}>Ver trilha</button>
-            </div>
-          </div>
-
-          <div className="hero-scene">
-            <div className="hero-scene-label">Adventure mode</div>
-            <div className="hero-scene-panel">
-              <div className="hero-orb hero-orb-left" />
-              <div className="hero-orb hero-orb-right" />
-              <div className="hero-speech hero-speech-top">Current mission</div>
-              <div className="hero-scene-image-wrap">
-                <picture>
-                  <source media="(max-width: 760px)" srcSet={currentMissionHeroMobile} />
-                  <img
-                    src={currentMissionHeroDesktop}
-                    alt={`Cena da missão ${currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'ativa'}`}
-                    className="hero-scene-image"
-                    loading="eager"
-                  />
-                </picture>
-              </div>
-              <div className="hero-scene-mascot">
-                <img src={currentMissionMascot} alt="Spark acompanha a missão atual" />
-              </div>
-              <div className="hero-scene-note hero-scene-note-left">
-                <span>Missão atual</span>
-                <strong>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Missão viva'}</strong>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="adventure-section">
-          <div className="section-heading-row">
-            <div className="section-heading-copy">
-              <p className="micro-label">Your adventure map</p>
-              <h2>Um checkpoint claro para saber onde você está e o que vem depois</h2>
-            </div>
-            <div className="journey-meta-pill">
-              <Target size={16} />
-              <span>{adventureProgress.filter((step) => step.state === 'done').length}/{adventureProgress.length} checkpoints</span>
-            </div>
-          </div>
-
-          <div className="adventure-shell">
-            <div className="adventure-track">
-              {visibleAdventureProgress.map((step) => (
-                <article key={step.id} className={`adventure-node adventure-node-${step.state}`}>
-                  <div className="adventure-node-step">{step.step}</div>
-                  <div className="adventure-node-visual">
-                    <img src={step.image} alt={step.title} />
-                  </div>
-                  <div className="adventure-node-copy">
-                    <span>{step.label}</span>
-                    <strong>{step.missionTitle ?? step.title}</strong>
-                    <p>{step.cue}</p>
-                  </div>
-                </article>
-              ))}
-            </div>
-
-            <div className="adventure-summary-strip">
-              <div className="adventure-summary-copy">
-                <span className="micro-label">Checkpoint atual</span>
-                <strong>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Continue sua jornada'}</strong>
-                <p>{currentMissionLesson?.practicalGoal ?? 'Use frases curtas, responda com confiança e avance para a próxima cena.'}</p>
-              </div>
-              <div className="adventure-summary-progress">
-                <div className="adventure-summary-head">
-                  <span>Progresso da missão</span>
-                  <strong>{currentMissionLesson?.progress ?? 0}%</strong>
+            <section className="phone-section">
+              <div className="phone-section-head">
+                <div>
+                  <span className="phone-section-label">Your adventure map</span>
+                  <strong>Follow the journey, one checkpoint at a time.</strong>
                 </div>
-                <div className="track soft">
-                  <div className="track-fill green" style={{ width: `${currentMissionLesson?.progress ?? 0}%` }} />
-                </div>
-                <small>{currentMissionLesson?.nextMissionHook ?? 'Cada checkpoint mantém a continuidade da sua aventura.'}</small>
+                <button type="button" className="phone-link-button" onClick={() => playUiSound('click')}>
+                  View all <ChevronRight size={15} />
+                </button>
               </div>
-            </div>
-          </div>
-        </section>
-
-        <section className="quick-challenges-section">
-          <div className="section-heading-row">
-            <div className="section-heading-copy">
-              <p className="micro-label">Quick XP challenges</p>
-              <h2>Microdesafios que mantêm a missão viva sem parecer lista de exercícios</h2>
-            </div>
-            <button className="ghost-link" type="button" onClick={launchRun}>Continuar jornada</button>
-          </div>
-
-          <div className="quick-challenge-grid">
-            {quickChallenges.map((challenge) => {
-              const Icon = challenge.Icon
-
-              return (
-                <button
-                  key={challenge.id}
-                  type="button"
-                  className={`quick-challenge-card tone-${challenge.tone}${challenge.done ? ' is-done' : ''}`}
-                  onClick={() => {
-                    setActiveFilter(challenge.tag)
-                    setActiveChallengeId(challenge.id)
-                    playUiSound('click')
-                  }}
-                >
-                  <div className="quick-challenge-head">
-                    <div className="quick-challenge-icon">
-                      <Icon size={18} />
+              <div className="adventure-strip">
+                {visibleAdventureProgress.map((step, index) => (
+                  <article key={step.id} className={`adventure-strip-node is-${step.state}`}>
+                    <div className="adventure-strip-visual">
+                      <img src={step.image} alt={step.title} />
                     </div>
-                    <span>{challenge.label}</span>
-                    <strong>+{challenge.reward} XP</strong>
-                  </div>
-                  <h3>{challenge.title}</h3>
-                  <p>{challenge.caption}</p>
-                  <div className="quick-challenge-foot">
-                    <small>{challenge.duration}</small>
-                    <small>{challenge.done ? 'Concluído' : challenge.tag}</small>
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-          <div className="quick-challenge-workspace">
-            <div className="run-state-bar">
-              <div className="run-stat run-stat-primary">
-                <Play size={16} fill="currentColor" />
-                <span>Missão ativa</span>
-                <strong>{completedCount}/{runtimeExercises.length}</strong>
+                    <div className="adventure-strip-copy">
+                      <strong>{step.missionTitle ?? step.title}</strong>
+                      <span>{step.state === 'done' ? 'Completed' : step.state === 'active' ? 'In progress' : step.state === 'ready' ? 'Ready' : 'Locked'}</span>
+                    </div>
+                    {index < visibleAdventureProgress.length - 1 && <div className="adventure-strip-connector" />}
+                  </article>
+                ))}
               </div>
-              <div className="run-stat">
-                <Flame size={16} />
-                <span>Combo</span>
-                <strong>x{Math.max(sessionStreak, 1)}</strong>
-              </div>
-              <div className="run-stat">
-                <Zap size={16} />
-                <span>XP sessão</span>
-                <strong>{totalXp}</strong>
-              </div>
-              <div className="run-energy">
-                <span>Energia da missão</span>
-                <div className="track soft">
-                  <div className="track-fill" style={{ width: `${sessionIntensity}%` }} />
+            </section>
+
+            <section className="phone-section">
+              <div className="phone-section-head">
+                <div>
+                  <span className="phone-section-label">Quick XP challenges</span>
+                  <small>New challenges keep your momentum alive.</small>
                 </div>
-              </div>
-            </div>
-
-            <div className="filter-row">
-              {filters.map((filter) => (
-                <button
-                  key={filter}
-                  className={`filter-chip${filter === activeFilter ? ' active' : ''}`}
-                  onClick={() => {
-                    setActiveFilter(filter)
-                    playUiSound('click')
-                  }}
-                >
-                  {filter}
+                <button type="button" className="phone-link-button" onClick={launchRun}>
+                  See all <ChevronRight size={15} />
                 </button>
-              ))}
-              <button className="icon-chip" aria-label="Pesquisa" onClick={() => playUiSound('click')}>
-                <Search size={16} />
-              </button>
-            </div>
-
-            <div className="exercise-grid exercise-grid-focus">
-                {(activeExercise ? [activeExercise] : []).map((exercise) => {
-                  const exerciseTagClass = exercise.tag.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]+/g, '-')
-
-                  if (exercise.kind === 'multiple-choice' || exercise.kind === 'listening') {
-                    const selected = choiceAnswers[exercise.id]
-                    const isCorrect = selected === exercise.correct
-                    const isWrong = selected !== null && selected !== exercise.correct
-
-                    return (
-                      <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
-                        <div className="exercise-glow" />
-                        {activeReaction?.exerciseId === exercise.id && (
-                          <div className={`exercise-burst exercise-burst-${activeReaction.kind}`}>{activeReaction.label}</div>
-                        )}
-                        <div className="exercise-head">
-                          <span className="exercise-kicker">{exercise.kicker}</span>
-                          <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
-                            {exercise.difficulty}
-                          </span>
-                        </div>
-
-                        <div className="exercise-topline">
-                          <div>
-                            <h3>{exercise.title}</h3>
-                            <p>{exercise.prompt}</p>
-                          </div>
-                          <img src={exercise.art} alt={exercise.artAlt} className="exercise-art" />
-                        </div>
-
-                        <div className="mini-game-strip">
-                          <span><Zap size={14} /> {getExerciseMode(exercise)}</span>
-                          <span><Flame size={14} /> combo x{Math.max(sessionStreak, 1)}</span>
-                        </div>
-
-                        {exercise.kind === 'listening' && (
-                          <div className="audio-player">
-                            <button className="play-circle" aria-label="Tocar áudio">
-                              <Play size={18} fill="currentColor" />
-                            </button>
-                            <div className="wave-bar">
-                              <div className="wave-lines" />
-                            </div>
-                            <span>0:05</span>
-                          </div>
-                        )}
-
-                        <div className="options-column">
-                          {exercise.options.map((option, index) => {
-                            const letter = String.fromCharCode(65 + index)
-                            const showCorrect = selected !== null && option === exercise.correct
-                            const showWrong = selected === option && option !== exercise.correct
-
-                            return (
-                              <button
-                                key={option}
-                                className={`option-card${showCorrect ? ' is-correct' : ''}${showWrong ? ' is-wrong' : ''}${selected === option ? ' is-selected' : ''}`}
-                                onClick={() => handleChoiceSelect(exercise.id, option)}
-                              >
-                                <span className="option-letter">{letter}</span>
-                                <span className="option-copy">{option}</span>
-                                {showCorrect && <span className="option-state">✓</span>}
-                                {showWrong && <span className="option-state">✕</span>}
-                              </button>
-                            )
-                          })}
-                        </div>
-
-                        <div className={`feedback-strip${isCorrect ? ' success' : ''}${isWrong ? ' error' : ''}`}>
-                          <span>{isCorrect ? exercise.explanation : isWrong ? `Quase. ${exercise.explanation}` : 'Dica'}</span>
-                          <div className="feedback-actions">
-                            <strong>⚡ {exercise.reward} XP</strong>
-                            {isWrong && (
-                              <button className="retry-link" onClick={() => resetChoice(exercise.id)}>
-                                Tentar de novo
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </article>
-                    )
-                  }
-
-                  if (exercise.kind === 'drag-fill') {
-                    const currentDragAnswer = dragFillAnswers[exercise.id] ?? null
-                    const isCorrect = currentDragAnswer === exercise.correct
-                    const isWrong = currentDragAnswer !== null && currentDragAnswer !== exercise.correct
-
-                    return (
-                      <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
-                        <div className="exercise-glow" />
-                        {activeReaction?.exerciseId === exercise.id && (
-                          <div className={`exercise-burst exercise-burst-${activeReaction.kind}`}>{activeReaction.label}</div>
-                        )}
-                        <div className="exercise-head">
-                          <span className="exercise-kicker">{exercise.kicker}</span>
-                          <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
-                            {exercise.difficulty}
-                          </span>
-                        </div>
-
-                        <div className="exercise-topline">
-                          <div>
-                            <h3>{exercise.title}</h3>
-                            <p>{exercise.prompt}</p>
-                          </div>
-                          <img src={exercise.art} alt={exercise.artAlt} className="exercise-art" />
-                        </div>
-
-                        <div className="mini-game-strip">
-                          <span><Grip size={14} /> {getExerciseMode(exercise)}</span>
-                          <span><Target size={14} /> acerto instantâneo</span>
-                        </div>
-
-                        <DndContext sensors={sensors} onDragEnd={(event) => handleDragFillEnd(exercise.id, event)}>
-                          <div className="sentence-card">
-                            <span>{exercise.sentenceBefore}</span>
-                            <DropSlot
-                              id={`drag-fill-slot-${exercise.id}`}
-                              value={currentDragAnswer}
-                              isCorrect={isCorrect}
-                              isWrong={isWrong}
-                              onClear={() => clearDragFill(exercise.id)}
-                            />
-                            <span>{exercise.sentenceAfter}</span>
-                          </div>
-
-                          <div className="token-bank">
-                            {exercise.options.map((option) => (
-                              <DraggableToken key={option} id={option} disabled={currentDragAnswer === option} label={option} />
-                            ))}
-                          </div>
-                        </DndContext>
-
-                        <div className={`feedback-strip${isCorrect ? ' success' : ''}${isWrong ? ' error' : ''}`}>
-                          <span>
-                            {isCorrect
-                              ? exercise.explanation
-                              : isWrong
-                                ? `A palavra certa é "${exercise.correct}". ${exercise.explanation}`
-                                : 'Arraste uma opção para a lacuna.'}
-                          </span>
-                          <strong>⚡ {exercise.reward} XP</strong>
-                        </div>
-                      </article>
-                    )
-                  }
-
-                  if (exercise.kind === 'speaking') {
-                    const speakingDone = speakingCompletions[exercise.id] === true
-
-                    return (
-                      <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
-                        <div className="exercise-glow" />
-                        {activeReaction?.exerciseId === exercise.id && (
-                          <div className={`exercise-burst exercise-burst-${activeReaction.kind}`}>{activeReaction.label}</div>
-                        )}
-                        <div className="exercise-head">
-                          <span className="exercise-kicker">{exercise.kicker}</span>
-                          <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
-                            {exercise.difficulty}
-                          </span>
-                        </div>
-
-                        <div className="exercise-topline">
-                          <div>
-                            <h3>{exercise.title}</h3>
-                            <p>{exercise.prompt}</p>
-                          </div>
-                          <img src={exercise.art} alt={exercise.artAlt} className="exercise-art" />
-                        </div>
-
-                        <div className="mini-game-strip">
-                          <span><Mic size={14} /> Speaking confidence</span>
-                          <span><Target size={14} /> {exercise.contextCue ?? 'responda em voz alta para destravar a próxima cena'}</span>
-                        </div>
-
-                        <div className={`speaking-stage${speakingDone ? ' is-done' : ''}`}>
-                          <div className="speaking-orb">
-                            <Mic size={20} />
-                          </div>
-                          <div className="speaking-copy">
-                            <strong>{speakingDone ? 'Resposta registrada' : 'Momento de voz'}</strong>
-                            <span>{speakingDone ? 'Spark marcou este speaking como concluído.' : 'Fale em voz alta, ganhe confiança e depois confirme a conclusão.'}</span>
-                          </div>
-                          <button className="hero-secondary speaking-cta" type="button" onClick={() => handleSpeakingComplete(exercise.id)}>
-                            {speakingDone ? 'Concluído' : 'Já respondi'}
-                          </button>
-                        </div>
-
-                        <div className={`feedback-strip${speakingDone ? ' success' : ''}`}>
-                          <span>{speakingDone ? exercise.explanation : exercise.contextCue ?? 'Respire, responda curto e continue a missão.'}</span>
-                          <strong>⚡ {exercise.reward} XP</strong>
-                        </div>
-                      </article>
-                    )
-                  }
-
-                  const currentOrderWords = orderWordMap[exercise.id] ?? exercise.scrambled
-                  const isOrdered = normalizeTokenOrder(currentOrderWords) === normalizeTokenOrder(exercise.solution)
+              </div>
+              <div className="phone-challenge-row">
+                {quickChallenges.slice(0, 3).map((challenge) => {
+                  const Icon = challenge.Icon
 
                   return (
-                    <article key={exercise.id} className={`exercise-card exercise-card-${exerciseTagClass}`}>
-                      <div className="exercise-glow" />
-                      {activeReaction?.exerciseId === exercise.id && (
-                        <div className={`exercise-burst exercise-burst-${activeReaction.kind}`}>{activeReaction.label}</div>
-                      )}
-                      <div className="exercise-head">
-                        <span className="exercise-kicker">{exercise.kicker}</span>
-                        <span className={`difficulty-pill ${exercise.difficulty === 'Fácil' ? 'easy' : 'medium'}`}>
-                          {exercise.difficulty}
-                        </span>
+                    <button
+                      key={challenge.id}
+                      type="button"
+                      className={`phone-challenge-card tone-${challenge.tone}${activeQuickChallenge?.id === challenge.id ? ' is-active' : ''}`}
+                      onClick={() => {
+                        setActiveFilter(challenge.tag)
+                        setActiveChallengeId(challenge.id)
+                        playUiSound('click')
+                      }}
+                    >
+                      <div className="phone-challenge-icon">
+                        <Icon size={18} />
                       </div>
-
-                      <div className="exercise-topline">
-                        <div>
-                          <h3>{exercise.title}</h3>
-                          <p>{exercise.prompt}</p>
-                        </div>
-                        <img src={exercise.art} alt={exercise.artAlt} className="exercise-art" />
-                      </div>
-
-                      <div className="mini-game-strip">
-                        <span><Sparkles size={14} /> {getExerciseMode(exercise)}</span>
-                        <span><Zap size={14} /> ordem perfeita rende bônus</span>
-                      </div>
-
-                      <DndContext sensors={sensors} onDragEnd={(event) => handleOrderingEnd(exercise.id, event)}>
-                        <SortableContext items={currentOrderWords} strategy={horizontalListSortingStrategy}>
-                          <div className="ordering-lane">
-                            {currentOrderWords.map((word) => (
-                              <SortableWord key={word} id={word} />
-                            ))}
-                          </div>
-                        </SortableContext>
-                      </DndContext>
-
-                      <div className={`feedback-strip${isOrdered ? ' success' : ''}`}>
-                        <span>{isOrdered ? `Perfeito: ${formatSentence(exercise.solution)}` : exercise.explanation}</span>
-                        <div className="feedback-actions">
-                          <strong>⚡ {exercise.reward} XP</strong>
-                          <button className="retry-link" onClick={() => resetOrdering(exercise)}>
-                            <RotateCcw size={14} />
-                            Resetar
-                          </button>
-                        </div>
-                      </div>
-                    </article>
+                      <strong>{challenge.label}</strong>
+                      <span>{challenge.duration}</span>
+                      <small>+{challenge.reward} XP</small>
+                    </button>
                   )
                 })}
-            </div>
-          </div>
-        </section>
+              </div>
+            </section>
 
-        <section className="moments-section">
-          <div className="section-heading-row">
-            <div className="section-heading-copy">
-              <p className="micro-label">Real-life moments</p>
-              <h2>Situações curtas para continuar a jornada mesmo quando você só tem alguns minutos</h2>
-            </div>
-            <button className="ghost-link" type="button" onClick={launchRun}>Praticar agora</button>
-          </div>
+            {featuredMoment && (
+              <section className="phone-section">
+                <div className="phone-section-head">
+                  <div>
+                    <span className="phone-section-label">Real-life moments</span>
+                    <small>Practice, anytime, anywhere.</small>
+                  </div>
+                  <button type="button" className="phone-link-button" onClick={launchRun}>
+                    See all <ChevronRight size={15} />
+                  </button>
+                </div>
+                <article className="phone-moment-card">
+                  <img src={featuredMoment.image} alt={featuredMoment.title} className="phone-moment-image" />
+                  <div className="phone-moment-overlay" />
+                  <div className="phone-moment-copy">
+                    <span>{featuredMoment.badge}</span>
+                    <strong>{featuredMoment.title}</strong>
+                    <p>{featuredMoment.hook}</p>
+                    <div className="phone-moment-foot">
+                      <small>{featuredMoment.duration}</small>
+                      <button type="button" aria-label="Abrir momento" onClick={launchRun}>
+                        <ArrowRight size={16} />
+                      </button>
+                    </div>
+                  </div>
+                </article>
+              </section>
+            )}
 
-          <div className="moments-grid">
-            {realLifeMoments.slice(0, 3).map((moment) => (
-              <article key={moment.id} className="moment-card">
-                <img src={moment.image} alt={moment.title} className="moment-card-image" />
-                <div className="moment-card-overlay" />
-                <div className="moment-card-copy">
-                  <span>{moment.badge}</span>
-                  <strong>{moment.title}</strong>
-                  <p>{moment.context}</p>
-                  <div className="moment-card-foot">
-                    <small>{moment.duration}</small>
-                    <small>{moment.hook}</small>
+            {featuredInsight && (
+              <section className="phone-section">
+                <div className="phone-section-head">
+                  <div>
+                    <span className="phone-section-label">Emotional insight</span>
+                    <small>Based on your recent conversations.</small>
                   </div>
                 </div>
-              </article>
-            ))}
-          </div>
-        </section>
+                <article className="phone-insight-card">
+                  <div className="phone-insight-icon">
+                    <Heart size={20} />
+                  </div>
+                  <div className="phone-insight-copy">
+                    <strong>{featuredInsight.title}</strong>
+                    <p>{featuredInsight.body}</p>
+                  </div>
+                  <div className="phone-insight-score">
+                    <strong>{emotionalPulse.confidence}%</strong>
+                    <span>This week</span>
+                  </div>
+                </article>
+              </section>
+            )}
 
-        <section className="memory-engine-section">
-          <div className="section-heading-row">
-            <div className="section-heading-copy">
-              <p className="micro-label">Emotional insight</p>
-              <h2>Spark interpreta sua memória recente para manter o próximo passo leve e contínuo</h2>
-            </div>
-          </div>
+            <nav className="phone-bottom-nav">
+              <button className="is-active" type="button" onClick={() => playUiSound('click')}>
+                <Home size={18} />
+                <span>Home</span>
+              </button>
+              <button type="button" onClick={() => playUiSound('click')}>
+                <Map size={18} />
+                <span>Map</span>
+              </button>
+              <button type="button" onClick={launchRun}>
+                <Gamepad2 size={18} />
+                <span>Practice</span>
+              </button>
+              <button type="button" onClick={() => playUiSound('click')}>
+                <BookOpen size={18} />
+                <span>Progress</span>
+              </button>
+              <button type="button" onClick={() => playUiSound('click')}>
+                <UserRound size={18} />
+                <span>Profile</span>
+              </button>
+            </nav>
+          </section>
 
-          <div className="memory-engine-grid">
-            <article className="memory-lead-card">
-              <div className="memory-lead-avatar">
-                <img src="/pollinations/sidebar-mascot.png" alt="Spark lendo sua memória de aprendizado" className="memory-lead-image" />
+          <aside className="experience-companion">
+            <div className="companion-label">Mission scene</div>
+            <article className="companion-scene-card">
+              <div className="companion-scene-topbar">
+                <button type="button" className="companion-icon-button" onClick={() => playUiSound('click')}>
+                  <ChevronRight size={18} />
+                </button>
+                <div className="companion-scene-title">
+                  <strong>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Airport Arrival'}</strong>
+                  <span>Scene {Math.min(currentMissionIndex + 1, Math.max(adventureProgress.length, 1))} of {Math.max(adventureProgress.length, 1)}</span>
+                </div>
+                <div className="companion-heart-pill">
+                  <Heart size={14} />
+                  <span>{Math.max(1, Math.round(emotionalPulse.confidence / 24))}</span>
+                </div>
               </div>
-              <div className="memory-lead-copy">
-                <span>Coach emocional</span>
-                <strong>{emotionalPulse.weakSkills.length ? `Hoje Spark vai destravar ${emotionalPulse.weakSkills.join(' e ')}.` : 'Hoje o foco é manter a confiança enquanto a missão sobe de contexto.'}</strong>
-                <p>{currentMissionLesson?.emotionalGoal ?? 'A IA está combinando memória, confiança e repertório para manter a jornada com sensação de evolução real.'}</p>
+
+              <div className="companion-scene-media">
+                <img src={currentMissionHeroDesktop} alt={currentMissionLesson?.title ?? 'Mission scene'} />
+                <div className="companion-scene-dim" />
+                <div className="companion-scene-character">
+                  <img src={currentMissionMascot} alt="Spark in mission scene" />
+                </div>
               </div>
-              <div className="memory-chip-row">
-                <span>Confiança {emotionalPulse.confidence}%</span>
-                <span>Speaking {emotionalPulse.speakingConfidence}%</span>
-                <span>Listening {emotionalPulse.listeningConfidence}%</span>
+
+              <div className="companion-bubble">
+                <span>{activeQuickChallenge?.title ?? 'Current challenge'}</span>
+                <strong>{activeExercise?.prompt ?? currentMissionLesson?.practicalGoal ?? 'Move the mission forward.'}</strong>
+                <Volume2 size={16} />
+              </div>
+
+              <div className="companion-scene-options">
+                {(activeExercise?.kind === 'multiple-choice' || activeExercise?.kind === 'listening') &&
+                  activeExercise.options.slice(0, 3).map((option) => {
+                    const selected = choiceAnswers[activeExercise.id]
+                    const isCorrect = selected !== null && option === activeExercise.correct
+                    const isWrong = selected === option && option !== activeExercise.correct
+
+                    return (
+                      <button
+                        key={option}
+                        type="button"
+                        className={`scene-option-button${selected === option ? ' is-selected' : ''}${isCorrect ? ' is-correct' : ''}${isWrong ? ' is-wrong' : ''}`}
+                        onClick={() => handleChoiceSelect(activeExercise.id, option)}
+                      >
+                        <span>{option}</span>
+                        {selected === option && <Volume2 size={15} />}
+                      </button>
+                    )
+                  })}
+
+                {activeExercise?.kind === 'drag-fill' && (
+                  <div className="scene-drag-builder">
+                    <DndContext sensors={sensors} onDragEnd={(event) => handleDragFillEnd(activeExercise.id, event)}>
+                      <div className="scene-drag-sentence">
+                        <span>{activeExercise.sentenceBefore}</span>
+                        <DropSlot
+                          id={`drag-fill-slot-${activeExercise.id}`}
+                          value={dragFillAnswers[activeExercise.id] ?? null}
+                          isCorrect={(dragFillAnswers[activeExercise.id] ?? null) === activeExercise.correct}
+                          isWrong={(dragFillAnswers[activeExercise.id] ?? null) !== null && (dragFillAnswers[activeExercise.id] ?? null) !== activeExercise.correct}
+                          onClear={() => clearDragFill(activeExercise.id)}
+                        />
+                        <span>{activeExercise.sentenceAfter}</span>
+                      </div>
+                      <div className="scene-token-row">
+                        {activeExercise.options.map((option) => (
+                          <DraggableToken key={option} id={option} label={option} disabled={(dragFillAnswers[activeExercise.id] ?? null) === option} />
+                        ))}
+                      </div>
+                    </DndContext>
+                  </div>
+                )}
+
+                {activeExercise?.kind === 'ordering' && (
+                  <div className="scene-order-builder">
+                    <SortableContext items={sceneOrderingWords} strategy={horizontalListSortingStrategy}>
+                      <DndContext sensors={sensors} onDragEnd={(event) => handleOrderingEnd(activeExercise.id, event)}>
+                        <div className="scene-sort-row">
+                          {sceneOrderingWords.map((word) => (
+                            <SortableWord key={`${activeExercise.id}-${word}`} id={word} />
+                          ))}
+                        </div>
+                      </DndContext>
+                    </SortableContext>
+                    <button className="scene-reset-button" type="button" onClick={() => resetOrdering(activeExercise)}>
+                      <RotateCcw size={14} />
+                      Reset
+                    </button>
+                  </div>
+                )}
+
+                {activeExercise?.kind === 'speaking' && (
+                  <div className="scene-speaking-card">
+                    <div className="scene-speaking-ring">
+                      <Mic size={20} />
+                    </div>
+                    <div className="scene-speaking-copy">
+                      <strong>{activeExercise.contextCue ?? 'Use your voice to move the scene forward.'}</strong>
+                      <p>{activeExercise.prompt}</p>
+                    </div>
+                    <button
+                      type="button"
+                      className={`scene-speaking-action${speakingCompletions[activeExercise.id] ? ' is-done' : ''}`}
+                      onClick={() => handleSpeakingComplete(activeExercise.id)}
+                    >
+                      {speakingCompletions[activeExercise.id] ? 'Completed' : 'Mark as spoken'}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              <div className="companion-scene-footer">
+                <div className="scene-feedback-copy">
+                  <strong>{sceneSolved ? 'Great choice! You sound natural.' : currentMissionLesson?.emotionalGoal ?? 'Keep the flow alive.'}</strong>
+                </div>
+                <div className="scene-progress-meter">
+                  <div className="scene-progress-bars">
+                    {Array.from({ length: Math.max(5, Math.min(6, currentMissionQuizzes.length || 5)) }).map((_, index) => (
+                      <span
+                        key={`scene-progress-${index}`}
+                        className={index < Math.max(1, completedCount) ? 'is-filled' : ''}
+                      />
+                    ))}
+                  </div>
+                  <strong>+{activeExercise?.reward ?? 15} XP</strong>
+                </div>
               </div>
             </article>
 
-            {emotionalInsights.slice(0, 1).map((insight) => (
-              <article key={insight.title} className={`memory-card tone-${insight.tone}`}>
-                <span>{insight.meta}</span>
-                <strong>{insight.title}</strong>
-                <p>{insight.body}</p>
+            <div className="companion-label">Map screen</div>
+            <article className="companion-map-card">
+              <div className="companion-map-head">
+                <div>
+                  <strong>Your Adventure</strong>
+                  <span>Chapter {currentMissionIndex + 1} · {currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Current path'}</span>
+                </div>
+                <button type="button" className="companion-icon-button" onClick={() => playUiSound('click')}>
+                  <Map size={16} />
+                </button>
+              </div>
+              <div className="companion-map-progress">
+                <span>{adventureCompletionCount}/{adventureProgress.length} completed</span>
+                <strong>{adventureCompletionPercent}%</strong>
+              </div>
+              <div className="companion-map-track">
+                {visibleAdventureProgress.map((step) => (
+                  <article key={`map-${step.id}`} className={`companion-map-node is-${step.state}`}>
+                    <div className="companion-map-node-image">
+                      <img src={step.image} alt={step.title} />
+                    </div>
+                    <strong>{step.missionTitle ?? step.title}</strong>
+                    <span>{step.state === 'done' ? 'complete' : step.state === 'active' ? `${step.progress ?? 0}%` : 'locked'}</span>
+                  </article>
+                ))}
+              </div>
+            </article>
+
+            <div className="companion-label">Responsive (mobile-first)</div>
+            <div className="companion-mini-grid">
+              <article className="mini-preview-card">
+                <div className="mini-preview-image">
+                  <img src={currentMissionHeroMobile} alt="Preview da home mobile" />
+                </div>
+                <strong>Home</strong>
               </article>
-            ))}
-          </div>
+              <article className="mini-preview-card">
+                <div className="mini-preview-image">
+                  <img src={currentMissionVisual} alt="Preview da missão" />
+                </div>
+                <strong>Mission</strong>
+              </article>
+              <article className="mini-preview-card">
+                <div className="mini-preview-progress">
+                  <span>Level {profileLevel}</span>
+                  <strong>{heroXp} / 650 XP</strong>
+                  <div className="track soft">
+                    <div className="track-fill track-fill-hero" style={{ width: heroXpWidth }} />
+                  </div>
+                  <small>Confidence {emotionalPulse.confidence}%</small>
+                </div>
+                <strong>Progress</strong>
+              </article>
+            </div>
+          </aside>
         </section>
 
-        <footer className="bottom-dock">
-          <button onClick={() => playUiSound('click')}><Map size={16} /> Mapa</button>
-          <button onClick={() => playUiSound('click')}><Search size={16} /> Review</button>
-          <button className="dock-primary" onClick={launchRun}><Play size={16} /> Play</button>
-          <button onClick={() => playUiSound('click')}><Store size={16} /> Store</button>
-          <button onClick={() => playUiSound('click')}><CalendarDays size={16} /> Eventos</button>
-        </footer>
+        <section className="experience-values">
+          <div className="experience-values-lead">
+            <div className="experience-values-icon">
+              <Sparkles size={18} />
+            </div>
+            <div>
+              <strong>SparkLingo adapts to you.</strong>
+              <p>Every conversation. Every choice. Every day.</p>
+            </div>
+          </div>
+          <div className="experience-values-grid">
+            <span>Personalized Learning</span>
+            <span>Emotional Memory</span>
+            <span>Real-Life Situations</span>
+            <span>Meaningful Progress</span>
+          </div>
+        </section>
       </main>
     </div>
   )
