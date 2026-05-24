@@ -1,613 +1,504 @@
-# SparkLingo — UX Experience Master Blueprint
+# SPARKLINGO PRODUCT BLUEPRINT
 
-## Filosofia Central do Produto
+## Visão do Produto
 
 O SparkLingo NÃO é:
-
-* um LMS
-* um app de quizzes
-* um curso de inglês tradicional
-* um dashboard gamificado
+- um LMS
+- uma plataforma de quizzes
+- um curso tradicional de inglês
 
 O SparkLingo É:
+- uma aventura emocional adaptativa
+- uma jornada contextual de fluência
+- uma experiência narrativa viva
+- um sistema emocional de retenção
 
-* uma aventura emocional adaptativa
-* uma jornada contextual de fluência
-* uma experiência narrativa viva
-* um sistema emocional de retenção
-* um mundo onde o inglês é necessário para avançar
-
-O usuário nunca deve sentir:
-
-* “vou estudar inglês”
+O produto deve parecer:
+- vivo
+- cinematográfico
+- contextual
+- emocional
+- recompensador
+- contínuo
 
 O usuário deve sentir:
+“Quero continuar minha jornada.”
 
-* “vou continuar minha jornada”
-
----
-
-# Objetivo Estratégico
-
-Transformar aprendizado em:
-
-* continuidade
-* curiosidade
-* sobrevivência contextual
-* progresso emocional
-* pequenas vitórias frequentes
-* construção de confiança
-
-O sistema deve reduzir:
-
-* medo de errar
-* vergonha de speaking
-* ansiedade
-* sobrecarga cognitiva
-
-E aumentar:
-
-* confiança
-* fluidez
-* coragem social
-* retenção diária
-* vínculo emocional
+E NÃO:
+“Preciso estudar inglês.”
 
 ---
 
-# Estrutura Macro do Produto
+# Filosofia Central
 
-```text
-MUNDO
- └── Capítulos
-      └── Missões
-           └── Cenas
-                └── Desafios
-```
+A plataforma deve transformar o aprendizado de inglês em:
+- progressão
+- narrativa
+- crescimento emocional
+- confiança real
+- imersão contextual
 
----
+A experiência deve parecer mais:
+- uma aventura interativa estilo Pixar
+- um jogo casual premium
+- um sistema narrativo vivo
 
-# O Que o Usuário Enxerga
-
-O usuário NÃO deve ver:
-
-* quizzes
-* questões
-* tipos de exercícios
-* estrutura pedagógica
-* taxonomia interna
-
-O usuário deve ver:
-
-* missão
-* situação
-* cena
-* objetivo
-* consequência
-* progresso
-* continuidade
-* checkpoints
+E NÃO:
+- um dashboard
+- um LMS
+- um CRUD com quizzes
+- uma planilha educacional
 
 ---
 
-# Loop Principal do Produto
+# Pilares do Produto
 
-```text
-Abrir aplicativo
-↓
-Continuar missão
-↓
-Entrar em cena narrativa
-↓
-Resolver micro desafio
-↓
-Receber feedback emocional
-↓
-Ganhar progresso
-↓
-Desbloquear próxima cena
-↓
-Continuar jornada
-```
+## 1. Aprendizado Emocional
 
-Esse loop deve durar:
+A plataforma deve se adaptar a:
+- confiança
+- medo de speaking
+- hesitação
+- pressão no listening
+- fluidez
+- erros recorrentes
+- ritmo de aprendizado
 
-* 30 segundos até 5 minutos
-
-Nunca:
-
-* sessões longas obrigatórias
-* excesso de leitura
-* excesso de navegação
+O sistema deve compreender:
+- progressão emocional
+- fadiga emocional
+- recuperação de confiança
+- comportamento de aprendizado
 
 ---
 
-# Filosofia de UX
+## 2. Progressão Narrativa
 
-O produto deve:
+Toda lição pertence a:
+- uma missão
+- um capítulo
+- uma cena
+- uma jornada contextual
 
-* puxar o usuário para frente
-* reduzir esforço mental
-* esconder complexidade
-* revelar funcionalidades aos poucos
-* parecer um mundo vivo
+O aluno progride através de:
+- cidades
+- situações reais
+- momentos emocionais
+- interações sociais
+- objetivos práticos
 
-O produto NÃO deve:
+A progressão deve parecer:
+- conectada
+- contínua
+- significativa
 
-* mostrar tudo ao mesmo tempo
-* parecer dashboard
-* parecer ERP
-* parecer CMS
-* parecer plataforma corporativa
-* parecer grid infinito de cards
-
----
-
-# Hierarquia Visual
-
-## Regra Principal
-
-Toda tela precisa ter:
-
-1. protagonista claro
-2. ação principal clara
-3. continuidade clara
-
-Nunca permitir:
-
-* múltiplos protagonistas
-* excesso de widgets
-* excesso de métricas
-* excesso de módulos competindo
+E NÃO aleatória.
 
 ---
 
-# Arquitetura da Home
+## 3. Estrutura de Aventura
 
-## A Home NÃO é:
+A plataforma deve funcionar como:
+- um mapa de aventura
+- um mundo de progressão
+- uma experiência por capítulos
 
-* catálogo
-* dashboard
-* hub administrativo
+Cada nó representa:
+- uma missão
+- um contexto
+- uma cena
+- um objetivo prático
 
-## A Home É:
+Cada nó pode conter:
+- uma ou múltiplas lições
+- quizzes
+- momentos de speaking
+- momentos de listening
+- interações de sobrevivência
 
-* continuidade da aventura
-* ponto de retomada
-* entrada rápida na jornada
+Os nós são desbloqueados sequencialmente.
 
 ---
 
-# Estrutura Ideal da Home
+# Filosofia de Aprendizado
+
+O aluno NÃO deve consumir:
+- exercícios isolados
+- quizzes desconectados
+- blocos gramaticais aleatórios
+
+Em vez disso:
+o aluno vivencia:
+- situações
+- missões
+- tensão
+- progressão
+- objetivos
+- vitórias emocionais
+
+---
+
+# Filosofia da Experiência
+
+Toda tela deve responder:
+“O que está acontecendo na minha jornada agora?”
+
+E NÃO:
+“Quais exercícios estão disponíveis?”
+
+---
+
+# Princípios de Interface
+
+Toda tela deve possuir:
+- um protagonista principal
+- uma ação principal
+- uma emoção dominante
+- uma direção clara de progressão
+
+Evitar:
+- múltiplos CTAs competindo
+- excesso de cards
+- excesso de widgets
+- grids gigantes
+- feeds infinitos
+- ruído visual
+- sobrecarga cognitiva
+- sensação de dashboard
+
+A interface deve:
+- respirar
+- conduzir
+- focar
+- recompensar
+- engajar emocionalmente
+
+---
+
+# Filosofia Visual
+
+O SparkLingo deve parecer:
+- cinematográfico
+- premium
+- emocional
+- imersivo
+- moderno
+- atmosférico
+
+A interface deve:
+- priorizar espaçamento
+- reduzir ruído visual
+- usar hierarquia forte
+- enfatizar foco
+- usar profundidade cuidadosamente
+- evitar poluição
+
+A linguagem visual deve lembrar:
+- cenas emocionais estilo Pixar
+- jogos casuais premium
+- aventuras interativas
+- interfaces narrativas
+
+E NÃO:
+- software corporativo
+- dashboards educacionais
+- painéis administrativos
+- layouts SaaS genéricos
+
+---
+
+# Filosofia Mobile
+
+O SparkLingo é MOBILE FIRST.
+
+A experiência deve parecer:
+- nativa
+- fluida
+- confortável para o polegar
+- rápida
+- imersiva
+
+Mais de 70% dos acessos serão mobile.
+
+Desktop é secundário.
+
+A plataforma deve priorizar:
+- sessões curtas
+- retomada rápida
+- retenção emocional
+- baixa fricção cognitiva
+
+---
+
+# Filosofia da Home
+
+A Home NÃO deve parecer:
+- dashboard
+- catálogo de conteúdo
+- lista de lições
+
+A Home deve parecer:
+- uma aventura ativa
+- uma missão viva
+- um mundo em progresso
+- uma continuação cinematográfica
+
+---
+
+# Estrutura da Home
+
+A Home deve conter APENAS:
 
 ## 1. Hero Mission
 
+Principal foco da experiência.
+
+Contém:
+- missão atual
+- contexto emocional
+- tensão
+- storytelling visual
+- progresso
+- CTA para continuar
+
+A missão deve evoluir visualmente.
+
+---
+
+## 2. Adventure Map
+
+Representa:
+- progressão
+- capítulos
+- checkpoints
+- nós desbloqueados
+- nós bloqueados
+- jornada contextual
+
+Isso NÃO é uma grade de lições.
+
+É:
+- um sistema visual de progressão
+- um mapa narrativo
+
+---
+
+## 3. Quick Play
+
+Pequena seção secundária.
+
 Objetivo:
+- XP rápido
+- retenção
+- sessões rápidas
+- baixa fricção
 
-* contextualizar emocionalmente
-* puxar o usuário para continuar
+Exemplos:
+- Speak Up
+- Shadowing
+- Listening Sprint
+- Quick Match
 
-Conteúdo:
+Nunca deve roubar atenção da missão principal.
 
-* situação atual
-* personagem
-* contexto emocional
-* progresso resumido
-* CTA dominante
+---
+
+## 4. Emotional Sidebar
+
+Painel emocional persistente.
+
+Contém:
+- confiança
+- medo de speaking
+- pressão no listening
+- streak
+- XP
+- insights emocionais
+- tendências de evolução
+
+Precisa permanecer visível.
+
+---
+
+# Filosofia das Missões
+
+Uma missão NÃO é:
+- uma lição
+- um pacote de quizzes
+
+Uma missão É:
+- uma experiência contextual
+- um capítulo narrativo
+- uma situação real
+
+Exemplos:
+- Chegada no Aeroporto
+- Táxi para o Centro
+- Check-in no Hotel
+- Sobrevivendo no Restaurante
+- Conhecendo Novas Pessoas
+- Apresentação de Trabalho
+- Situação de Emergência
+
+---
+
+# Comportamento das Questões
+
+As questões NÃO devem permanecer visíveis permanentemente.
+
+Quando concluídas:
+- desaparecem
+- a narrativa avança
+- o estado emocional muda
+- o mapa atualiza
+- a próxima cena desbloqueia
+
+O aluno precisa SENTIR progressão.
+
+---
+
+# Emotional Engine
+
+A plataforma deve adaptar constantemente:
+- nível de desafio
+- ritmo da missão
+- reforço
+- pressão de speaking
+- pressão de listening
+- repetição de vocabulário
+
+Baseado em:
+- erros recentes
+- estado emocional
+- confiança
+- fadiga
+- hesitação
+- tendências de performance
+
+---
+
+# Filosofia da IA
+
+A IA NUNCA deve parecer genérica.
+
+A IA deve gerar:
+- missões contextuais
+- continuidade emocional
+- progressão adaptativa
+- reforço personalizado
+- situações contextualizadas de speaking
+
+Toda IA deve rodar através de:
+- backend seguro
+- Firebase Functions
+- providers protegidos
+
+Nunca expor chaves no frontend.
+
+---
+
+# Filosofia do Backend
+
+O frontend deve ser alimentado por:
+- progressão real
+- estado emocional real
+- missões reais
+- memória real
+- desbloqueios reais
+- XP real
+- continuidade real
+
+Evitar:
+- widgets fake
+- dashboards estáticos
+- lógica placeholder em produção
+
+---
+
+# Filosofia PWA
+
+O SparkLingo deve se comportar como:
+- aplicativo nativo
+- jogo portátil
+- jornada persistente
+
+Requisitos PWA:
+- instalável
+- standalone
+- splash screen
+- base offline-ready
+- suporte Apple
+- suporte Android
+
+---
+
+# Visual Slot System
+
+O frontend NÃO deve possuir imagens hardcoded.
+
+O sistema deve suportar:
+- slots visuais dinâmicos
+- artes configuráveis
+- temas configuráveis
+- moods configuráveis
+
+Cada bloco visual deve expor:
+- resolução recomendada
+- aspect ratio
+- safe area
+- compatibilidade com overlay
 
 Exemplo:
 
-"Você perdeu seu voo em Londres."
+Hero Mission
+- 1920x1080
+- 16:9
 
-Botão:
-"Continuar missão"
+Adventure Node
+- 512x512
+- 1:1
 
----
-
-## 2. Mini Mapa da Jornada
-
-Objetivo:
-
-* mostrar direção
-* mostrar progresso
-* gerar curiosidade
-
-Características:
-
-* horizontal
-* simples
-* poucos nós visíveis
-* linear com pequenas ramificações
-
-Nunca:
-
-* mapa gigante
-* excesso de informação
-* excesso de zoom
-* dezenas de capítulos simultâneos
+Quick Play
+- 640x360
+- 16:9
 
 ---
 
-## 3. Quick XP Challenges
+# Visual System Admin
 
-Objetivo:
+O Admin deve possuir:
+Configurações → Visual System
 
-* retenção rápida
-* sessões curtas
-* entrada sem esforço
+Permitir:
+- upload de hero images
+- upload de node images
+- upload de mascotes
+- upload de backgrounds cinematográficos
+- upload de capas de missão
+- upload de capas de quick challenges
+- configuração de temas dark/light
+- configuração de mood packs
 
-Tipos:
-
-* Speak Up
-* Listening Fast
-* Shadowing
-* Match It
-* Reflex Choice
-* Mini Survival
-
-Tempo:
-
-* 30 segundos até 3 minutos
+O frontend deve consumir tudo dinamicamente.
 
 ---
 
-## 4. Emotional Insight
-
-Objetivo:
-
-* fazer o usuário sentir que o sistema o entende
-
-Exemplos:
-
-* “Você hesitou menos hoje.”
-* “Seu speaking está mais natural.”
-* “Você respondeu mais rápido em situações sociais.”
-
-Nunca:
-
-* analytics frios
-* gráficos corporativos
-* métricas excessivas
-
----
-
-# O Mapa
-
-## O mapa é:
-
-* principal elemento de progressão
-* organizador cognitivo
-* estrutura narrativa
-
-## O mapa NÃO é:
-
-* decorativo
-* complexo
-* sandbox aberto
-
----
-
-# Estrutura do Mapa
-
-## Exemplo:
-
-```text
-Travel English
- ├── Airport Arrival
- ├── Taxi Ride
- ├── Hotel Check-in
- ├── Restaurant Survival
- ├── Asking for Help
- ├── Shopping Time
- └── New Friends
-```
-
----
-
-# Filosofia Narrativa
-
-Cada capítulo deve representar:
-
-* uma situação real
-* um contexto emocional
-* um objetivo humano
-
-Nunca:
-
-* tópicos gramaticais secos
-
----
-
-# Exemplo Correto
-
-❌ Present Perfect
-
-✅ You need to explain what happened yesterday.
-
----
-
-# Estrutura de Missão
-
-## Missão =
-
-* situação contextual
-* objetivo emocional
-* conjunto de cenas
-* progressão narrativa
-
----
-
-# Estrutura de Cena
-
-## Cena =
-
-* momento curto
-* interação rápida
-* tensão leve
-* resposta do usuário
-* consequência
-
----
-
-# Estrutura de Desafio
-
-Desafios devem ser invisíveis pedagogicamente.
-
-O usuário não deve sentir:
-
-* “estou fazendo um exercício”
-
-O usuário deve sentir:
-
-* “preciso resolver isso”
-
----
-
-# Tipos de Experiência
-
-## Speaking
-
-Situações sociais rápidas.
-
-## Listening
-
-Anúncios, diálogos, contexto real.
-
-## Shadowing
-
-Repetição emocional contextual.
-
-## Reflex
-
-Resposta rápida sob pressão leve.
-
-## Match
-
-Construção de associação contextual.
-
-## Survival Choice
-
-Escolha da resposta correta para continuar.
-
----
-
-# O Mascote
-
-## O mascote NÃO é:
-
-* professor
-* chatbot
-* tutorial ambulante
-* personagem infantil exagerado
-
-## O mascote É:
-
-* companion emocional
-* presença viva
-* suporte emocional
-* parceiro de jornada
-
----
-
-# Funções do Mascote
-
-* celebrar progresso
-* reduzir ansiedade
-* incentivar
-* comentar evolução
-* apoiar após erros
-* manter vínculo emocional
-
----
-
-# Exemplos Corretos
-
-❌ “Great job learning Present Perfect!”
-
-✅ “Você conseguiu pedir ajuda sem travar.”
-
----
-
-# Emotional Memory Engine
-
-Objetivo:
-
-* personalizar a experiência emocional
-* adaptar progressão
-* detectar padrões emocionais
-
----
-
-# O sistema deve rastrear:
-
-* medo de speaking
-* hesitação
-* abandono
-* velocidade de resposta
-* confiança
-* fluidez
-* listening pressure
-* recovery rate
-
----
-
-# Adaptação Inteligente
-
-A IA deve:
-
-* reduzir pressão quando necessário
-* aumentar desafio gradualmente
-* mudar ritmo
-* variar contexto
-* adaptar speaking/listening
-
-Nunca:
-
-* repetir padrões excessivamente
-* gerar sensação robótica
-
----
-
-# Filosofia Mobile-First
-
-O produto deve nascer:
-
-* mobile-first
-* vertical-first
-* thumb-friendly
-
-Nunca:
-
-* desktop-first
-* dashboards largos
-* grids pesados
-* excesso de colunas
-
----
-
-# Filosofia de UI
-
-## O produto deve parecer:
-
-* cinematográfico
-* emocional
-* premium
-* vivo
-* caloroso
-* moderno
-* respirável
-
----
-
-# O produto NÃO deve parecer:
-
-* corporativo
-* enterprise
-* LMS
-* ERP
-* template genérico
-* cassino de dopamina
-
----
-
-# Referências de Sensação
-
-Inspirar-se em:
-
-* Pixar
-* Journey
-* Monument Valley
-* Sky
-* Nintendo UI
-* Life is Strange
-* Animal Crossing
-
-Evitar:
-
-* Coin Master
-* Candy Crush
-* dashboards SaaS
-* templates admin
-
----
-
-# Filosofia de Retenção
-
-Retenção NÃO deve vir de:
-
-* spam de notificações
-* streak agressivo
-* ansiedade artificial
-
-Retenção deve vir de:
-
-* continuidade
-* curiosidade
-* apego emocional
-* progressão clara
-* pequenas vitórias
-
----
-
-# O Produto Ideal
-
-O usuário deve sentir:
-
-"Vou continuar minha aventura por alguns minutos."
-
-E NÃO:
-
-"Vou estudar inglês agora."
-
----
-
-# Filosofia Técnica
-
-## Backend First
-
-Toda UI deve nascer de:
-
-* estado real
-* memória real
-* progressão real
-* narrativa real
-* contexto real
-
-Nunca criar:
-
-* widgets fake
-* dados mockados permanentes
-* componentes sem função emocional
-
----
-
-# Papel da IA
-
-A IA NÃO é:
-
-* gerador de quizzes
-* chatbot genérico
-
-A IA É:
-
-* motor adaptativo emocional
-* diretor de continuidade
-* copiloto pedagógico
-* gerador contextual
-
----
-
-# Resultado Final Esperado
-
-O SparkLingo deve parecer:
-
-* uma aventura emocional interativa
-* um jogo casual premium
-* um mundo vivo de aprendizado
-* uma experiência cinematográfica adaptativa
-
-E NÃO:
-
-* plataforma educacional tradicional
-* LMS gamificado
-* dashbo
+# Direção do Produto
+
+O SparkLingo deve evoluir para:
+- progressão emocional
+- storytelling adaptativo
+- imersão contextual
+- construção de confiança
+- comunicação real
+
+A experiência final deve parecer:
+- uma jornada emocional de inglês
+- uma aventura interativa estilo Pixar
+- um jogo premium adaptativo
+
+E NUNCA:
+- um LMS tradicional
+- um app genérico de quizzes
+- uma plataforma corporativa educacional
+- um CRUD com IA
