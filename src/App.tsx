@@ -39,18 +39,12 @@ import {
   Home,
   Map,
   Medal,
-  Menu,
   Mic,
-  RotateCcw,
   Sparkles,
   UserRound,
   Volume2,
-  WandSparkles,
   Zap,
 } from 'lucide-react'
-import { DndContext, PointerSensor, useDraggable, useDroppable, useSensor, useSensors, type DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, arrayMove, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
-import { CSS } from '@dnd-kit/utilities'
 
 type FilterKey = 'Todos' | 'Gramática' | 'Vocabulário' | 'Listening' | 'Reading' | 'Speaking'
 type Difficulty = 'Fácil' | 'Médio'
@@ -244,6 +238,43 @@ const exercises: Exercise[] = [
     reward: 30,
   },
 ]
+
+const storyMedia = {
+  mascot: '/Images/Mascote/Sparklingo.png',
+  airport: {
+    hero: '/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png',
+    immigration: '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png',
+    checkin: '/Images/Airport/checkin.png',
+    departures: '/Images/Airport/departures.png',
+    waiting: '/Images/Airport/sparklingo_asset_airport_waiting_scene_mobile_v1.png',
+  },
+  coffee: {
+    checking: '/Images/CoffeeShop/sparklingo_scene_checking_account_mobile_v1.png',
+    ordering: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
+    pay: '/Images/CoffeeShop/sparklingo_scene_pay_ordering_mobile_v1.png',
+    take: '/Images/CoffeeShop/sparklingo_scene_take_coffee_mobile_v1.png',
+    takeTwo: '/Images/CoffeeShop/sparklingo_scene_take_coffee_2_mobile_v1.png',
+    window: '/Images/CoffeeShop/sparklingo_scene_take_coffee_window_mobile_v1.png',
+    writing: '/Images/CoffeeShop/sparklingo_scene_writing_coffee_mobile_v1.png',
+  },
+  park: {
+    draw: '/Images/Park/fox_in_the_park_draw.png',
+    dropped: '/Images/Park/fox_in_the_park_dropped_ice_cream.png',
+    enjoy: '/Images/Park/sparklingo_scene_enjoy_park_mobile_v1.png',
+    coffee: '/Images/Park/sparklingo_scene_park_coffee_mobile_v1.png',
+    iceCream: '/Images/Park/sparklingo_scene_park_icecream_mobile_v1.png',
+  },
+}
+
+const normalizeScenePath = (path: string | undefined, fallback: string) => {
+  if (!path) return fallback
+
+  const normalized = path
+    .replace('/Images/coffee shop/', '/Images/CoffeeShop/')
+    .replace('/Images/coffee%20shop/', '/Images/CoffeeShop/')
+
+  return normalized || fallback
+}
 
 const normalizeTokenOrder = (words: string[]) => words.map((word) => word.toLowerCase()).join('|')
 const clampPercent = (value: number) => Math.min(100, Math.max(0, Math.round(value)))
@@ -447,7 +478,6 @@ const getExerciseAttempts = (
 
 function App() {
   const { status, user, profile, signOut, platformConfig, patchProfile } = useAuth()
-  const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }))
   const [activeFilter, setActiveFilter] = useState<FilterKey>('Todos')
   const [activeChallengeId, setActiveChallengeId] = useState<string | null>(null)
   const [choiceAnswers, setChoiceAnswers] = useState<Record<string, string | null>>({})
@@ -649,6 +679,29 @@ function App() {
     [currentMissionLesson],
   )
 
+  const heroPortraitImage = useMemo(
+    () => normalizeScenePath(currentMissionHeroMobile, storyMedia.airport.hero),
+    [currentMissionHeroMobile],
+  )
+
+  const missionSceneImage = useMemo(
+    () => normalizeScenePath(currentMissionHeroDesktop, storyMedia.airport.immigration),
+    [currentMissionHeroDesktop],
+  )
+
+  const missionPreviewImage = useMemo(() => {
+    const previewSource =
+      getFirstSlotPath(currentMissionLesson?.mediaSlots, ['thumbnail', 'heroImageDesktop', 'heroImageMobile'], '') ||
+      currentMissionVisual
+
+    return normalizeScenePath(previewSource, storyMedia.airport.checkin)
+  }, [currentMissionLesson, currentMissionVisual])
+
+  const missionMascotImage = useMemo(
+    () => normalizeScenePath(currentMissionMascot, storyMedia.mascot),
+    [currentMissionMascot],
+  )
+
   const quickChallenges = useMemo(
     () =>
       runtimeExercises.slice(0, 4).map((exercise, index) => {
@@ -722,11 +775,6 @@ function App() {
     [activeExercise?.id, quickChallenges],
   )
 
-  const sceneOrderingWords = useMemo(
-    () => (activeExercise?.kind === 'ordering' ? orderWordMap[activeExercise.id] ?? activeExercise.scrambled : []),
-    [activeExercise, orderWordMap],
-  )
-
   const sceneSolved = useMemo(
     () =>
       activeExercise
@@ -776,13 +824,6 @@ function App() {
     [currentMissionIndex, lessonsCatalog],
   )
 
-  const visibleAdventureProgress = useMemo(() => {
-    if (adventureProgress.length <= 4) return adventureProgress
-
-    const start = Math.max(0, Math.min(currentMissionIndex - 1, adventureProgress.length - 4))
-    return adventureProgress.slice(start, start + 4)
-  }, [adventureProgress, currentMissionIndex])
-
   const realLifeMoments = useMemo(() => {
     const source = (currentMissionQuizzes.length ? currentMissionQuizzes : quizCatalog).slice(0, 3)
 
@@ -818,7 +859,20 @@ function App() {
     })
   }, [currentMissionLesson, currentMissionQuizzes, lessonMap, lessonsCatalog, quizCatalog])
 
-  const featuredMoment = realLifeMoments[0] ?? null
+  const homeMomentCards = useMemo(() => {
+    const fallbackMoments = [
+      storyMedia.coffee.ordering,
+      storyMedia.coffee.take,
+      storyMedia.park.iceCream,
+      storyMedia.park.draw,
+    ]
+
+    return realLifeMoments.slice(0, 4).map((moment, index) => ({
+      ...moment,
+      image: normalizeScenePath(moment.image, fallbackMoments[index % fallbackMoments.length]),
+    }))
+  }, [realLifeMoments])
+
   const featuredInsight = emotionalInsights[0] ?? null
 
   const adventureCompletionCount = useMemo(
@@ -830,6 +884,44 @@ function App() {
     () => (adventureProgress.length ? Math.round((adventureCompletionCount / adventureProgress.length) * 100) : 0),
     [adventureCompletionCount, adventureProgress.length],
   )
+
+  const mapNodes = useMemo(() => {
+    const chapterTitles =
+      currentMissionLesson?.journeyArc?.length
+        ? currentMissionLesson.journeyArc.slice(0, 5)
+        : ['Airport Arrival', 'Taxi to Downtown', 'Hotel Check-in', 'Dinner Dialogue', 'Next Chapter']
+
+    const nodeFallbacks = [
+      storyMedia.airport.checkin,
+      storyMedia.airport.departures,
+      storyMedia.coffee.ordering,
+      storyMedia.park.enjoy,
+      storyMedia.park.iceCream,
+    ]
+
+    return chapterTitles.map((title, index) => {
+      const step = adventureProgress[index]
+      const state = step?.state ?? 'locked'
+
+      return {
+        id: step?.id ?? `journey-${index}`,
+        title,
+        image: normalizeScenePath(step?.image, nodeFallbacks[index % nodeFallbacks.length]),
+        state,
+        step: index + 1,
+        progressLabel:
+          state === 'done'
+            ? 'Completed'
+            : state === 'active'
+              ? `${step?.progress ?? 0}%`
+              : state === 'ready'
+                ? 'Ready'
+                : index === chapterTitles.length - 1
+                  ? 'Next'
+                  : 'Locked',
+      }
+    })
+  }, [adventureProgress, currentMissionLesson?.journeyArc])
 
   const recentMissionTheme = currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? ''
   const {
@@ -1464,75 +1556,6 @@ function App() {
     })
   }
 
-  const clearDragFill = (exerciseId: string) => {
-    setDragFillAnswers((current) => ({ ...current, [exerciseId]: null }))
-  }
-
-  const handleDragFillEnd = (exerciseId: string, event: DragEndEvent) => {
-    const draggedWord = String(event.active.id)
-    if (event.over?.id !== `drag-fill-slot-${exerciseId}` || dragFillAnswers[exerciseId] === draggedWord) return
-
-    const exercise = runtimeExercises.find((item): item is DragFillExercise => item.id === exerciseId && item.kind === 'drag-fill')
-    if (!exercise) return
-
-    const isCorrect = draggedWord === exercise.correct
-    registerExerciseAttempt(exercise.id)
-    setDragFillAnswers((current) => ({ ...current, [exerciseId]: draggedWord }))
-    if (user) {
-      void trackProductEvent(user.uid, isCorrect ? 'quiz_completed' : 'quiz_failed', {
-        quizId: exercise.id,
-        answer: draggedWord,
-      })
-    }
-    triggerMoment({
-      exerciseId: exercise.id,
-      correct: isCorrect,
-      reward: exercise.reward,
-      successLine: 'Acertou no encaixe. O combo segue vivo.',
-      errorLine: 'Essa peça não encaixou. Solta outra e continua.',
-    })
-  }
-
-  const handleOrderingEnd = (exerciseId: string, event: DragEndEvent) => {
-    const { active, over } = event
-    if (!over || active.id === over.id) return
-
-    registerExerciseAttempt(exerciseId)
-
-    setOrderWordMap((current) => {
-      const words = current[exerciseId] ?? []
-      const oldIndex = words.indexOf(String(active.id))
-      const newIndex = words.indexOf(String(over.id))
-      if (oldIndex < 0 || newIndex < 0) return current
-      return { ...current, [exerciseId]: arrayMove(words, oldIndex, newIndex) }
-    })
-  }
-
-  const resetOrdering = (exercise: OrderingExercise) => {
-    setOrderWordMap((current) => ({ ...current, [exercise.id]: [...exercise.scrambled] }))
-  }
-
-  const handleSpeakingComplete = (exerciseId: string) => {
-    const exercise = runtimeExercises.find((item): item is SpeakingExercise => item.id === exerciseId && item.kind === 'speaking')
-    if (!exercise || speakingCompletions[exerciseId]) return
-
-    registerExerciseAttempt(exerciseId)
-    setSpeakingCompletions((current) => ({ ...current, [exerciseId]: true }))
-    if (user) {
-      void trackProductEvent(user.uid, 'quiz_completed', {
-        quizId: exerciseId,
-        mode: 'speaking',
-      })
-    }
-    triggerMoment({
-      exerciseId,
-      correct: true,
-      reward: exercise.reward,
-      successLine: 'Boa. Sua voz entrou no contexto da missão.',
-      errorLine: '',
-    })
-  }
-
   const launchRun = () => {
     setMascotMood('guide')
     setMascotLine('A aventura começou. Fecha um warm-up e eu acelero o combo.')
@@ -1604,497 +1627,392 @@ function App() {
   }
 
   return (
-    <div className="experience-shell">
+    <div className="spark-home-shell">
       {isAdmin && (
-        <button className="experience-admin-pill" type="button" onClick={() => setView('admin')}>
+        <button className="spark-admin-pill" type="button" onClick={() => setView('admin')}>
           <Crown size={16} />
           Admin
         </button>
       )}
 
-      <main className="experience-home">
-        <section className="experience-stage">
-          <section className="phone-home">
-            <header className="phone-topbar">
-              <button className="phone-menu-button" type="button" onClick={() => playUiSound('click')} aria-label="Abrir menu">
-                <Menu size={18} />
+      <main className="spark-home-stage">
+        <section className="spark-phone-frame">
+          <header className="spark-phone-topbar">
+            <div className="spark-brand-pill">
+              <Zap size={18} />
+              <strong>SparkLingo</strong>
+            </div>
+
+            <div className="spark-topbar-actions">
+              <div className="spark-stat-pill">
+                <Flame size={14} />
+                <div>
+                  <strong>{streakDays}</strong>
+                  <span>day streak</span>
+                </div>
+              </div>
+              <div className="spark-stat-pill">
+                <Medal size={14} />
+                <div>
+                  <strong>{heroXp} +</strong>
+                  <span>XP</span>
+                </div>
+              </div>
+              <button className="spark-avatar-button" onClick={() => signOut()} title="Sair" type="button">
+                {profile?.avatarUrl ? (
+                  <img src={profile.avatarUrl} alt={profile.displayName} className="avatar-image" />
+                ) : (
+                  <UserRound size={18} />
+                )}
               </button>
-              <div className="phone-brand-block">
-                <div className="phone-brand-mark">
-                  <WandSparkles size={16} strokeWidth={2.35} />
-                </div>
-                <strong>SparkLingo</strong>
-              </div>
-              <div className="phone-status-cluster">
-                <div className="phone-status-pill">
-                  <Flame size={14} />
-                  <div>
-                    <strong>{streakDays}</strong>
-                    <span>day streak</span>
-                  </div>
-                </div>
-                <div className="phone-status-pill">
-                  <Medal size={14} />
-                  <div>
-                    <strong>{heroXp} +</strong>
-                    <span>XP</span>
-                  </div>
-                </div>
-                <button className="phone-avatar-button" onClick={() => signOut()} title="Sair" type="button">
-                  {profile?.avatarUrl ? (
-                    <img src={profile.avatarUrl} alt={profile.displayName} className="avatar-image" />
-                  ) : (
-                    <UserRound size={18} />
-                  )}
-                </button>
-              </div>
-            </header>
+            </div>
+          </header>
 
-            <section className="mission-hero-card">
-              <picture className="mission-hero-media">
-                <source media="(max-width: 760px)" srcSet={currentMissionHeroMobile} />
-                <img
-                  src={currentMissionHeroDesktop}
-                  alt={`Missão atual ${currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'ativa'}`}
-                  loading="eager"
-                />
-              </picture>
-              <div className="mission-hero-gradient" />
-              <div className="mission-hero-copy">
-                <p className="mission-greeting">{greeting}, {firstName}! 👋</p>
-                <h1>Continue your adventure</h1>
-                <p>Every conversation moves you closer to fluency.</p>
-              </div>
-              <div className="mission-hero-mascot">
-                <img src={currentMissionMascot} alt="Spark acompanha sua missão" />
-              </div>
-            </section>
+          <section className="spark-hero-panel">
+            <div className="spark-hero-copy">
+              <p className="spark-greeting">{greeting}, {firstName}! 👋</p>
+              <h1>Continue your adventure</h1>
+              <p>Every conversation moves you closer to fluency.</p>
+            </div>
 
-            <article className="mission-current-card">
-              <div className="mission-current-badge">Current mission</div>
-              <div className="mission-current-media">
-                <img src={currentMissionVisual} alt={currentMissionLesson?.title ?? 'Current mission'} />
+            <div className="spark-hero-art">
+              <img src={heroPortraitImage} alt={currentMissionLesson?.missionTitle ?? 'Current mission hero'} />
+              <div className="spark-hero-art-glow" />
+            </div>
+
+            <article className="spark-current-mission">
+              <div className="spark-current-mission-media">
+                <img src={missionPreviewImage} alt={currentMissionLesson?.title ?? 'Mission preview'} />
               </div>
-              <div className="mission-current-copy">
+              <div className="spark-current-mission-body">
+                <span className="spark-micro-chip">Current mission</span>
                 <h2>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Airport Arrival'}</h2>
                 <p>{currentMissionLesson?.emotionalContext ?? "You just landed in Boston. Let's get you through immigration."}</p>
-                <div className="mission-current-meta">
+                <div className="spark-current-meta">
                   <span>Chapter {currentMissionIndex + 1}</span>
-                  <span>Scene {Math.min(currentMissionIndex + 1, Math.max(adventureProgress.length, 1))} of {Math.max(adventureProgress.length, 1)}</span>
+                  <span>Scene 1 of {Math.max(mapNodes.length, 1)}</span>
                   <strong>In progress</strong>
                 </div>
               </div>
-              <button className="mission-continue-button" type="button" onClick={launchRun}>
-                <span>Continue Mission</span>
-                <ArrowRight size={18} />
-              </button>
             </article>
 
-            <section className="phone-section">
-              <div className="phone-section-head">
-                <div>
-                  <span className="phone-section-label">Your adventure map</span>
-                  <strong>Follow the journey, one checkpoint at a time.</strong>
-                </div>
-                <button type="button" className="phone-link-button" onClick={() => playUiSound('click')}>
-                  View all <ChevronRight size={15} />
-                </button>
-              </div>
-              <div className="adventure-strip">
-                {visibleAdventureProgress.map((step, index) => (
-                  <article key={step.id} className={`adventure-strip-node is-${step.state}`}>
-                    <div className="adventure-strip-visual">
-                      <img src={step.image} alt={step.title} />
-                    </div>
-                    <div className="adventure-strip-copy">
-                      <strong>{step.missionTitle ?? step.title}</strong>
-                      <span>{step.state === 'done' ? 'Completed' : step.state === 'active' ? 'In progress' : step.state === 'ready' ? 'Ready' : 'Locked'}</span>
-                    </div>
-                    {index < visibleAdventureProgress.length - 1 && <div className="adventure-strip-connector" />}
-                  </article>
-                ))}
-              </div>
-            </section>
+            <button className="spark-primary-cta" type="button" onClick={launchRun}>
+              <span>Continue Mission</span>
+              <ArrowRight size={18} />
+            </button>
+          </section>
 
-            <section className="phone-section">
-              <div className="phone-section-head">
+          <section className="spark-home-section">
+            <div className="spark-section-head">
+              <div>
+                <span className="spark-section-label">Your adventure map</span>
+                <strong>Follow your next checkpoint.</strong>
+              </div>
+              <button type="button" className="spark-link-button" onClick={() => playUiSound('click')}>
+                View all <ChevronRight size={15} />
+              </button>
+            </div>
+
+            <div className="spark-map-strip">
+              {mapNodes.map((node, index) => (
+                <article key={node.id} className={`spark-map-node is-${node.state}`}>
+                  <div className="spark-map-node-visual">
+                    <img src={node.image} alt={node.title} />
+                  </div>
+                  <div className="spark-map-node-step">{node.step}</div>
+                  <strong>{node.title}</strong>
+                  <span>{node.progressLabel}</span>
+                  {index < mapNodes.length - 1 && <div className="spark-map-connector" />}
+                </article>
+              ))}
+            </div>
+          </section>
+
+          <section className="spark-home-section">
+            <div className="spark-section-head">
+              <div>
+                <span className="spark-section-label">Quick XP challenges</span>
+                <strong>Short boosts to keep momentum.</strong>
+              </div>
+              <button type="button" className="spark-link-button" onClick={launchRun}>
+                See all <ChevronRight size={15} />
+              </button>
+            </div>
+
+            <div className="spark-quick-grid">
+              {quickChallenges.slice(0, 3).map((challenge) => {
+                const Icon = challenge.Icon
+
+                return (
+                  <button
+                    key={challenge.id}
+                    type="button"
+                    className={`spark-quick-card tone-${challenge.tone}${activeQuickChallenge?.id === challenge.id ? ' is-active' : ''}`}
+                    onClick={() => {
+                      setActiveFilter(challenge.tag)
+                      setActiveChallengeId(challenge.id)
+                      playUiSound('click')
+                    }}
+                  >
+                    <div className="spark-quick-card-icon">
+                      <Icon size={22} />
+                    </div>
+                    <strong>{challenge.label}</strong>
+                    <span>{challenge.duration}</span>
+                    <small>+{challenge.reward} XP</small>
+                  </button>
+                )
+              })}
+            </div>
+          </section>
+
+          {homeMomentCards.length > 0 && (
+            <section className="spark-home-section">
+              <div className="spark-section-head">
                 <div>
-                  <span className="phone-section-label">Quick XP challenges</span>
-                  <small>New challenges keep your momentum alive.</small>
+                  <span className="spark-section-label">Real-life moments</span>
+                  <strong>Practice anytime, anywhere.</strong>
                 </div>
-                <button type="button" className="phone-link-button" onClick={launchRun}>
+                <button type="button" className="spark-link-button" onClick={launchRun}>
                   See all <ChevronRight size={15} />
                 </button>
               </div>
-              <div className="phone-challenge-row">
-                {quickChallenges.slice(0, 3).map((challenge) => {
-                  const Icon = challenge.Icon
 
-                  return (
-                    <button
-                      key={challenge.id}
-                      type="button"
-                      className={`phone-challenge-card tone-${challenge.tone}${activeQuickChallenge?.id === challenge.id ? ' is-active' : ''}`}
-                      onClick={() => {
-                        setActiveFilter(challenge.tag)
-                        setActiveChallengeId(challenge.id)
-                        playUiSound('click')
-                      }}
-                    >
-                      <div className="phone-challenge-icon">
-                        <Icon size={18} />
+              <div className="spark-moment-list">
+                {homeMomentCards.slice(0, 1).map((moment) => (
+                  <article key={moment.id} className="spark-moment-card">
+                    <img src={moment.image} alt={moment.title} className="spark-moment-image" />
+                    <div className="spark-moment-dim" />
+                    <div className="spark-moment-body">
+                      <span>{moment.badge}</span>
+                      <strong>{moment.title}</strong>
+                      <p>{moment.hook}</p>
+                      <div className="spark-moment-foot">
+                        <small>{moment.duration}</small>
+                        <button type="button" aria-label="Open moment" onClick={launchRun}>
+                          <ArrowRight size={16} />
+                        </button>
                       </div>
-                      <strong>{challenge.label}</strong>
-                      <span>{challenge.duration}</span>
-                      <small>+{challenge.reward} XP</small>
-                    </button>
-                  )
-                })}
-              </div>
-            </section>
-
-            {featuredMoment && (
-              <section className="phone-section">
-                <div className="phone-section-head">
-                  <div>
-                    <span className="phone-section-label">Real-life moments</span>
-                    <small>Practice, anytime, anywhere.</small>
-                  </div>
-                  <button type="button" className="phone-link-button" onClick={launchRun}>
-                    See all <ChevronRight size={15} />
-                  </button>
-                </div>
-                <article className="phone-moment-card">
-                  <img src={featuredMoment.image} alt={featuredMoment.title} className="phone-moment-image" />
-                  <div className="phone-moment-overlay" />
-                  <div className="phone-moment-copy">
-                    <span>{featuredMoment.badge}</span>
-                    <strong>{featuredMoment.title}</strong>
-                    <p>{featuredMoment.hook}</p>
-                    <div className="phone-moment-foot">
-                      <small>{featuredMoment.duration}</small>
-                      <button type="button" aria-label="Abrir momento" onClick={launchRun}>
-                        <ArrowRight size={16} />
-                      </button>
                     </div>
-                  </div>
-                </article>
-              </section>
-            )}
-
-            {featuredInsight && (
-              <section className="phone-section">
-                <div className="phone-section-head">
-                  <div>
-                    <span className="phone-section-label">Emotional insight</span>
-                    <small>Based on your recent conversations.</small>
-                  </div>
-                </div>
-                <article className="phone-insight-card">
-                  <div className="phone-insight-icon">
-                    <Heart size={20} />
-                  </div>
-                  <div className="phone-insight-copy">
-                    <strong>{featuredInsight.title}</strong>
-                    <p>{featuredInsight.body}</p>
-                  </div>
-                  <div className="phone-insight-score">
-                    <strong>{emotionalPulse.confidence}%</strong>
-                    <span>This week</span>
-                  </div>
-                </article>
-              </section>
-            )}
-
-            <nav className="phone-bottom-nav">
-              <button className="is-active" type="button" onClick={() => playUiSound('click')}>
-                <Home size={18} />
-                <span>Home</span>
-              </button>
-              <button type="button" onClick={() => playUiSound('click')}>
-                <Map size={18} />
-                <span>Map</span>
-              </button>
-              <button type="button" onClick={launchRun}>
-                <Gamepad2 size={18} />
-                <span>Practice</span>
-              </button>
-              <button type="button" onClick={() => playUiSound('click')}>
-                <BookOpen size={18} />
-                <span>Progress</span>
-              </button>
-              <button type="button" onClick={() => playUiSound('click')}>
-                <UserRound size={18} />
-                <span>Profile</span>
-              </button>
-            </nav>
-          </section>
-
-          <aside className="experience-companion">
-            <div className="companion-label">Mission scene</div>
-            <article className="companion-scene-card">
-              <div className="companion-scene-topbar">
-                <button type="button" className="companion-icon-button" onClick={() => playUiSound('click')}>
-                  <ChevronRight size={18} />
-                </button>
-                <div className="companion-scene-title">
-                  <strong>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Airport Arrival'}</strong>
-                  <span>Scene {Math.min(currentMissionIndex + 1, Math.max(adventureProgress.length, 1))} of {Math.max(adventureProgress.length, 1)}</span>
-                </div>
-                <div className="companion-heart-pill">
-                  <Heart size={14} />
-                  <span>{Math.max(1, Math.round(emotionalPulse.confidence / 24))}</span>
-                </div>
-              </div>
-
-              <div className="companion-scene-media">
-                <img src={currentMissionHeroDesktop} alt={currentMissionLesson?.title ?? 'Mission scene'} />
-                <div className="companion-scene-dim" />
-                <div className="companion-scene-character">
-                  <img src={currentMissionMascot} alt="Spark in mission scene" />
-                </div>
-              </div>
-
-              <div className="companion-bubble">
-                <span>{activeQuickChallenge?.title ?? 'Current challenge'}</span>
-                <strong>{activeExercise?.prompt ?? currentMissionLesson?.practicalGoal ?? 'Move the mission forward.'}</strong>
-                <Volume2 size={16} />
-              </div>
-
-              <div className="companion-scene-options">
-                {(activeExercise?.kind === 'multiple-choice' || activeExercise?.kind === 'listening') &&
-                  activeExercise.options.slice(0, 3).map((option) => {
-                    const selected = choiceAnswers[activeExercise.id]
-                    const isCorrect = selected !== null && option === activeExercise.correct
-                    const isWrong = selected === option && option !== activeExercise.correct
-
-                    return (
-                      <button
-                        key={option}
-                        type="button"
-                        className={`scene-option-button${selected === option ? ' is-selected' : ''}${isCorrect ? ' is-correct' : ''}${isWrong ? ' is-wrong' : ''}`}
-                        onClick={() => handleChoiceSelect(activeExercise.id, option)}
-                      >
-                        <span>{option}</span>
-                        {selected === option && <Volume2 size={15} />}
-                      </button>
-                    )
-                  })}
-
-                {activeExercise?.kind === 'drag-fill' && (
-                  <div className="scene-drag-builder">
-                    <DndContext sensors={sensors} onDragEnd={(event) => handleDragFillEnd(activeExercise.id, event)}>
-                      <div className="scene-drag-sentence">
-                        <span>{activeExercise.sentenceBefore}</span>
-                        <DropSlot
-                          id={`drag-fill-slot-${activeExercise.id}`}
-                          value={dragFillAnswers[activeExercise.id] ?? null}
-                          isCorrect={(dragFillAnswers[activeExercise.id] ?? null) === activeExercise.correct}
-                          isWrong={(dragFillAnswers[activeExercise.id] ?? null) !== null && (dragFillAnswers[activeExercise.id] ?? null) !== activeExercise.correct}
-                          onClear={() => clearDragFill(activeExercise.id)}
-                        />
-                        <span>{activeExercise.sentenceAfter}</span>
-                      </div>
-                      <div className="scene-token-row">
-                        {activeExercise.options.map((option) => (
-                          <DraggableToken key={option} id={option} label={option} disabled={(dragFillAnswers[activeExercise.id] ?? null) === option} />
-                        ))}
-                      </div>
-                    </DndContext>
-                  </div>
-                )}
-
-                {activeExercise?.kind === 'ordering' && (
-                  <div className="scene-order-builder">
-                    <SortableContext items={sceneOrderingWords} strategy={horizontalListSortingStrategy}>
-                      <DndContext sensors={sensors} onDragEnd={(event) => handleOrderingEnd(activeExercise.id, event)}>
-                        <div className="scene-sort-row">
-                          {sceneOrderingWords.map((word) => (
-                            <SortableWord key={`${activeExercise.id}-${word}`} id={word} />
-                          ))}
-                        </div>
-                      </DndContext>
-                    </SortableContext>
-                    <button className="scene-reset-button" type="button" onClick={() => resetOrdering(activeExercise)}>
-                      <RotateCcw size={14} />
-                      Reset
-                    </button>
-                  </div>
-                )}
-
-                {activeExercise?.kind === 'speaking' && (
-                  <div className="scene-speaking-card">
-                    <div className="scene-speaking-ring">
-                      <Mic size={20} />
-                    </div>
-                    <div className="scene-speaking-copy">
-                      <strong>{activeExercise.contextCue ?? 'Use your voice to move the scene forward.'}</strong>
-                      <p>{activeExercise.prompt}</p>
-                    </div>
-                    <button
-                      type="button"
-                      className={`scene-speaking-action${speakingCompletions[activeExercise.id] ? ' is-done' : ''}`}
-                      onClick={() => handleSpeakingComplete(activeExercise.id)}
-                    >
-                      {speakingCompletions[activeExercise.id] ? 'Completed' : 'Mark as spoken'}
-                    </button>
-                  </div>
-                )}
-              </div>
-
-              <div className="companion-scene-footer">
-                <div className="scene-feedback-copy">
-                  <strong>{sceneSolved ? 'Great choice! You sound natural.' : currentMissionLesson?.emotionalGoal ?? 'Keep the flow alive.'}</strong>
-                </div>
-                <div className="scene-progress-meter">
-                  <div className="scene-progress-bars">
-                    {Array.from({ length: Math.max(5, Math.min(6, currentMissionQuizzes.length || 5)) }).map((_, index) => (
-                      <span
-                        key={`scene-progress-${index}`}
-                        className={index < Math.max(1, completedCount) ? 'is-filled' : ''}
-                      />
-                    ))}
-                  </div>
-                  <strong>+{activeExercise?.reward ?? 15} XP</strong>
-                </div>
-              </div>
-            </article>
-
-            <div className="companion-label">Map screen</div>
-            <article className="companion-map-card">
-              <div className="companion-map-head">
-                <div>
-                  <strong>Your Adventure</strong>
-                  <span>Chapter {currentMissionIndex + 1} · {currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Current path'}</span>
-                </div>
-                <button type="button" className="companion-icon-button" onClick={() => playUiSound('click')}>
-                  <Map size={16} />
-                </button>
-              </div>
-              <div className="companion-map-progress">
-                <span>{adventureCompletionCount}/{adventureProgress.length} completed</span>
-                <strong>{adventureCompletionPercent}%</strong>
-              </div>
-              <div className="companion-map-track">
-                {visibleAdventureProgress.map((step) => (
-                  <article key={`map-${step.id}`} className={`companion-map-node is-${step.state}`}>
-                    <div className="companion-map-node-image">
-                      <img src={step.image} alt={step.title} />
-                    </div>
-                    <strong>{step.missionTitle ?? step.title}</strong>
-                    <span>{step.state === 'done' ? 'complete' : step.state === 'active' ? `${step.progress ?? 0}%` : 'locked'}</span>
                   </article>
                 ))}
               </div>
-            </article>
+            </section>
+          )}
 
-            <div className="companion-label">Responsive (mobile-first)</div>
-            <div className="companion-mini-grid">
-              <article className="mini-preview-card">
-                <div className="mini-preview-image">
-                  <img src={currentMissionHeroMobile} alt="Preview da home mobile" />
+          {featuredInsight && (
+            <section className="spark-home-section">
+              <div className="spark-section-head">
+                <div>
+                  <span className="spark-section-label">Emotional insight</span>
+                  <strong>Based on your recent sessions.</strong>
                 </div>
-                <strong>Home</strong>
-              </article>
-              <article className="mini-preview-card">
-                <div className="mini-preview-image">
-                  <img src={currentMissionVisual} alt="Preview da missão" />
+              </div>
+
+              <article className="spark-insight-card">
+                <div className="spark-insight-icon">
+                  <Heart size={20} />
                 </div>
-                <strong>Mission</strong>
+                <div className="spark-insight-copy">
+                  <strong>{featuredInsight.title}</strong>
+                  <p>{featuredInsight.body}</p>
+                </div>
+                <div className="spark-insight-score">
+                  <strong>{emotionalPulse.confidence}%</strong>
+                  <span>This week</span>
+                </div>
               </article>
-              <article className="mini-preview-card">
-                <div className="mini-preview-progress">
-                  <span>Level {profileLevel}</span>
-                  <strong>{heroXp} / 650 XP</strong>
-                  <div className="track soft">
-                    <div className="track-fill track-fill-hero" style={{ width: heroXpWidth }} />
+            </section>
+          )}
+
+          <nav className="spark-bottom-nav">
+            <button className="is-active" type="button" onClick={() => playUiSound('click')}>
+              <Home size={18} />
+              <span>Home</span>
+            </button>
+            <button type="button" onClick={() => playUiSound('click')}>
+              <Map size={18} />
+              <span>Map</span>
+            </button>
+            <button type="button" onClick={launchRun}>
+              <Gamepad2 size={18} />
+              <span>Practice</span>
+            </button>
+            <button type="button" onClick={() => playUiSound('click')}>
+              <BookOpen size={18} />
+              <span>Progress</span>
+            </button>
+            <button type="button" onClick={() => playUiSound('click')}>
+              <UserRound size={18} />
+              <span>Profile</span>
+            </button>
+          </nav>
+        </section>
+
+        <aside className="spark-companion-stack">
+          <div className="spark-companion-label">MISSION SCENE (EXAMPLE)</div>
+          <article className="spark-scene-card">
+            <header className="spark-scene-topbar">
+              <button type="button" className="spark-circle-icon" onClick={() => playUiSound('click')}>
+                <ChevronRight size={18} />
+              </button>
+              <div>
+                <strong>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Airport Arrival'}</strong>
+                <span>Scene 1 of {Math.max(mapNodes.length, 1)}</span>
+              </div>
+              <div className="spark-heart-pill">
+                <Heart size={14} />
+                <span>{Math.max(1, Math.round(emotionalPulse.confidence / 24))}</span>
+              </div>
+            </header>
+
+            <div className="spark-scene-stage">
+              <img src={missionSceneImage} alt={currentMissionLesson?.title ?? 'Mission scene'} className="spark-scene-bg" />
+              <div className="spark-scene-overlay" />
+              <div className="spark-scene-mascot">
+                <img src={missionMascotImage} alt="Spark companion" />
+              </div>
+            </div>
+
+            <div className="spark-scene-prompt">
+              <div>
+                <span>{activeQuickChallenge?.title ?? 'Current challenge'}</span>
+                <strong>{activeExercise?.prompt ?? currentMissionLesson?.practicalGoal ?? 'Move the mission forward.'}</strong>
+              </div>
+              <Volume2 size={16} />
+            </div>
+
+            <div className="spark-scene-choice-list">
+              {(activeExercise?.kind === 'multiple-choice' || activeExercise?.kind === 'listening') &&
+                activeExercise.options.slice(0, 3).map((option) => {
+                  const selected = choiceAnswers[activeExercise.id]
+                  const isCorrect = selected !== null && option === activeExercise.correct
+                  const isWrong = selected === option && option !== activeExercise.correct
+
+                  return (
+                    <button
+                      key={option}
+                      type="button"
+                      className={`scene-option-button${selected === option ? ' is-selected' : ''}${isCorrect ? ' is-correct' : ''}${isWrong ? ' is-wrong' : ''}`}
+                      onClick={() => handleChoiceSelect(activeExercise.id, option)}
+                    >
+                      <span>{option}</span>
+                      {selected === option && <Volume2 size={15} />}
+                    </button>
+                  )
+                })}
+
+              {activeExercise?.kind !== 'multiple-choice' && activeExercise?.kind !== 'listening' && (
+                <>
+                  <button type="button" className="scene-option-button is-selected" onClick={launchRun}>
+                    <span>{currentMissionLesson?.practicalGoal ?? 'Move to the next checkpoint.'}</span>
+                  </button>
+                  <button type="button" className="scene-option-button" onClick={launchRun}>
+                    <span>{currentMissionLesson?.emotionalGoal ?? 'Respond with more confidence.'}</span>
+                  </button>
+                  <button type="button" className="scene-option-button" onClick={launchRun}>
+                    <span>{activeQuickChallenge?.caption ?? 'Keep the scene alive.'}</span>
+                  </button>
+                </>
+              )}
+            </div>
+
+            <footer className="spark-scene-footer">
+              <strong>{sceneSolved ? 'Great choice! You sound natural.' : currentMissionLesson?.emotionalGoal ?? 'Keep the scene moving.'}</strong>
+              <div className="spark-scene-xp">
+                <div className="spark-scene-progress">
+                  {Array.from({ length: Math.max(5, Math.min(6, currentMissionQuizzes.length || 5)) }).map((_, index) => (
+                    <span key={`scene-progress-${index}`} className={index < Math.max(1, completedCount) ? 'is-filled' : ''} />
+                  ))}
+                </div>
+                <small>+{activeExercise?.reward ?? 15} XP</small>
+              </div>
+            </footer>
+          </article>
+
+          <div className="spark-companion-label">MAP SCREEN</div>
+          <article className="spark-map-screen">
+            <header className="spark-map-screen-head">
+              <div>
+                <strong>Your Adventure</strong>
+                <span>Chapter {currentMissionIndex + 1} · {currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Current path'}</span>
+              </div>
+              <button type="button" className="spark-circle-icon" onClick={() => playUiSound('click')}>
+                <Map size={16} />
+              </button>
+            </header>
+
+            <div className="spark-map-screen-progress">
+              <span>{adventureCompletionCount}/{mapNodes.length} completed</span>
+              <strong>{adventureCompletionPercent}%</strong>
+            </div>
+
+            <div className="spark-map-screen-canvas">
+              {mapNodes.slice(0, 5).map((node) => (
+                <article key={`screen-${node.id}`} className={`spark-map-screen-node is-${node.state}`}>
+                  <div className="spark-map-screen-node-art">
+                    <img src={node.image} alt={node.title} />
                   </div>
-                  <small>Confidence {emotionalPulse.confidence}%</small>
-                </div>
-                <strong>Progress</strong>
-              </article>
+                  <strong>{node.title}</strong>
+                  <span>{node.progressLabel}</span>
+                </article>
+              ))}
             </div>
-          </aside>
-        </section>
 
-        <section className="experience-values">
-          <div className="experience-values-lead">
-            <div className="experience-values-icon">
-              <Sparkles size={18} />
-            </div>
-            <div>
-              <strong>SparkLingo adapts to you.</strong>
-              <p>Every conversation. Every choice. Every day.</p>
-            </div>
+            <nav className="spark-map-screen-nav">
+              <span className="is-active">Home</span>
+              <span>Map</span>
+              <span>Practice</span>
+              <span>Progress</span>
+              <span>Profile</span>
+            </nav>
+          </article>
+
+          <div className="spark-companion-label">RESPONSIVE (MOBILE-FIRST)</div>
+          <div className="spark-preview-stack">
+            <article className="spark-preview-card">
+              <div className="spark-preview-thumb">
+                <img src={heroPortraitImage} alt="Home mobile preview" />
+              </div>
+              <strong>Home</strong>
+            </article>
+            <article className="spark-preview-card">
+              <div className="spark-preview-thumb">
+                <img src={missionSceneImage} alt="Mission preview" />
+              </div>
+              <strong>Mission</strong>
+            </article>
+            <article className="spark-preview-card spark-preview-progress-card">
+              <span>Level {profileLevel}</span>
+              <strong>{heroXp} / 650 XP</strong>
+              <div className="track soft">
+                <div className="track-fill track-fill-hero" style={{ width: heroXpWidth }} />
+              </div>
+              <small>Confidence {emotionalPulse.confidence}%</small>
+              <strong>Progress</strong>
+            </article>
           </div>
-          <div className="experience-values-grid">
-            <span>Personalized Learning</span>
-            <span>Emotional Memory</span>
-            <span>Real-Life Situations</span>
-            <span>Meaningful Progress</span>
-          </div>
-        </section>
+        </aside>
       </main>
+
+      <section className="spark-home-values">
+        <div className="spark-home-values-lead">
+          <div className="spark-home-values-icon">
+            <Sparkles size={18} />
+          </div>
+          <div>
+            <strong>SparkLingo adapts to you.</strong>
+            <p>Every conversation. Every choice. Every day.</p>
+          </div>
+        </div>
+        <div className="spark-home-values-grid">
+          <span>Personalized Learning</span>
+          <span>Emotional Memory</span>
+          <span>Real-Life Situations</span>
+          <span>Meaningful Progress</span>
+        </div>
+      </section>
     </div>
-  )
-}
-
-function DraggableToken({ id, label, disabled }: { id: string; label: string; disabled?: boolean }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id, disabled })
-
-  return (
-    <button
-      ref={setNodeRef}
-      style={{ transform: CSS.Translate.toString(transform) }}
-      className={`token-pill${isDragging ? ' dragging' : ''}${disabled ? ' disabled' : ''}`}
-      {...listeners}
-      {...attributes}
-    >
-      <Grip size={14} />
-      {label}
-    </button>
-  )
-}
-
-function DropSlot({
-  id,
-  value,
-  isCorrect,
-  isWrong,
-  onClear,
-}: {
-  id: string
-  value: string | null
-  isCorrect: boolean
-  isWrong: boolean
-  onClear: () => void
-}) {
-  const { setNodeRef, isOver } = useDroppable({ id })
-
-  return (
-    <button
-      ref={setNodeRef}
-      className={`drop-slot${isOver ? ' over' : ''}${isCorrect ? ' correct' : ''}${isWrong ? ' wrong' : ''}`}
-      onClick={() => value && onClear()}
-    >
-      {value ?? 'solte aqui'}
-    </button>
-  )
-}
-
-function SortableWord({ id }: { id: string }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
-
-  return (
-    <button
-      ref={setNodeRef}
-      style={{ transform: CSS.Transform.toString(transform), transition }}
-      className={`sortable-word${isDragging ? ' dragging' : ''}`}
-      {...attributes}
-      {...listeners}
-    >
-      {id}
-    </button>
   )
 }
 

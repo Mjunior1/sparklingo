@@ -129,12 +129,12 @@ const assetLibrary = {
     waiting: '/Images/Airport/sparklingo_asset_airport_waiting_scene_mobile_v1.png',
   },
   coffee: {
-    order: '/Images/coffee shop/sparklingo_scene_coffee_ordering_mobile_v1.png',
-    pay: '/Images/coffee shop/sparklingo_scene_pay_ordering_mobile_v1.png',
-    take: '/Images/coffee shop/sparklingo_scene_take_coffee_mobile_v1.png',
-    window: '/Images/coffee shop/sparklingo_scene_take_coffee_window_mobile_v1.png',
-    write: '/Images/coffee shop/sparklingo_scene_writing_coffee_mobile_v1.png',
-    account: '/Images/coffee shop/sparklingo_scene_checking_account_mobile_v1.png',
+    order: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
+    pay: '/Images/CoffeeShop/sparklingo_scene_pay_ordering_mobile_v1.png',
+    take: '/Images/CoffeeShop/sparklingo_scene_take_coffee_mobile_v1.png',
+    window: '/Images/CoffeeShop/sparklingo_scene_take_coffee_window_mobile_v1.png',
+    write: '/Images/CoffeeShop/sparklingo_scene_writing_coffee_mobile_v1.png',
+    account: '/Images/CoffeeShop/sparklingo_scene_checking_account_mobile_v1.png',
   },
   park: {
     enjoy: '/Images/Park/sparklingo_scene_enjoy_park_mobile_v1.png',
