@@ -28,18 +28,10 @@ import { saveSkillProgress } from './services/skillProgress'
 import { completeStudySession, startStudySession } from './services/studySessions'
 import {
   ArrowRight,
-  BookOpen,
   ChevronRight,
   Flame,
-  Gamepad2,
-  Grip,
-  Headphones,
   Heart,
-  Home,
-  Map,
   Medal,
-  Mic,
-  Sparkles,
   UserRound,
   Volume2,
   Zap,
@@ -415,27 +407,6 @@ const toRuntimeExercises = (questions: QuizQuestionItem[], quizzes: QuizCatalogI
   return mapped.length ? mapped : exercises
 }
 
-const getChallengeDuration = (exercise: Exercise) => {
-  if (exercise.kind === 'speaking') return '15s'
-  if (exercise.kind === 'listening') return '45s'
-  if (exercise.kind === 'drag-fill') return '1 min'
-  if (exercise.kind === 'ordering') return '50s'
-  return exercise.tag === 'Reading' ? '90s' : '40s'
-}
-
-const getChallengeTitle = (exercise: Exercise) => {
-  if (exercise.kind === 'speaking') return 'Speak Up'
-  if (exercise.kind === 'listening') return 'Listen Fast'
-  if (exercise.kind === 'drag-fill') return 'Drag & Match'
-  if (exercise.kind === 'ordering') return 'Speed Order'
-  return exercise.tag === 'Reading' ? 'Reflex Read' : 'Mini Survival'
-}
-
-const getChallengeTone = (index: number) => {
-  const tones = ['lime', 'sky', 'berry', 'violet', 'gold', 'coral'] as const
-  return tones[index % tones.length]
-}
-
 const getSlotPath = (slots: MediaSlots | undefined, key: MediaSlotKey) => slots?.[key]?.path ?? ''
 
 const getFirstSlotPath = (slots: MediaSlots | undefined, keys: MediaSlotKey[], fallback = '') => {
@@ -477,7 +448,6 @@ const getExerciseAttempts = (
 
 function App() {
   const { status, user, profile, signOut, platformConfig, patchProfile } = useAuth()
-  const [activeFilter, setActiveFilter] = useState<FilterKey>('Todos')
   const [activeChallengeId, setActiveChallengeId] = useState<string | null>(null)
   const [choiceAnswers, setChoiceAnswers] = useState<Record<string, string | null>>({})
   const [dragFillAnswers, setDragFillAnswers] = useState<Record<string, string | null>>({})
@@ -522,13 +492,9 @@ function App() {
     )
   }, [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises, speakingCompletions])
 
-  const visibleExercises = useMemo(() => {
-    if (activeFilter === 'Todos') return runtimeExercises
-    return runtimeExercises.filter((exercise) => exercise.tag === activeFilter)
-  }, [activeFilter, runtimeExercises])
   const activeExercise = useMemo(
-    () => visibleExercises.find((exercise) => exercise.id === activeChallengeId) ?? visibleExercises[0] ?? null,
-    [activeChallengeId, visibleExercises],
+    () => runtimeExercises.find((exercise) => exercise.id === activeChallengeId) ?? runtimeExercises[0] ?? null,
+    [activeChallengeId, runtimeExercises],
   )
 
   const completedCount = useMemo(() => {
@@ -549,9 +515,7 @@ function App() {
 
   const profileXp = progressSnapshot?.totalXp ?? profile?.xp ?? totalXp
   const streakDays = progressSnapshot?.streakDays ?? profile?.streak ?? 0
-  const profileLevel = progressSnapshot?.level ?? profile?.level ?? 1
   const heroXp = Math.min(650, 350 + profileXp)
-  const heroXpWidth = `${(heroXp / 650) * 100}%`
   const firstName = profile?.displayName?.split(' ')[0] ?? user?.displayName?.split(' ')[0] ?? 'learner'
   const isAdmin = profile?.role === 'admin'
   const currentMissionLesson = useMemo(() => {
@@ -679,35 +643,20 @@ function App() {
       getFirstSlotPath(currentMissionLesson?.mediaSlots, ['thumbnail', 'heroImageDesktop', 'heroImageMobile'], '') ||
       currentMissionVisual
 
-    return normalizeScenePath(previewSource, storyMedia.airport.checkin)
+    return normalizeScenePath(previewSource, storyMedia.airport.departures)
   }, [currentMissionLesson, currentMissionVisual])
 
-  const quickChallenges = useMemo(
-    () =>
-      runtimeExercises.slice(0, 4).map((exercise, index) => {
-        const Icon =
-          exercise.kind === 'speaking'
-            ? Mic
-            : exercise.kind === 'listening'
-              ? Headphones
-              : exercise.kind === 'drag-fill'
-                ? Grip
-                : exercise.kind === 'ordering'
-                  ? Sparkles
-                  : Zap
-
-        return {
-          ...exercise,
-          Icon,
-          tone: getChallengeTone(index),
-          duration: getChallengeDuration(exercise),
-          label: getChallengeTitle(exercise),
-          caption: ('contextCue' in exercise ? exercise.contextCue : '') || exercise.prompt,
-          done: isExerciseSolved(exercise, choiceAnswers, dragFillAnswers, orderWordMap, speakingCompletions),
-        }
-      }),
-    [choiceAnswers, dragFillAnswers, orderWordMap, runtimeExercises, speakingCompletions],
+  const missionCardImage = useMemo(
+    () => normalizeScenePath(missionPreviewImage, storyMedia.airport.departures),
+    [missionPreviewImage],
   )
+
+  const missionSceneCount = useMemo(
+    () => Math.max(5, currentMissionQuizzes.length || 0),
+    [currentMissionQuizzes.length],
+  )
+
+  /*
 
   const emotionalInsights = useMemo(
     () => [
@@ -743,17 +692,14 @@ function App() {
     [currentMissionLesson?.emotionalGoal, emotionalPulse, profile?.focusSkill],
   )
 
+  */
+
   const greeting = useMemo(() => {
     const hour = new Date().getHours()
     if (hour < 12) return 'Good morning'
     if (hour < 18) return 'Good afternoon'
     return 'Good evening'
   }, [])
-
-  const activeQuickChallenge = useMemo(
-    () => quickChallenges.find((challenge) => challenge.id === activeExercise?.id) ?? quickChallenges[0] ?? null,
-    [activeExercise?.id, quickChallenges],
-  )
 
   const sceneSolved = useMemo(
     () =>
@@ -767,6 +713,8 @@ function App() {
     const index = lessonsCatalog.findIndex((lesson) => lesson.id === currentMissionLesson?.id)
     return index >= 0 ? index : 0
   }, [currentMissionLesson?.id, lessonsCatalog])
+
+  /*
 
   const adventureProgress = useMemo(
     () =>
@@ -904,6 +852,8 @@ function App() {
     })
   }, [adventureProgress, currentMissionLesson?.journeyArc])
 
+  */
+
   const recentMissionTheme = currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? ''
   const {
     confidence: emotionalConfidence,
@@ -921,15 +871,15 @@ function App() {
   )
 
   useEffect(() => {
-    if (!visibleExercises.length) {
+    if (!runtimeExercises.length) {
       setActiveChallengeId(null)
       return
     }
 
-    if (!activeChallengeId || !visibleExercises.some((exercise) => exercise.id === activeChallengeId)) {
-      setActiveChallengeId(visibleExercises[0].id)
+    if (!activeChallengeId || !runtimeExercises.some((exercise) => exercise.id === activeChallengeId)) {
+      setActiveChallengeId(runtimeExercises[0].id)
     }
-  }, [activeChallengeId, visibleExercises])
+  }, [activeChallengeId, runtimeExercises])
 
   const progressSyncPayload = useMemo(
     () => ({
@@ -1609,8 +1559,8 @@ function App() {
 
   return (
     <div className="spark-home-shell">
-      <main className="spark-home-stage">
-        <section className="spark-phone-frame">
+      <main className="spark-home-stage spark-home-stage-hero-only">
+        <section className="spark-phone-frame spark-phone-frame-hero-only">
           <header className="spark-phone-topbar">
             <div className="spark-brand-pill">
               <Zap size={18} />
@@ -1657,7 +1607,7 @@ function App() {
 
             <article className="spark-current-mission">
               <div className="spark-current-mission-media">
-                <img src={missionPreviewImage} alt={currentMissionLesson?.title ?? 'Mission preview'} />
+                <img src={missionCardImage} alt={currentMissionLesson?.title ?? 'Mission preview'} />
               </div>
               <div className="spark-current-mission-body">
                 <span className="spark-micro-chip">Current mission</span>
@@ -1665,7 +1615,7 @@ function App() {
                 <p>{currentMissionLesson?.emotionalContext ?? "You just landed in Boston. Let's get you through immigration."}</p>
                 <div className="spark-current-meta">
                   <span>Chapter {currentMissionIndex + 1}</span>
-                  <span>Scene 1 of {Math.max(mapNodes.length, 1)}</span>
+                  <span>Scene 1 of {missionSceneCount}</span>
                   <strong>In progress</strong>
                 </div>
               </div>
@@ -1676,161 +1626,18 @@ function App() {
               <ArrowRight size={18} />
             </button>
           </section>
-
-          <section className="spark-home-section">
-            <div className="spark-section-head">
-              <div>
-                <span className="spark-section-label">Your adventure map</span>
-                <strong>Follow your next checkpoint</strong>
-              </div>
-              <button type="button" className="spark-link-button" onClick={() => playUiSound('click')}>
-                View all <ChevronRight size={15} />
-              </button>
-            </div>
-
-            <div className="spark-map-strip">
-              {mapNodes.map((node, index) => (
-                <article key={node.id} className={`spark-map-node is-${node.state}`}>
-                  <div className="spark-map-node-visual">
-                    <img src={node.image} alt={node.title} />
-                  </div>
-                  <div className="spark-map-node-step">{node.step}</div>
-                  <strong>{node.title}</strong>
-                  <span>{node.progressLabel}</span>
-                  {index < mapNodes.length - 1 && <div className="spark-map-connector" />}
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="spark-home-section">
-            <div className="spark-section-head">
-              <div>
-                <span className="spark-section-label">Quick XP challenges</span>
-                <strong>Keep the run alive</strong>
-              </div>
-              <button type="button" className="spark-link-button" onClick={launchRun}>
-                See all <ChevronRight size={15} />
-              </button>
-            </div>
-
-            <div className="spark-quick-grid">
-              {quickChallenges.slice(0, 3).map((challenge) => {
-                const Icon = challenge.Icon
-
-                return (
-                  <button
-                    key={challenge.id}
-                    type="button"
-                    className={`spark-quick-card tone-${challenge.tone}${activeQuickChallenge?.id === challenge.id ? ' is-active' : ''}`}
-                    onClick={() => {
-                      setActiveFilter(challenge.tag)
-                      setActiveChallengeId(challenge.id)
-                      playUiSound('click')
-                    }}
-                  >
-                    <div className="spark-quick-card-icon">
-                      <Icon size={22} />
-                    </div>
-                    <strong>{challenge.label}</strong>
-                    <span>{challenge.duration}</span>
-                    <small>+{challenge.reward} XP</small>
-                  </button>
-                )
-              })}
-            </div>
-          </section>
-
-          {primaryMoment && currentMissionIndex < 0 && (
-            <section className="spark-home-section">
-              <div className="spark-section-head">
-                <div>
-                  <span className="spark-section-label">Real-life moments</span>
-                  <strong>Practice real conversations</strong>
-                </div>
-                <button type="button" className="spark-link-button" onClick={launchRun}>
-                  See all <ChevronRight size={15} />
-                </button>
-              </div>
-
-              <article className="spark-real-life-card">
-                <div className="spark-real-life-media">
-                  <img src={primaryMoment.image} alt={primaryMoment.title} />
-                </div>
-                <div className="spark-real-life-copy">
-                  <span>{primaryMoment.badge}</span>
-                  <strong>{primaryMoment.title}</strong>
-                  <p>{primaryMoment.hook}</p>
-                  <div className="spark-moment-foot">
-                    <small>{primaryMoment.duration}</small>
-                    <button type="button" aria-label="Open moment" onClick={launchRun}>
-                      <ArrowRight size={16} />
-                    </button>
-                  </div>
-                </div>
-              </article>
-            </section>
-          )}
-
-          {featuredInsight && (
-            <section className="spark-home-section">
-              <div className="spark-section-head">
-              <div>
-                <span className="spark-section-label">Emotional insight</span>
-                <strong>Based on your conversations</strong>
-              </div>
-              </div>
-
-              <article className="spark-insight-card">
-                <div className="spark-insight-icon">
-                  <Heart size={20} />
-                </div>
-                <div className="spark-insight-copy">
-                  <strong>{featuredInsight.title}</strong>
-                  <p>{featuredInsight.body}</p>
-                </div>
-                <div className="spark-insight-score">
-                  <strong>{emotionalPulse.confidence}%</strong>
-                  <span>This week</span>
-                </div>
-              </article>
-            </section>
-          )}
-
-          <nav className="spark-bottom-nav">
-            <button className="is-active" type="button" onClick={() => playUiSound('click')}>
-              <Home size={18} />
-              <span>Home</span>
-            </button>
-            <button type="button" onClick={() => playUiSound('click')}>
-              <Map size={18} />
-              <span>Map</span>
-            </button>
-            <button type="button" onClick={launchRun}>
-              <Gamepad2 size={18} />
-              <span>Practice</span>
-            </button>
-            <button type="button" onClick={() => playUiSound('click')}>
-              <BookOpen size={18} />
-              <span>Progress</span>
-            </button>
-            <button type="button" onClick={() => playUiSound('click')}>
-              <UserRound size={18} />
-              <span>Profile</span>
-            </button>
-          </nav>
         </section>
 
-        <aside className="spark-companion-stack">
+        <aside className="spark-companion-stack spark-companion-stack-hero-only">
           <div className="spark-companion-label">MISSION SCENE (EXAMPLE)</div>
-          <article className="spark-scene-card">
+          <article className="spark-scene-card spark-scene-card-hero">
             <header className="spark-scene-topbar">
               <button type="button" className="spark-circle-icon is-back" onClick={() => playUiSound('click')}>
                 <ChevronRight size={18} />
               </button>
               <div>
                 <strong>{currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Airport Arrival'}</strong>
-                <span>Scene 1 of {Math.max(mapNodes.length, 1)}</span>
+                <span>Scene 1 of {missionSceneCount}</span>
               </div>
               <div className="spark-heart-pill">
                 <Heart size={14} />
@@ -1880,7 +1687,7 @@ function App() {
                     <span>{currentMissionLesson?.emotionalGoal ?? 'Respond with more confidence.'}</span>
                   </button>
                   <button type="button" className="scene-option-button" onClick={launchRun}>
-                    <span>{activeQuickChallenge?.caption ?? 'Keep the scene alive.'}</span>
+                    <span>{currentMissionLesson?.urgencyNote ?? 'Keep the scene alive.'}</span>
                   </button>
                 </>
               )}
@@ -1898,69 +1705,6 @@ function App() {
               </div>
             </footer>
           </article>
-
-          <div className="spark-companion-label">MAP SCREEN</div>
-          <article className="spark-map-screen">
-            <header className="spark-map-screen-head">
-              <div>
-                <strong>Your Adventure</strong>
-                <span>Chapter {currentMissionIndex + 1} - {currentMissionLesson?.missionTitle ?? currentMissionLesson?.title ?? 'Current path'}</span>
-              </div>
-              <button type="button" className="spark-circle-icon" onClick={() => playUiSound('click')}>
-                <Map size={16} />
-              </button>
-            </header>
-
-            <div className="spark-map-screen-progress">
-              <span>{adventureCompletionCount}/{mapNodes.length} completed</span>
-              <strong>{adventureCompletionPercent}%</strong>
-            </div>
-
-            <div className="spark-map-screen-canvas">
-              {mapNodes.slice(0, 5).map((node) => (
-                <article key={`screen-${node.id}`} className={`spark-map-screen-node is-${node.state}`}>
-                  <div className="spark-map-screen-node-art">
-                    <img src={node.image} alt={node.title} />
-                  </div>
-                  <strong>{node.title}</strong>
-                  <span>{node.progressLabel}</span>
-                </article>
-              ))}
-            </div>
-
-            <nav className="spark-map-screen-nav">
-              <span className="is-active">Home</span>
-              <span>Map</span>
-              <span>Practice</span>
-              <span>Progress</span>
-              <span>Profile</span>
-            </nav>
-          </article>
-
-          <div className="spark-companion-label">RESPONSIVE (MOBILE-FIRST)</div>
-          <div className="spark-preview-stack">
-            <article className="spark-preview-card">
-              <div className="spark-preview-thumb">
-                <img src={storyMedia.airport.hero} alt="Home mobile preview" />
-              </div>
-              <strong>Home</strong>
-            </article>
-            <article className="spark-preview-card">
-              <div className="spark-preview-thumb">
-                <img src={missionSceneImage} alt="Mission preview" />
-              </div>
-              <strong>Mission</strong>
-            </article>
-            <article className="spark-preview-card spark-preview-progress-card">
-              <span>Level {profileLevel}</span>
-              <strong>{heroXp} / 650 XP</strong>
-              <div className="track soft">
-                <div className="track-fill track-fill-hero" style={{ width: heroXpWidth }} />
-              </div>
-              <small>Confidence {emotionalPulse.confidence}%</small>
-              <strong>Progress</strong>
-            </article>
-          </div>
         </aside>
       </main>
 

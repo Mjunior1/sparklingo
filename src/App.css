@@ -4474,6 +4474,16 @@
   gap: 22px;
 }
 
+.spark-home-stage.spark-home-stage-hero-only {
+  grid-template-columns: minmax(390px, 0.92fr) minmax(0, 1.52fr);
+  align-items: stretch;
+}
+
+.spark-phone-frame.spark-phone-frame-hero-only {
+  min-height: 860px;
+  padding-bottom: calc(22px + env(safe-area-inset-bottom));
+}
+
 .spark-phone-topbar,
 .spark-topbar-actions,
 .spark-section-head,
@@ -5131,6 +5141,11 @@
   gap: 26px;
 }
 
+.spark-companion-stack.spark-companion-stack-hero-only {
+  gap: 14px;
+  align-content: start;
+}
+
 .spark-companion-label {
   color: rgba(232, 228, 255, 0.76);
   font-size: 0.78rem;
@@ -5154,6 +5169,11 @@
   padding: 22px;
   display: grid;
   gap: 18px;
+}
+
+.spark-scene-card.spark-scene-card-hero {
+  min-height: 860px;
+  align-content: start;
 }
 
 .spark-circle-icon {
@@ -5188,6 +5208,10 @@
   min-height: 460px;
   border-radius: 30px;
   overflow: hidden;
+}
+
+.spark-scene-card.spark-scene-card-hero .spark-scene-stage {
+  min-height: 520px;
 }
 
 .spark-scene-mascot {
@@ -5469,6 +5493,22 @@
   .spark-home-values {
     max-width: 430px;
   }
+
+  .spark-home-stage.spark-home-stage-hero-only {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 22px;
+  }
+
+  .spark-phone-frame.spark-phone-frame-hero-only,
+  .spark-companion-stack.spark-companion-stack-hero-only {
+    max-width: 520px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .spark-companion-stack.spark-companion-stack-hero-only {
+    display: grid;
+  }
 }
 
 @media (max-width: 760px) {
@@ -5489,6 +5529,15 @@
       calc(16px + env(safe-area-inset-top))
       14px
       calc(108px + env(safe-area-inset-bottom))
+      14px;
+  }
+
+  .spark-phone-frame.spark-phone-frame-hero-only {
+    min-height: auto;
+    padding:
+      calc(16px + env(safe-area-inset-top))
+      14px
+      calc(22px + env(safe-area-inset-bottom))
       14px;
   }
 
@@ -5560,5 +5609,20 @@
 
   .spark-home-values {
     display: none;
+  }
+
+  .spark-companion-stack.spark-companion-stack-hero-only {
+    display: grid;
+    gap: 12px;
+  }
+
+  .spark-scene-card.spark-scene-card-hero {
+    min-height: auto;
+    border-radius: 28px;
+    padding: 18px;
+  }
+
+  .spark-scene-card.spark-scene-card-hero .spark-scene-stage {
+    min-height: 360px;
   }
 }
