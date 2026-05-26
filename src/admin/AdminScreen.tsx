@@ -55,6 +55,7 @@ import {
   type QuizCatalogItem,
   type QuizQuestionItem,
 } from '../services/catalog'
+import { SceneRenderer } from '../components/scene/SceneRenderer'
 import {
   defaultQuestionMix,
   draftQuestionTypeOptions,
@@ -98,6 +99,19 @@ import {
   type GeneratedMediaAsset,
 } from '../services/media'
 import { defaultPlatformConfig, savePlatformConfig, type PlatformConfig } from '../services/platform'
+import {
+  defaultSceneAssetDraft,
+  defaultSceneAssetsCatalog,
+  deleteSceneAsset,
+  getSceneAssets,
+  seedDefaultSceneAssets,
+  upsertSceneAsset,
+  type SceneAssetCategory,
+  type SceneAssetFocalPoint,
+  type SceneAssetOverlayStyle,
+  type SceneAssetRecord,
+  type SceneAssetSafeArea,
+} from '../services/sceneAssets'
 
 type AdminScreenProps = {
   lessons: LessonCatalogItem[]
@@ -112,6 +126,7 @@ type AdminScreenProps = {
 type SectionKey =
   | 'dashboard'
   | 'ai-control'
+  | 'scene-assets'
   | 'lessons'
   | 'quizzes'
   | 'questions'
@@ -122,7 +137,7 @@ type SectionKey =
   | 'settings'
 
 type DrawerMode = 'create' | 'edit'
-type DrawerKind = 'lesson' | 'quiz' | 'question' | 'achievement'
+type DrawerKind = 'lesson' | 'quiz' | 'question' | 'achievement' | 'scene-asset'
 
 type DrawerState =
   | { open: false }
@@ -145,6 +160,8 @@ type MediaSlotGuide = {
   safeArea: string
 }
 
+type SceneAssetStatusFilter = 'all' | 'active' | 'inactive'
+
 const tagOptions: Exclude<FilterKey, 'Todos'>[] = ['Gramática', 'Vocabulário', 'Listening', 'Reading', 'Speaking']
 type ToastState = {
   tone: 'success' | 'error' | 'info'
@@ -158,6 +175,7 @@ const questionKinds: Array<QuizQuestionItem['kind']> = ['multiple-choice', 'drag
 const navItems: Array<{ key: SectionKey; label: string; icon: typeof LayoutDashboard }> = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'ai-control', label: 'AI Control Center', icon: BrainCircuit },
+  { key: 'scene-assets', label: 'Scene Assets', icon: Image },
   { key: 'lessons', label: 'Lições', icon: BookOpen },
   { key: 'quizzes', label: 'Quizzes', icon: Gamepad2 },
   { key: 'questions', label: 'Questões', icon: WandSparkles },
@@ -198,6 +216,10 @@ const questionMediaGuides: MediaSlotGuide[] = [
   { key: 'emotionalThumbnail', label: 'Thumbnail emocional', resolution: '900x1200', ratio: '3:4', safeArea: 'Realce tensão, urgência ou recompensa.' },
   { key: 'challengeIcon', label: 'Ícone da ação', resolution: '512x512', ratio: '1:1', safeArea: 'Funciona bem em chips e cards compactos.' },
 ]
+
+const sceneAssetCategoryOptions: SceneAssetCategory[] = ['Airport', 'CoffeeShop', 'Park', 'General']
+const sceneAssetFocalPointOptions: SceneAssetFocalPoint[] = ['center', 'center-left', 'center-right', 'top', 'bottom']
+const sceneAssetOverlayStyleOptions: SceneAssetOverlayStyle[] = ['cinematic-violet', 'midnight-glass', 'ember-glow', 'aurora-soft']
 
 const emptyLesson: LessonCatalogItem = {
   id: '',
@@ -256,6 +278,12 @@ const emptyAchievement: AchievementCatalogItem = {
   xpReward: 20,
 }
 
+const createEmptySceneAsset = (): SceneAssetRecord => ({
+  ...defaultSceneAssetDraft,
+  textSafeArea: { ...defaultSceneAssetDraft.textSafeArea },
+  characterSafeArea: { ...defaultSceneAssetDraft.characterSafeArea },
+})
+
 const formatQuestionKind = (kind: QuizQuestionItem['kind']) => {
   if (kind === 'multiple-choice') return 'Múltipla escolha'
   if (kind === 'drag-fill') return 'Drag & Drop'
@@ -308,6 +336,7 @@ const nextNumericId = (existingIds: string[], prefix: string) => {
 const sectionTitle: Record<SectionKey, string> = {
   dashboard: 'Dashboard operacional',
   'ai-control': 'AI Control Center',
+  'scene-assets': 'Scene Assets',
   lessons: 'Lições',
   quizzes: 'Quizzes',
   questions: 'Questões',
@@ -321,6 +350,7 @@ const sectionTitle: Record<SectionKey, string> = {
 const sectionCopy: Record<SectionKey, string> = {
   dashboard: 'Acompanhe o catálogo, veja o volume de conteúdo e acesse ações rápidas sem abrir formulários gigantes.',
   'ai-control': 'Configure providers, guardrails, drafts e geração contextual sem quebrar a hierarquia atual de lições, quizzes e questões.',
+  'scene-assets': 'Cadastre, organize e ajuste os assets narrativos cinematográficos que alimentam hero, missões e cenas do SparkLingo.',
   lessons: 'Crie e organize as trilhas principais. Cada lição agrupa quizzes e define o tom visual da jornada.',
   quizzes: 'Estruture os blocos jogáveis dentro das lições e mantenha a progressão clara.',
   questions: 'Encontre, filtre e edite qualquer desafio em segundos com uma grade compacta e um drawer lateral.',
@@ -383,10 +413,16 @@ export function AdminScreen({
   const [filterQuizId, setFilterQuizId] = useState<string>('all')
   const [questionStatus, setQuestionStatus] = useState<StatusFilter>('all')
   const [achievementSearch, setAchievementSearch] = useState('')
+  const [sceneAssetSearch, setSceneAssetSearch] = useState('')
+  const [sceneAssetCategoryFilter, setSceneAssetCategoryFilter] = useState<SceneAssetCategory | 'all'>('all')
+  const [sceneAssetStatus, setSceneAssetStatus] = useState<SceneAssetStatusFilter>('all')
   const [lessonDraft, setLessonDraft] = useState<LessonCatalogItem>(emptyLesson)
   const [quizDraft, setQuizDraft] = useState<QuizCatalogItem>(emptyQuiz)
   const [questionDraft, setQuestionDraft] = useState<QuizQuestionItem>(emptyQuestion)
   const [achievementDraft, setAchievementDraft] = useState<AchievementCatalogItem>(emptyAchievement)
+  const [sceneAssetDraft, setSceneAssetDraft] = useState<SceneAssetRecord>(createEmptySceneAsset)
+  const [sceneAssets, setSceneAssets] = useState<SceneAssetRecord[]>([])
+  const [sceneAssetsLoaded, setSceneAssetsLoaded] = useState(false)
   const [platformDraft, setPlatformDraft] = useState<PlatformConfig>(platformConfig ?? defaultPlatformConfig)
   const [mediaAiOpen, setMediaAiOpen] = useState(false)
   const [mediaAiTarget, setMediaAiTarget] = useState<MediaAiScope>('lesson')
@@ -412,10 +448,20 @@ export function AdminScreen({
   const debouncedQuizSearch = useDebouncedValue(quizSearch)
   const debouncedQuestionSearch = useDebouncedValue(questionSearch)
   const debouncedAchievementSearch = useDebouncedValue(achievementSearch)
+  const debouncedSceneAssetSearch = useDebouncedValue(sceneAssetSearch)
 
   useEffect(() => {
     setPlatformDraft(platformConfig ?? defaultPlatformConfig)
   }, [platformConfig])
+
+  useEffect(() => {
+    getSceneAssets()
+      .then((items) => {
+        setSceneAssets(items)
+        setSceneAssetsLoaded(true)
+      })
+      .catch(() => setSceneAssetsLoaded(true))
+  }, [])
 
   useEffect(() => {
     if (!toast) return
@@ -457,12 +503,18 @@ export function AdminScreen({
     [achievementDraft.id, achievements],
   )
 
+  const sceneAssetIdPreview = useMemo(
+    () => sceneAssetDraft.id || nextNumericId(sceneAssets.map((item) => item.id), 'SA'),
+    [sceneAssetDraft.id, sceneAssets],
+  )
+
   const lessonDisplayIds = useMemo(() => buildDisplayIdMap(lessons.map((item) => item.id), 'LS'), [lessons])
   const quizDisplayIds = useMemo(() => buildDisplayIdMap(quizzes.map((item) => item.id), 'QZ'), [quizzes])
   const questionDisplayIds = useMemo(() => buildDisplayIdMap(questions.map((item) => item.id), 'QT'), [questions])
   const achievementDisplayIds = useMemo(() => buildDisplayIdMap(achievements.map((item) => item.id), 'AC'), [achievements])
+  const sceneAssetDisplayIds = useMemo(() => buildDisplayIdMap(sceneAssets.map((item) => item.id), 'SA'), [sceneAssets])
 
-  const displayId = (id: string, kind: 'lesson' | 'quiz' | 'question' | 'achievement') => {
+  const displayId = (id: string, kind: 'lesson' | 'quiz' | 'question' | 'achievement' | 'scene-asset') => {
     if (!id) return ''
     const map =
       kind === 'lesson'
@@ -471,7 +523,9 @@ export function AdminScreen({
           ? quizDisplayIds
           : kind === 'question'
             ? questionDisplayIds
-            : achievementDisplayIds
+            : kind === 'achievement'
+              ? achievementDisplayIds
+              : sceneAssetDisplayIds
 
     return map.get(id) ?? id.toUpperCase()
   }
@@ -523,12 +577,29 @@ export function AdminScreen({
     })
   }, [achievements, debouncedAchievementSearch])
 
+  const filteredSceneAssets = useMemo(() => {
+    return sceneAssets
+      .filter((asset) => sceneAssetCategoryFilter === 'all' || asset.category === sceneAssetCategoryFilter)
+      .filter((asset) => sceneAssetStatus === 'all' || (sceneAssetStatus === 'active' ? asset.active : !asset.active))
+      .filter((asset) => {
+        if (!debouncedSceneAssetSearch.trim()) return true
+        const haystack = `${asset.id} ${asset.title} ${asset.slug} ${asset.category} ${asset.chapter} ${asset.mission}`.toLowerCase()
+        return haystack.includes(debouncedSceneAssetSearch.toLowerCase())
+      })
+      .sort((a, b) => a.progressionOrder - b.progressionOrder || a.title.localeCompare(b.title))
+  }, [debouncedSceneAssetSearch, sceneAssetCategoryFilter, sceneAssetStatus, sceneAssets])
+
   const dashboardStats = [
     { label: 'Lições', value: lessons.length, helper: 'trilhas vivas' },
     { label: 'Quizzes', value: quizzes.length, helper: 'blocos jogáveis' },
     { label: 'Questões', value: questions.length, helper: 'itens no catálogo' },
     { label: 'Conquistas', value: achievements.length || defaultAchievementCatalog.length, helper: 'recompensas' },
   ]
+
+  const sceneAssetCategories = useMemo(
+    () => Array.from(new Set([...sceneAssetCategoryOptions, ...sceneAssets.map((asset) => asset.category)])).sort(),
+    [sceneAssets],
+  )
 
   const currentQuestionQuiz = quizzes.find((quiz) => quiz.id === questionDraft.quizId)
   const currentQuestionLesson = lessons.find((lesson) => lesson.id === questionDraft.lessonId)
@@ -656,6 +727,13 @@ export function AdminScreen({
       }))
     }
   }, [aiControl.provider, aiControl.primaryModel, aiControl.fallbackModel])
+
+  const refreshSceneAssets = async () => {
+    const items = await getSceneAssets()
+    setSceneAssets(items)
+    setSceneAssetsLoaded(true)
+    return items
+  }
 
   const openDrawer = (kind: DrawerKind, mode: DrawerMode) => setDrawer({ open: true, kind, mode })
   const closeDrawer = () => setDrawer({ open: false })
@@ -836,6 +914,17 @@ export function AdminScreen({
     },
   )
 
+  const saveSceneAssetItem = () => runAdminTask(
+    'Salvando scene asset...',
+    `Scene asset "${sceneAssetDraft.title}" salvo com sucesso.`,
+    async () => {
+      await upsertSceneAsset({ ...sceneAssetDraft, id: sceneAssetDraft.id || sceneAssetIdPreview })
+      await refreshSceneAssets()
+      setSceneAssetDraft(createEmptySceneAsset())
+      closeDrawer()
+    },
+  )
+
   const removeCatalogItem = async (label: string, task: () => Promise<void>) => {
     if (!window.confirm(`Excluir "${label}" do catálogo?`)) return
 
@@ -843,6 +932,19 @@ export function AdminScreen({
       `Excluindo "${label}"...`,
       `"${label}" removido do Firestore.`,
       task,
+    )
+  }
+
+  const removeSceneAssetItem = async (asset: SceneAssetRecord) => {
+    if (!window.confirm(`Excluir "${asset.title}" de Scene Assets?`)) return
+
+    await runAdminTask(
+      `Excluindo "${asset.title}"...`,
+      `"${asset.title}" removido de Scene Assets.`,
+      async () => {
+        await deleteSceneAsset(asset.id)
+        await refreshSceneAssets()
+      },
     )
   }
 
@@ -885,6 +987,29 @@ export function AdminScreen({
   const openAchievementEditor = (achievement?: AchievementCatalogItem) => {
     setAchievementDraft(achievement ?? emptyAchievement)
     openDrawer('achievement', achievement  ? 'edit' : 'create')
+  }
+
+  const openSceneAssetEditor = (asset?: SceneAssetRecord) => {
+    setSceneAssetDraft(
+      asset
+        ? {
+            ...asset,
+            textSafeArea: { ...asset.textSafeArea },
+            characterSafeArea: { ...asset.characterSafeArea },
+          }
+        : createEmptySceneAsset(),
+    )
+    openDrawer('scene-asset', asset ? 'edit' : 'create')
+  }
+
+  const updateSceneAssetSafeArea = (key: 'textSafeArea' | 'characterSafeArea', field: keyof SceneAssetSafeArea, value: string) => {
+    setSceneAssetDraft((current) => ({
+      ...current,
+      [key]: {
+        ...current[key],
+        [field]: Number(value) || 0,
+      },
+    }))
   }
 
   const applyMediaAsset = (path: string) => {
@@ -1369,6 +1494,140 @@ export function AdminScreen({
             <button className="admin-primary" type="button" disabled={saving || !questionDraft.quizId || !questionDraft.title} onClick={saveQuestion}>
               <Save size={16} />
               {saving  ? 'Salvando...' : 'Salvar questão'}
+            </button>
+          </div>
+        </>
+      )
+    }
+
+    if (drawer.kind === 'scene-asset') {
+      return (
+        <>
+          <div className="admin-drawer-head">
+            <div>
+              <span className="admin-drawer-kicker">{drawer.mode === 'create' ? 'Novo scene asset' : 'Editar scene asset'}</span>
+              <h3>{sceneAssetDraft.title || 'Configure a cena narrativa'}</h3>
+              <p>ID automático: <strong>{displayId(sceneAssetDraft.id || sceneAssetIdPreview, 'scene-asset')}</strong></p>
+            </div>
+            <button type="button" className="drawer-close" onClick={closeDrawer}><X size={18} /></button>
+          </div>
+
+          <div className="admin-drawer-body">
+            <div className="drawer-form">
+              <label>Título
+                <input
+                  value={sceneAssetDraft.title}
+                  onChange={(event) =>
+                    setSceneAssetDraft((current) => ({
+                      ...current,
+                      title: event.target.value,
+                      slug: current.slug || event.target.value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+                    }))
+                  }
+                />
+              </label>
+              <label>Slug
+                <input value={sceneAssetDraft.slug} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, slug: event.target.value }))} />
+              </label>
+              <label>Categoria
+                <select value={sceneAssetDraft.category} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, category: event.target.value as SceneAssetCategory }))}>
+                  {sceneAssetCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
+                </select>
+              </label>
+              <label>Capítulo
+                <input value={sceneAssetDraft.chapter} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, chapter: event.target.value }))} />
+              </label>
+              <label>Missão
+                <input value={sceneAssetDraft.mission} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, mission: event.target.value }))} />
+              </label>
+              <label>Tom emocional
+                <input value={sceneAssetDraft.emotionalTone} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, emotionalTone: event.target.value }))} />
+              </label>
+              <label>URL desktop
+                <input value={sceneAssetDraft.imageUrlDesktop} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, imageUrlDesktop: event.target.value }))} placeholder="/Images/Airport/..." />
+              </label>
+              <label>URL mobile
+                <input value={sceneAssetDraft.imageUrlMobile} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, imageUrlMobile: event.target.value }))} placeholder="/Images/Airport/..." />
+              </label>
+              <div className="scene-asset-inline-grid">
+                <label>Aspect ratio recomendado
+                  <input value={sceneAssetDraft.recommendedAspectRatio} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, recommendedAspectRatio: event.target.value }))} placeholder="9:16" />
+                </label>
+                <label>Focal point
+                  <select value={sceneAssetDraft.focalPoint} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, focalPoint: event.target.value as SceneAssetFocalPoint }))}>
+                    {sceneAssetFocalPointOptions.map((item) => <option key={item} value={item}>{item}</option>)}
+                  </select>
+                </label>
+              </div>
+              <div className="scene-asset-slider-grid">
+                <label>Overlay ({sceneAssetDraft.overlayIntensity}%)
+                  <input type="range" min="0" max="100" value={sceneAssetDraft.overlayIntensity} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, overlayIntensity: Number(event.target.value) }))} />
+                </label>
+                <label>Brightness ({sceneAssetDraft.brightness}%)
+                  <input type="range" min="40" max="140" value={sceneAssetDraft.brightness} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, brightness: Number(event.target.value) }))} />
+                </label>
+                <label>Blur ({sceneAssetDraft.blurIntensity}px)
+                  <input type="range" min="0" max="24" value={sceneAssetDraft.blurIntensity} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, blurIntensity: Number(event.target.value) }))} />
+                </label>
+              </div>
+              <label>Estilo do overlay
+                <select value={sceneAssetDraft.uiOverlayStyle} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, uiOverlayStyle: event.target.value as SceneAssetOverlayStyle }))}>
+                  {sceneAssetOverlayStyleOptions.map((style) => <option key={style} value={style}>{style}</option>)}
+                </select>
+              </label>
+              <div className="scene-asset-inline-grid">
+                <label>Ordem de progressão
+                  <input type="number" min="1" value={sceneAssetDraft.progressionOrder} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, progressionOrder: Number(event.target.value) || 1 }))} />
+                </label>
+                <label className="scene-asset-toggle">
+                  <span>Ativo</span>
+                  <input type="checkbox" checked={sceneAssetDraft.active} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, active: event.target.checked }))} />
+                </label>
+              </div>
+            </div>
+
+            <div className="scene-asset-safearea-panel">
+              <div className="media-slot-head">
+                <strong>Safe areas</strong>
+                <span>Defina onde o texto pode viver e onde o personagem principal não pode ser cortado.</span>
+              </div>
+              <div className="scene-asset-safearea-grid">
+                <SafeAreaFieldset
+                  title="Text safe area"
+                  area={sceneAssetDraft.textSafeArea}
+                  onChange={(field, value) => updateSceneAssetSafeArea('textSafeArea', field, value)}
+                />
+                <SafeAreaFieldset
+                  title="Character safe area"
+                  area={sceneAssetDraft.characterSafeArea}
+                  onChange={(field, value) => updateSceneAssetSafeArea('characterSafeArea', field, value)}
+                />
+              </div>
+            </div>
+
+            <div className="scene-asset-preview-card">
+              <div className="media-slot-head">
+                <strong>Preview cinematográfico</strong>
+                <span>O renderer aplica crop responsivo, overlay e áreas seguras automaticamente.</span>
+              </div>
+              <SceneRenderer
+                asset={{ ...sceneAssetDraft, id: sceneAssetDraft.id || sceneAssetIdPreview }}
+                showGuides
+                eyebrow={sceneAssetDraft.chapter || 'Chapter'}
+                title={sceneAssetDraft.title || 'Narrative scene'}
+                subtitle={sceneAssetDraft.mission || 'Define the mission beat for this cinematic asset.'}
+                badge={sceneAssetDraft.emotionalTone || 'emotional tone'}
+                cta="Safe area preview"
+                footer={sceneAssetDraft.recommendedAspectRatio || '9:16'}
+              />
+            </div>
+          </div>
+
+          <div className="admin-drawer-footer">
+            <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
+            <button className="admin-primary" type="button" disabled={saving || !sceneAssetDraft.title || !(sceneAssetDraft.imageUrlDesktop || sceneAssetDraft.imageUrlMobile)} onClick={saveSceneAssetItem}>
+              <Save size={16} />
+              {saving ? 'Salvando...' : 'Salvar scene asset'}
             </button>
           </div>
         </>
@@ -1973,6 +2232,124 @@ export function AdminScreen({
           </section>
         )}
 
+        {activeSection === 'scene-assets' && (
+          <section className="cms-panel-stack">
+            <section className="cms-summary-grid">
+              <article className="cms-stat-card">
+                <span>Scene assets</span>
+                <strong>{sceneAssets.length}</strong>
+                <small>ativos no backend visual</small>
+              </article>
+              <article className="cms-stat-card">
+                <span>Assets ativos</span>
+                <strong>{sceneAssets.filter((asset) => asset.active).length}</strong>
+                <small>prontos para render cinematográfico</small>
+              </article>
+              <article className="cms-stat-card">
+                <span>Categorias</span>
+                <strong>{sceneAssetCategories.length}</strong>
+                <small>airport, coffee, park e geral</small>
+              </article>
+              <article className="cms-stat-card">
+                <span>Preview mode</span>
+                <strong>Safe area</strong>
+                <small>texto e personagem preservados</small>
+              </article>
+            </section>
+
+            <section className="cms-panel">
+              <div className="cms-panel-head">
+                <div>
+                  <h2>Scene Assets</h2>
+                  <p className="admin-helper">Cadastre e ajuste fundos narrativos com focal point, overlay e áreas seguras para texto e personagem.</p>
+                </div>
+                <div className="cms-content-actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      runAdminTask(
+                        'Criando assets base...',
+                        'Assets base populados no Firestore.',
+                        async () => {
+                          await seedDefaultSceneAssets()
+                          await refreshSceneAssets()
+                        },
+                      )
+                    }
+                  >
+                    <Sparkles size={14} />
+                    Popular base ({defaultSceneAssetsCatalog.length})
+                  </button>
+                  <button className="admin-primary" type="button" onClick={() => openSceneAssetEditor()}>
+                    <Plus size={16} />
+                    Novo scene asset
+                  </button>
+                </div>
+              </div>
+
+              <div className="cms-filter-row cms-filter-row-scene-assets">
+                <div className="cms-search">
+                  <Search size={16} />
+                  <input
+                    value={sceneAssetSearch}
+                    onChange={(event) => setSceneAssetSearch(event.target.value)}
+                    placeholder="Buscar por título, slug, missão ou capítulo"
+                  />
+                </div>
+                <select value={sceneAssetCategoryFilter} onChange={(event) => setSceneAssetCategoryFilter(event.target.value as SceneAssetCategory | 'all')}>
+                  <option value="all">Todas categorias</option>
+                  {sceneAssetCategories.map((category) => <option key={category} value={category}>{category}</option>)}
+                </select>
+                <select value={sceneAssetStatus} onChange={(event) => setSceneAssetStatus(event.target.value as SceneAssetStatusFilter)}>
+                  <option value="all">Todos status</option>
+                  <option value="active">Ativos</option>
+                  <option value="inactive">Inativos</option>
+                </select>
+              </div>
+
+              {!filteredSceneAssets.length && sceneAssetsLoaded ? (
+                <div className="cms-empty-panel cms-empty-panel-inline">
+                  <Image size={24} />
+                  <h2>Nenhum scene asset ainda</h2>
+                  <p>Comece populando os assets base do SparkLingo ou crie um asset cinematográfico manualmente por URL.</p>
+                </div>
+              ) : (
+                <div className="scene-asset-grid">
+                  {filteredSceneAssets.map((asset) => (
+                    <article key={asset.id} className="scene-asset-card">
+                      <SceneRenderer
+                        asset={asset}
+                        eyebrow={asset.chapter}
+                        title={asset.title}
+                        subtitle={asset.mission}
+                        badge={asset.emotionalTone}
+                        footer={`${displayId(asset.id, 'scene-asset')} • ${asset.recommendedAspectRatio}`}
+                        className="scene-asset-card-renderer"
+                      />
+                      <div className="scene-asset-card-copy">
+                        <div>
+                          <strong>{asset.title}</strong>
+                          <span>{displayId(asset.id, 'scene-asset')} • {asset.category} • ordem {asset.progressionOrder}</span>
+                        </div>
+                        <p>{asset.mission}</p>
+                        <div className="scene-asset-card-meta">
+                          <span>{asset.focalPoint}</span>
+                          <span>{asset.uiOverlayStyle}</span>
+                          <span>{asset.active ? 'ativo' : 'inativo'}</span>
+                        </div>
+                      </div>
+                      <div className="cms-content-actions">
+                        <button type="button" onClick={() => openSceneAssetEditor(asset)}><Pencil size={14} />Editar</button>
+                        <button type="button" className="danger" onClick={() => removeSceneAssetItem(asset)}><Trash2 size={14} />Excluir</button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          </section>
+        )}
+
         {activeSection === 'lessons' && (
           <section className="cms-panel-stack">
             <section className="cms-panel">
@@ -2546,6 +2923,36 @@ function MediaSlotEditor({
         })}
       </div>
     </div>
+  )
+}
+
+function SafeAreaFieldset({
+  title,
+  area,
+  onChange,
+}: {
+  title: string
+  area: SceneAssetSafeArea
+  onChange: (field: keyof SceneAssetSafeArea, value: string) => void
+}) {
+  return (
+    <article className="scene-safearea-card">
+      <strong>{title}</strong>
+      <div className="scene-safearea-inputs">
+        <label>X
+          <input type="number" min="0" max="100" value={area.x} onChange={(event) => onChange('x', event.target.value)} />
+        </label>
+        <label>Y
+          <input type="number" min="0" max="100" value={area.y} onChange={(event) => onChange('y', event.target.value)} />
+        </label>
+        <label>W
+          <input type="number" min="0" max="100" value={area.width} onChange={(event) => onChange('width', event.target.value)} />
+        </label>
+        <label>H
+          <input type="number" min="0" max="100" value={area.height} onChange={(event) => onChange('height', event.target.value)} />
+        </label>
+      </div>
+    </article>
   )
 }
 

@@ -78,6 +78,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /sceneAssets/{assetId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
     match /aiDrafts/{draftId} {
       allow read, write: if isAdmin();
     }
