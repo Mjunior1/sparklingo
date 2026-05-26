@@ -1559,6 +1559,12 @@ function App() {
 
   return (
     <div className="spark-home-shell">
+      {isAdmin && (
+        <button className="spark-admin-pill" type="button" onClick={() => setView('admin')}>
+          <span>Admin</span>
+        </button>
+      )}
+
       <main className="spark-home-stage spark-home-stage-hero-only">
         <section className="spark-phone-frame spark-phone-frame-hero-only">
           <header className="spark-phone-topbar">
