@@ -44,12 +44,13 @@ type NarrativeOverlayProps = {
 
 export function NarrativeOverlay({ asset }: NarrativeOverlayProps) {
   const style = {
-    '--scene-overlay-opacity': `${asset.overlayIntensity / 100}`,
+    '--scene-overlay-opacity': `${asset.overlayOpacity / 100}`,
     '--scene-blur-strength': `${asset.blurIntensity}px`,
     '--scene-brightness': `${asset.brightness / 100}`,
+    '--scene-overlay-color': asset.overlayColor,
   } as CSSProperties
 
-  return <div className={`scene-overlay scene-overlay-${asset.uiOverlayStyle}`} style={style} />
+  return <div className={`scene-overlay scene-overlay-${asset.cinematicStyle}`} style={style} />
 }
 
 type CinematicImageProps = {
@@ -58,9 +59,13 @@ type CinematicImageProps = {
 }
 
 export function CinematicImage({ asset, mode = 'auto' }: CinematicImageProps) {
-  const mobileSource = asset.imageUrlMobile || asset.imageUrlDesktop
-  const desktopSource = asset.imageUrlDesktop || asset.imageUrlMobile
-  const position = focalPointMap[asset.focalPoint]
+  const mobileSource = asset.mobileImageUrl || asset.imageUrlMobile || asset.imageUrl || asset.imageUrlDesktop
+  const desktopSource = asset.imageUrl || asset.imageUrlDesktop || asset.mobileImageUrl || asset.imageUrlMobile
+  const fallbackPosition = focalPointMap[asset.focalPoint]
+  const position =
+    typeof asset.focalPointX === 'number' && typeof asset.focalPointY === 'number'
+      ? `${asset.focalPointX}% ${asset.focalPointY}%`
+      : fallbackPosition
 
   const imageStyle = {
     objectPosition: position,

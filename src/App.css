@@ -5622,7 +5622,599 @@
     padding: 18px;
   }
 
-  .spark-scene-card.spark-scene-card-hero .spark-scene-stage {
-    min-height: 360px;
+.spark-scene-card.spark-scene-card-hero .spark-scene-stage {
+  min-height: 360px;
+}
+}
+
+.spark-hero-app {
+  min-height: 100vh;
+  padding: 28px;
+  background:
+    radial-gradient(circle at top left, rgba(120, 74, 255, 0.22), transparent 18%),
+    radial-gradient(circle at 100% 0%, rgba(255, 149, 91, 0.16), transparent 24%),
+    linear-gradient(180deg, #050917 0%, #071022 36%, #040915 100%);
+  color: #fff;
+}
+
+.spark-cinematic-hero {
+  display: grid;
+  grid-template-columns: minmax(340px, 28%) minmax(0, 72%);
+  gap: 24px;
+  max-width: 1460px;
+  min-height: calc(100vh - 56px);
+  margin: 0 auto;
+}
+
+.spark-cinematic-left,
+.spark-cinematic-right {
+  position: relative;
+  min-width: 0;
+}
+
+.spark-cinematic-left {
+  display: grid;
+  grid-template-rows: auto auto auto auto auto 1fr;
+  gap: 22px;
+  padding: 24px 24px 28px;
+  border-radius: 34px;
+  background:
+    radial-gradient(circle at 78% 12%, rgba(155, 96, 255, 0.18), transparent 20%),
+    linear-gradient(180deg, rgba(13, 19, 44, 0.96), rgba(8, 12, 28, 0.98));
+  border: 1px solid rgba(141, 116, 255, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 32px 80px rgba(0, 0, 0, 0.42);
+  overflow: hidden;
+}
+
+.spark-cinematic-left::after {
+  content: '';
+  position: absolute;
+  inset: auto -80px -90px auto;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(120, 80, 255, 0.24), transparent 70%);
+  pointer-events: none;
+}
+
+.spark-cinematic-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.spark-cinematic-logo,
+.spark-cinematic-badge,
+.spark-cinematic-scene-chip,
+.spark-cinematic-level-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 20px;
+  backdrop-filter: blur(14px);
+}
+
+.spark-cinematic-logo {
+  padding: 14px 18px;
+  background: rgba(16, 21, 48, 0.84);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff3db;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.spark-cinematic-logo strong {
+  font-size: 1.85rem;
+  line-height: 1;
+}
+
+.spark-cinematic-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.spark-cinematic-badge {
+  padding: 10px 14px;
+  background: rgba(17, 24, 56, 0.72);
+  border: 1px solid rgba(148, 124, 255, 0.18);
+  box-shadow: 0 16px 32px rgba(5, 8, 20, 0.22);
+}
+
+.spark-cinematic-badge div {
+  display: grid;
+  gap: 2px;
+}
+
+.spark-cinematic-badge strong {
+  font-size: 1.05rem;
+  line-height: 1;
+}
+
+.spark-cinematic-badge span {
+  color: rgba(222, 227, 255, 0.7);
+  font-size: 0.72rem;
+  text-transform: lowercase;
+}
+
+.spark-cinematic-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(17, 24, 56, 0.72);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  box-shadow: 0 14px 30px rgba(5, 8, 20, 0.18);
+}
+
+.spark-cinematic-copy {
+  display: grid;
+  gap: 16px;
+  max-width: 22rem;
+  position: relative;
+  z-index: 1;
+}
+
+.spark-cinematic-greeting {
+  margin: 0;
+  color: #b686ff;
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.spark-cinematic-copy h1 {
+  margin: 0;
+  display: grid;
+  gap: 2px;
+  font-size: clamp(4rem, 6.8vw, 5.95rem);
+  line-height: 0.9;
+  letter-spacing: -0.06em;
+  color: #fff;
+  text-wrap: balance;
+}
+
+.spark-cinematic-copy p {
+  margin: 0;
+  max-width: 18rem;
+  color: rgba(232, 236, 255, 0.82);
+  font-size: 1rem;
+  line-height: 1.58;
+}
+
+.spark-cinematic-fox {
+  position: relative;
+  min-height: 250px;
+  margin-top: -8px;
+  z-index: 1;
+}
+
+.spark-cinematic-fox img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 30px 48px rgba(0, 0, 0, 0.34));
+}
+
+.spark-cinematic-mission-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: 156px minmax(0, 1fr);
+  gap: 18px;
+  padding: 18px;
+  border-radius: 30px;
+  background: linear-gradient(180deg, rgba(24, 18, 64, 0.94), rgba(12, 15, 36, 0.96));
+  border: 1px solid rgba(153, 129, 255, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 28px 56px rgba(5, 7, 20, 0.34);
+  overflow: hidden;
+}
+
+.spark-cinematic-mission-media {
+  border-radius: 24px;
+  overflow: hidden;
+  aspect-ratio: 0.78 / 1;
+}
+
+.spark-cinematic-mission-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+.spark-cinematic-mission-copy {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+}
+
+.spark-cinematic-chip {
+  width: fit-content;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(131, 93, 255, 0.28);
+  border: 1px solid rgba(190, 172, 255, 0.18);
+  color: #f0eaff;
+  font-size: 0.73rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.spark-cinematic-mission-copy h2 {
+  margin: 0;
+  font-size: clamp(2.1rem, 3vw, 2.8rem);
+  line-height: 1;
+}
+
+.spark-cinematic-mission-copy p {
+  margin: 0;
+  color: rgba(226, 231, 255, 0.8);
+  line-height: 1.52;
+}
+
+.spark-cinematic-mission-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 14px;
+  color: rgba(204, 209, 238, 0.82);
+  font-size: 0.86rem;
+}
+
+.spark-cinematic-progress,
+.spark-cinematic-xp-track {
+  position: relative;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.09);
+}
+
+.spark-cinematic-progress {
+  height: 8px;
+}
+
+.spark-cinematic-progress span,
+.spark-cinematic-xp-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #9257ff, #c37cff 45%, #f9b95b 100%);
+  box-shadow: 0 0 28px rgba(153, 108, 255, 0.42);
+}
+
+.spark-cinematic-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  padding: 22px 24px;
+  border: 0;
+  border-radius: 28px;
+  color: #fff;
+  background: linear-gradient(90deg, #7b47ff 0%, #a361ff 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 24px 44px rgba(113, 67, 255, 0.34);
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.spark-cinematic-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 18px 20px 0;
+  color: #cba8ff;
+}
+
+.spark-cinematic-note div {
+  display: grid;
+  gap: 4px;
+}
+
+.spark-cinematic-note strong {
+  color: #c772ff;
+  font-size: 1rem;
+}
+
+.spark-cinematic-note span {
+  color: rgba(219, 224, 255, 0.7);
+  line-height: 1.5;
+}
+
+.spark-cinematic-right {
+  display: grid;
+}
+
+.spark-cinematic-scene {
+  position: relative;
+  min-height: calc(100vh - 56px);
+  border-radius: 36px;
+  overflow: hidden;
+  border: 1px solid rgba(149, 122, 255, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 34px 84px rgba(0, 0, 0, 0.42);
+  background: linear-gradient(180deg, rgba(15, 20, 44, 0.98), rgba(10, 14, 30, 0.96));
+}
+
+.spark-cinematic-scene .scene-picture,
+.spark-cinematic-scene .scene-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.spark-cinematic-scene .scene-image {
+  object-fit: cover;
+}
+
+.spark-cinematic-scene .scene-overlay {
+  z-index: 1;
+}
+
+.spark-cinematic-scene-head {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 28px 28px 0;
+}
+
+.spark-cinematic-scene-label {
+  display: grid;
+  gap: 4px;
+}
+
+.spark-cinematic-scene-label strong {
+  font-size: 1.1rem;
+}
+
+.spark-cinematic-scene-label span {
+  color: rgba(231, 235, 255, 0.74);
+  font-size: 0.86rem;
+}
+
+.spark-cinematic-scene-chip {
+  padding: 13px 18px;
+  background: rgba(38, 29, 82, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f4efff;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.spark-cinematic-safe-copy {
+  position: absolute;
+  z-index: 3;
+  display: grid;
+  gap: 20px;
+  align-content: end;
+}
+
+.spark-cinematic-dialogue {
+  display: grid;
+  gap: 10px;
+  max-width: 560px;
+}
+
+.spark-cinematic-dialogue span {
+  width: fit-content;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f5f0ff;
+  font-size: 0.76rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.spark-cinematic-dialogue strong {
+  font-size: clamp(1.7rem, 2.8vw, 2.6rem);
+  line-height: 1.06;
+  text-wrap: balance;
+}
+
+.spark-cinematic-dialogue p {
+  margin: 0;
+  max-width: 40rem;
+  color: rgba(226, 231, 255, 0.84);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.spark-cinematic-choices {
+  display: grid;
+  gap: 12px;
+  width: min(560px, 100%);
+}
+
+.spark-cinematic-choice {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: 100%;
+  padding: 19px 22px;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(11, 14, 35, 0.72);
+  color: #fff;
+  font-size: 1.05rem;
+  text-align: left;
+  box-shadow: 0 18px 30px rgba(3, 5, 16, 0.24);
+  backdrop-filter: blur(18px);
+}
+
+.spark-cinematic-choice.is-selected {
+  background: linear-gradient(90deg, rgba(105, 56, 255, 0.82), rgba(144, 88, 255, 0.8));
+  border-color: rgba(204, 188, 255, 0.22);
+}
+
+.spark-cinematic-scene-footer {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 16px;
+  align-items: center;
+  width: min(700px, 100%);
+  padding: 18px 20px;
+  border-radius: 24px;
+  background: rgba(9, 11, 29, 0.74);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(18px);
+}
+
+.spark-cinematic-level-pill {
+  padding: 12px 16px;
+  background: linear-gradient(90deg, rgba(129, 76, 255, 0.72), rgba(181, 102, 255, 0.72));
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  font-weight: 700;
+}
+
+.spark-cinematic-xp-bar {
+  display: grid;
+  gap: 8px;
+}
+
+.spark-cinematic-xp-bar strong {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.spark-cinematic-xp-track {
+  height: 10px;
+}
+
+.spark-cinematic-reward {
+  color: #ffd971;
+  font-size: 1.7rem;
+  line-height: 1;
+}
+
+@media (max-width: 1180px) {
+  .spark-hero-app {
+    padding: 18px;
+  }
+
+  .spark-cinematic-hero {
+    grid-template-columns: 1fr;
+    min-height: auto;
+  }
+
+  .spark-cinematic-left {
+    min-height: auto;
+  }
+
+  .spark-cinematic-right,
+  .spark-cinematic-scene {
+    min-height: 620px;
+  }
+}
+
+@media (max-width: 780px) {
+  .spark-hero-app {
+    padding: 12px;
+  }
+
+  .spark-cinematic-hero {
+    gap: 16px;
+    min-height: auto;
+  }
+
+  .spark-cinematic-left,
+  .spark-cinematic-scene {
+    border-radius: 28px;
+  }
+
+  .spark-cinematic-left {
+    padding: 18px 18px 22px;
+    gap: 18px;
+  }
+
+  .spark-cinematic-topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .spark-cinematic-status {
+    justify-content: space-between;
+  }
+
+  .spark-cinematic-badge {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .spark-cinematic-copy {
+    max-width: none;
+  }
+
+  .spark-cinematic-copy h1 {
+    font-size: clamp(3.1rem, 15vw, 4.6rem);
+  }
+
+  .spark-cinematic-copy p {
+    max-width: 22rem;
+  }
+
+  .spark-cinematic-fox {
+    min-height: 240px;
+  }
+
+  .spark-cinematic-mission-card {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+
+  .spark-cinematic-mission-media {
+    aspect-ratio: 16 / 10;
+  }
+
+  .spark-cinematic-cta {
+    padding: 18px 20px;
+    font-size: 1.3rem;
+  }
+
+  .spark-cinematic-right,
+  .spark-cinematic-scene {
+    min-height: 720px;
+  }
+
+  .spark-cinematic-scene-head {
+    padding: 18px 18px 0;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .spark-cinematic-dialogue strong {
+    font-size: 1.45rem;
+  }
+
+  .spark-cinematic-choice {
+    padding: 16px 18px;
+    font-size: 0.96rem;
+  }
+
+  .spark-cinematic-scene-footer {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+
+  .spark-cinematic-reward {
+    font-size: 1.35rem;
   }
 }

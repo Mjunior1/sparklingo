@@ -1544,10 +1544,10 @@ export function AdminScreen({
                 <input value={sceneAssetDraft.emotionalTone} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, emotionalTone: event.target.value }))} />
               </label>
               <label>URL desktop
-                <input value={sceneAssetDraft.imageUrlDesktop} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, imageUrlDesktop: event.target.value }))} placeholder="/Images/Airport/..." />
+                <input value={sceneAssetDraft.imageUrl} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, imageUrl: event.target.value, imageUrlDesktop: event.target.value }))} placeholder="/Images/Airport/..." />
               </label>
               <label>URL mobile
-                <input value={sceneAssetDraft.imageUrlMobile} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, imageUrlMobile: event.target.value }))} placeholder="/Images/Airport/..." />
+                <input value={sceneAssetDraft.mobileImageUrl} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, mobileImageUrl: event.target.value, imageUrlMobile: event.target.value }))} placeholder="/Images/Airport/..." />
               </label>
               <div className="scene-asset-inline-grid">
                 <label>Aspect ratio recomendado
@@ -1559,9 +1559,17 @@ export function AdminScreen({
                   </select>
                 </label>
               </div>
+              <div className="scene-asset-inline-grid">
+                <label>Focal point X
+                  <input type="number" min="0" max="100" value={sceneAssetDraft.focalPointX} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, focalPointX: Number(event.target.value) || 0 }))} />
+                </label>
+                <label>Focal point Y
+                  <input type="number" min="0" max="100" value={sceneAssetDraft.focalPointY} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, focalPointY: Number(event.target.value) || 0 }))} />
+                </label>
+              </div>
               <div className="scene-asset-slider-grid">
-                <label>Overlay ({sceneAssetDraft.overlayIntensity}%)
-                  <input type="range" min="0" max="100" value={sceneAssetDraft.overlayIntensity} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, overlayIntensity: Number(event.target.value) }))} />
+                <label>Overlay ({sceneAssetDraft.overlayOpacity}%)
+                  <input type="range" min="0" max="100" value={sceneAssetDraft.overlayOpacity} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, overlayOpacity: Number(event.target.value) || 0, overlayIntensity: Number(event.target.value) || 0 }))} />
                 </label>
                 <label>Brightness ({sceneAssetDraft.brightness}%)
                   <input type="range" min="40" max="140" value={sceneAssetDraft.brightness} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, brightness: Number(event.target.value) }))} />
@@ -1570,10 +1578,19 @@ export function AdminScreen({
                   <input type="range" min="0" max="24" value={sceneAssetDraft.blurIntensity} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, blurIntensity: Number(event.target.value) }))} />
                 </label>
               </div>
-              <label>Estilo do overlay
-                <select value={sceneAssetDraft.uiOverlayStyle} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, uiOverlayStyle: event.target.value as SceneAssetOverlayStyle }))}>
-                  {sceneAssetOverlayStyleOptions.map((style) => <option key={style} value={style}>{style}</option>)}
-                </select>
+              <div className="scene-asset-inline-grid">
+                <label>Overlay color
+                  <input value={sceneAssetDraft.overlayColor} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, overlayColor: event.target.value }))} placeholder="#090d24" />
+                </label>
+                <label>Cinematic style
+                  <select value={sceneAssetDraft.cinematicStyle} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, cinematicStyle: event.target.value as SceneAssetOverlayStyle, uiOverlayStyle: event.target.value as SceneAssetOverlayStyle }))}>
+                    {sceneAssetOverlayStyleOptions.map((style) => <option key={style} value={style}>{style}</option>)}
+                  </select>
+                </label>
+              </div>
+              <label className="scene-asset-toggle">
+                <span>Featured hero</span>
+                <input type="checkbox" checked={sceneAssetDraft.featuredHero} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, featuredHero: event.target.checked }))} />
               </label>
               <div className="scene-asset-inline-grid">
                 <label>Ordem de progressão
@@ -1625,7 +1642,7 @@ export function AdminScreen({
 
           <div className="admin-drawer-footer">
             <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
-            <button className="admin-primary" type="button" disabled={saving || !sceneAssetDraft.title || !(sceneAssetDraft.imageUrlDesktop || sceneAssetDraft.imageUrlMobile)} onClick={saveSceneAssetItem}>
+            <button className="admin-primary" type="button" disabled={saving || !sceneAssetDraft.title || !(sceneAssetDraft.imageUrl || sceneAssetDraft.mobileImageUrl)} onClick={saveSceneAssetItem}>
               <Save size={16} />
               {saving ? 'Salvando...' : 'Salvar scene asset'}
             </button>
@@ -2333,8 +2350,9 @@ export function AdminScreen({
                         </div>
                         <p>{asset.mission}</p>
                         <div className="scene-asset-card-meta">
-                          <span>{asset.focalPoint}</span>
-                          <span>{asset.uiOverlayStyle}</span>
+                          <span>{Math.round(asset.focalPointX)}% / {Math.round(asset.focalPointY)}%</span>
+                          <span>{asset.cinematicStyle}</span>
+                          {asset.featuredHero && <span>featured</span>}
                           <span>{asset.active ? 'ativo' : 'inativo'}</span>
                         </div>
                       </div>

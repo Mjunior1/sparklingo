@@ -39,29 +39,33 @@
 
 .scene-overlay-cinematic-violet {
   background:
-    linear-gradient(180deg, rgba(6, 8, 25, calc(var(--scene-overlay-opacity) * 0.84)), rgba(10, 12, 38, var(--scene-overlay-opacity))),
+    linear-gradient(180deg, color-mix(in srgb, var(--scene-overlay-color) 84%, transparent), color-mix(in srgb, var(--scene-overlay-color) 100%, transparent)),
     radial-gradient(circle at 25% 14%, rgba(137, 104, 255, 0.26), transparent 36%),
     linear-gradient(115deg, rgba(16, 21, 52, 0.72), rgba(32, 15, 68, 0.38));
+  opacity: var(--scene-overlay-opacity);
 }
 
 .scene-overlay-midnight-glass {
   background:
-    linear-gradient(180deg, rgba(6, 10, 31, calc(var(--scene-overlay-opacity) * 0.9)), rgba(7, 11, 28, var(--scene-overlay-opacity))),
+    linear-gradient(180deg, color-mix(in srgb, var(--scene-overlay-color) 90%, transparent), color-mix(in srgb, var(--scene-overlay-color) 100%, transparent)),
     linear-gradient(120deg, rgba(20, 25, 58, 0.74), rgba(7, 10, 28, 0.3));
+  opacity: var(--scene-overlay-opacity);
 }
 
 .scene-overlay-ember-glow {
   background:
-    linear-gradient(180deg, rgba(26, 15, 28, calc(var(--scene-overlay-opacity) * 0.74)), rgba(15, 10, 26, var(--scene-overlay-opacity))),
+    linear-gradient(180deg, color-mix(in srgb, var(--scene-overlay-color) 74%, transparent), color-mix(in srgb, var(--scene-overlay-color) 100%, transparent)),
     radial-gradient(circle at 18% 18%, rgba(255, 188, 111, 0.22), transparent 32%),
     linear-gradient(120deg, rgba(62, 31, 34, 0.4), rgba(17, 13, 32, 0.36));
+  opacity: var(--scene-overlay-opacity);
 }
 
 .scene-overlay-aurora-soft {
   background:
-    linear-gradient(180deg, rgba(8, 18, 26, calc(var(--scene-overlay-opacity) * 0.7)), rgba(7, 14, 28, var(--scene-overlay-opacity))),
+    linear-gradient(180deg, color-mix(in srgb, var(--scene-overlay-color) 70%, transparent), color-mix(in srgb, var(--scene-overlay-color) 100%, transparent)),
     radial-gradient(circle at 75% 16%, rgba(120, 247, 220, 0.16), transparent 24%),
     linear-gradient(120deg, rgba(14, 36, 58, 0.3), rgba(22, 18, 42, 0.28));
+  opacity: var(--scene-overlay-opacity);
 }
 
 .scene-safe-area {
