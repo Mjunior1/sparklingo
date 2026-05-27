@@ -1543,21 +1543,7 @@ export function AdminScreen({
               <label>Tom emocional
                 <input value={sceneAssetDraft.emotionalTone} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, emotionalTone: event.target.value }))} />
               </label>
-              <label>Headline da Hero
-                <textarea
-                  value={sceneAssetDraft.heroHeadline}
-                  onChange={(event) => setSceneAssetDraft((current) => ({ ...current, heroHeadline: event.target.value }))}
-                  placeholder={'Continue\nyour\nadventure'}
-                />
-              </label>
-              <label>Subtítulo da Hero
-                <textarea
-                  value={sceneAssetDraft.heroSubtitle}
-                  onChange={(event) => setSceneAssetDraft((current) => ({ ...current, heroSubtitle: event.target.value }))}
-                  placeholder="Entre, continue sua jornada e deixe o Spark manter o ritmo da sua aventura."
-                />
-              </label>
-              <label>Texto da missão
+              <label>Texto do poster da missão
                 <textarea
                   value={sceneAssetDraft.missionCardDescription}
                   onChange={(event) => setSceneAssetDraft((current) => ({ ...current, missionCardDescription: event.target.value }))}
@@ -1634,11 +1620,11 @@ export function AdminScreen({
             <div className="scene-asset-safearea-panel">
               <div className="media-slot-head">
                 <strong>Safe areas</strong>
-                <span>Defina onde headline, subtítulo, mission card e CTA podem viver e onde o personagem principal não pode ser cortado.</span>
+                <span>Defina onde a Hero global pode respirar e onde o personagem principal não pode ser cortado quando esta missão assumir a atmosfera.</span>
               </div>
               <div className="scene-asset-safearea-grid">
                 <SafeAreaFieldset
-                  title="Hero text block"
+                  title="Hero global text block"
                   area={sceneAssetDraft.textSafeArea}
                   onChange={(field, value) => updateSceneAssetSafeArea('textSafeArea', field, value)}
                 />
@@ -1653,14 +1639,14 @@ export function AdminScreen({
             <div className="scene-asset-preview-card">
               <div className="media-slot-head">
                 <strong>Preview cinematográfico</strong>
-                <span>O renderer aplica crop responsivo, overlay e áreas seguras automaticamente.</span>
+                <span>O renderer aplica crop responsivo, overlay e áreas seguras enquanto a copy vem da configuração global da Hero.</span>
               </div>
               <SceneRenderer
                 asset={{ ...sceneAssetDraft, id: sceneAssetDraft.id || sceneAssetIdPreview }}
                 showGuides
                 eyebrow={sceneAssetDraft.chapter || 'Chapter'}
-                title={sceneAssetDraft.heroHeadline || 'Continue\nyour\nadventure'}
-                subtitle={sceneAssetDraft.heroSubtitle || 'Entre, continue sua jornada e deixe o Spark manter o ritmo da sua aventura.'}
+                title={platformDraft.heroHeadline || 'Continue\nyour\nadventure'}
+                subtitle={platformDraft.heroSubheadline || 'Entre, continue sua jornada e deixe o Spark manter o ritmo da sua aventura.'}
                 badge={sceneAssetDraft.emotionalTone || 'emotional tone'}
                 cta={sceneAssetDraft.missionCardDescription || 'Pedir ajuda e entender o próximo passo no aeroporto.'}
                 footer={sceneAssetDraft.recommendedAspectRatio || '9:16'}
@@ -2670,7 +2656,7 @@ export function AdminScreen({
               <div className="cms-panel-head">
                 <div>
                   <h2>Configurações da plataforma</h2>
-                  <p className="admin-helper">Ajuste o runtime da home e popule o catálogo base sem mexer no código.</p>
+                  <p className="admin-helper">Ajuste o runtime da home, o Hero Experience global e popule o catálogo base sem mexer no código.</p>
                 </div>
               </div>
 
@@ -2690,15 +2676,31 @@ export function AdminScreen({
                 </article>
 
                 <article className="cms-settings-form">
+                  <div className="media-slot-head">
+                    <strong>Hero Experience</strong>
+                    <span>Esses campos controlam a camada emocional fixa da Hero. O carousel de missões altera apenas a atmosfera e os posters.</span>
+                  </div>
                   <div className="drawer-form">
-                    <label>Headline do hero
+                    <label>Hero headline
                       <input value={platformDraft.heroHeadline} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroHeadline: event.target.value }))} />
                     </label>
-                    <label>Subtítulo
-                      <textarea value={platformDraft.heroSubtitle} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroSubtitle: event.target.value }))} />
+                    <label>Hero subheadline
+                      <textarea value={platformDraft.heroSubheadline} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroSubheadline: event.target.value }))} />
                     </label>
-                    <label>CTA principal
-                      <input value={platformDraft.playCta} onChange={(event) => setPlatformDraft((current) => ({ ...current, playCta: event.target.value }))} />
+                    <label>Hero CTA
+                      <input value={platformDraft.heroCTA} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroCTA: event.target.value }))} />
+                    </label>
+                    <label>Mascot image URL
+                      <input value={platformDraft.heroMascotImageUrl} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroMascotImageUrl: event.target.value }))} placeholder="/Images/Mascote/Sparklingo.png" />
+                    </label>
+                    <label>Ambient background URL
+                      <input value={platformDraft.heroAmbientBackgroundUrl} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroAmbientBackgroundUrl: event.target.value }))} placeholder="/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png" />
+                    </label>
+                    <label>Hero overlay strength ({platformDraft.heroOverlayStrength}%)
+                      <input type="range" min="0" max="100" value={platformDraft.heroOverlayStrength} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroOverlayStrength: Number(event.target.value) || 0 }))} />
+                    </label>
+                    <label>Hero glow color
+                      <input value={platformDraft.heroGlowColor} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroGlowColor: event.target.value }))} placeholder="#8f58ff" />
                     </label>
                   </div>
                   <button

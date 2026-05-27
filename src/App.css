@@ -7477,3 +7477,644 @@
     padding: 17px 21px;
   }
 }
+
+.global-hero-app {
+  min-height: 100vh;
+  padding: 0;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(115, 80, 255, 0.22), transparent 28%),
+    radial-gradient(circle at 100% 10%, rgba(255, 153, 92, 0.14), transparent 22%),
+    linear-gradient(180deg, #020510 0%, #050917 42%, #020510 100%);
+}
+
+.global-hero-shell {
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  overflow: hidden;
+  background: rgba(4, 8, 19, 0.88);
+}
+
+.global-hero-shell-loading {
+  display: grid;
+  place-items: center;
+  gap: 12px;
+  text-align: center;
+  padding: 40px 24px;
+  color: #f4f6ff;
+}
+
+.global-hero-kicker {
+  margin: 0;
+  color: #bf93ff;
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.global-hero-pulse {
+  width: 72px;
+  height: 72px;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(167, 106, 255, 0.62), rgba(167, 106, 255, 0));
+  animation: missionPulse 1.8s ease-in-out infinite;
+}
+
+.global-hero-background,
+.global-hero-background .scene-picture,
+.global-hero-background .scene-image,
+.global-hero-background-layer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.global-hero-background {
+  z-index: 0;
+}
+
+.global-hero-background .scene-picture,
+.global-hero-background .scene-image {
+  height: 100%;
+}
+
+.global-hero-background .scene-image {
+  object-fit: cover;
+  object-position: var(--hero-focal-x, 50%) var(--hero-focal-y, 50%);
+}
+
+.global-hero-background-layer {
+  overflow: hidden;
+}
+
+.global-hero-background-layer-ambient {
+  opacity: 0.46;
+  filter: blur(10px) saturate(1.05);
+  transform: scale(1.08);
+}
+
+.global-hero-background-layer-current {
+  z-index: 2;
+  animation: heroSceneFadeIn 640ms ease forwards;
+}
+
+.global-hero-background-layer-previous {
+  z-index: 1;
+  animation: heroSceneFadeOut 700ms ease forwards;
+}
+
+.global-hero-global-overlay,
+.global-hero-atmosphere,
+.global-hero-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.global-hero-global-overlay {
+  z-index: 3;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(3, 6, 18, calc(var(--hero-global-overlay-strength, 0.58) * 0.72)),
+      rgba(3, 6, 18, calc(var(--hero-global-overlay-strength, 0.58) * 1.08))
+    );
+}
+
+.global-hero-background .scene-overlay {
+  z-index: 4;
+  backdrop-filter: blur(var(--scene-blur-strength, 8px));
+}
+
+.global-hero-atmosphere {
+  z-index: 5;
+}
+
+.global-hero-atmosphere-cinematic-violet {
+  background:
+    radial-gradient(circle at 20% 22%, color-mix(in srgb, var(--hero-glow-color, #8f58ff) 24%, transparent), transparent 32%),
+    radial-gradient(circle at 86% 20%, rgba(255, 178, 110, 0.16), transparent 24%);
+}
+
+.global-hero-atmosphere-midnight-glass {
+  background:
+    radial-gradient(circle at 78% 18%, rgba(147, 191, 255, 0.12), transparent 22%),
+    radial-gradient(circle at 16% 20%, color-mix(in srgb, var(--hero-glow-color, #8f58ff) 18%, transparent), transparent 30%);
+}
+
+.global-hero-atmosphere-ember-glow {
+  background:
+    radial-gradient(circle at 18% 16%, rgba(255, 198, 120, 0.16), transparent 26%),
+    radial-gradient(circle at 82% 28%, color-mix(in srgb, var(--hero-glow-color, #8f58ff) 18%, transparent), transparent 26%);
+}
+
+.global-hero-atmosphere-aurora-soft {
+  background:
+    radial-gradient(circle at 18% 18%, rgba(122, 255, 218, 0.12), transparent 26%),
+    radial-gradient(circle at 86% 26%, color-mix(in srgb, var(--hero-glow-color, #8f58ff) 14%, transparent), transparent 30%);
+}
+
+.global-hero-vignette {
+  z-index: 6;
+  background:
+    linear-gradient(180deg, rgba(2, 6, 17, 0.18), rgba(2, 6, 17, 0.4)),
+    radial-gradient(circle at center, transparent 38%, rgba(2, 6, 17, 0.44) 100%);
+}
+
+.global-hero-header {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding:
+    calc(18px + env(safe-area-inset-top))
+    16px
+    0
+    16px;
+}
+
+.global-hero-brand,
+.global-hero-pill,
+.global-hero-avatar {
+  backdrop-filter: blur(18px);
+}
+
+.global-hero-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 15px;
+  border-radius: 18px;
+  background: rgba(11, 14, 32, 0.58);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff0d7;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.global-hero-brand strong {
+  font-size: 1.24rem;
+}
+
+.global-hero-status {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.global-hero-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(14, 18, 40, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+
+.global-hero-pill div {
+  display: grid;
+  gap: 2px;
+}
+
+.global-hero-pill strong {
+  font-size: 0.98rem;
+  line-height: 1;
+}
+
+.global-hero-pill span {
+  color: rgba(233, 236, 255, 0.66);
+  font-size: 0.7rem;
+  line-height: 1;
+}
+
+.global-hero-avatar {
+  width: 46px;
+  height: 46px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  background: rgba(14, 18, 40, 0.56);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+}
+
+.global-hero-admin-entry {
+  color: #d7c7ff;
+  background:
+    linear-gradient(180deg, rgba(118, 82, 255, 0.22), rgba(67, 40, 161, 0.2)),
+    rgba(14, 18, 40, 0.56);
+}
+
+.global-hero-copy-safe.scene-safe-area,
+.global-hero-mascot-safe.scene-safe-area-character {
+  z-index: 10;
+}
+
+.global-hero-copy {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  width: min(100%, 380px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 24px);
+}
+
+.global-hero-greeting {
+  margin: 0;
+  color: rgba(231, 219, 255, 0.86);
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.global-hero-copy h1 {
+  margin: 0;
+  display: grid;
+  gap: 0;
+  color: #fff;
+  font-size: clamp(3.5rem, 15vw, 5.4rem);
+  line-height: 0.9;
+  letter-spacing: -0.08em;
+  text-shadow: 0 14px 46px rgba(0, 0, 0, 0.34);
+}
+
+.global-hero-copy > p {
+  margin: 0;
+  max-width: 17rem;
+  color: rgba(232, 236, 255, 0.82);
+  font-size: 0.98rem;
+  line-height: 1.62;
+}
+
+.global-hero-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: min(100%, 360px);
+  min-height: 60px;
+  padding: 17px 20px;
+  border: 0;
+  border-radius: 22px;
+  background: linear-gradient(90deg, #7e4cff 0%, #aa63ff 100%);
+  color: #fff;
+  font-size: 1.08rem;
+  font-weight: 800;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    0 24px 42px rgba(111, 61, 255, 0.32);
+}
+
+.global-hero-mascot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.global-hero-mascot img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center bottom;
+  filter: drop-shadow(0 34px 46px rgba(0, 0, 0, 0.34));
+}
+
+.global-hero-carousel-shell {
+  position: absolute;
+  z-index: 10;
+  inset: auto 16px calc(16px + env(safe-area-inset-bottom)) 16px;
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 28px;
+  background: rgba(8, 11, 29, 0.46);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 26px 52px rgba(0, 0, 0, 0.24);
+  backdrop-filter: blur(18px);
+}
+
+.global-hero-carousel-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.global-hero-carousel-head > div:first-child {
+  display: grid;
+  gap: 6px;
+}
+
+.global-hero-carousel-head strong {
+  color: #fff;
+  font-size: 1.22rem;
+  line-height: 1.05;
+}
+
+.global-hero-carousel-head small {
+  color: rgba(229, 233, 255, 0.72);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.global-hero-carousel-nav {
+  display: flex;
+  gap: 8px;
+}
+
+.global-hero-carousel-nav button {
+  width: 38px;
+  height: 38px;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  display: grid;
+  place-items: center;
+}
+
+.global-hero-carousel-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(248px, 86%);
+  gap: 14px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  scrollbar-width: none;
+}
+
+.global-hero-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.global-hero-mission-poster {
+  position: relative;
+  display: grid;
+  align-content: end;
+  min-height: 286px;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 26px;
+  overflow: hidden;
+  scroll-snap-align: center;
+  text-align: left;
+  background: rgba(11, 14, 30, 0.84);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.26);
+  scroll-snap-stop: always;
+  transition: transform 260ms ease, border-color 260ms ease, box-shadow 260ms ease;
+}
+
+.global-hero-mission-poster.is-active {
+  transform: translateY(-2px) scale(1.01);
+  border-color: rgba(196, 177, 255, 0.24);
+  box-shadow: 0 26px 48px rgba(95, 58, 208, 0.28);
+}
+
+.global-hero-mission-art,
+.global-hero-mission-art img,
+.global-hero-mission-overlay {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.global-hero-mission-art img {
+  object-fit: cover;
+  object-position: var(--hero-focal-x, 50%) var(--hero-focal-y, 50%);
+}
+
+.global-hero-mission-overlay {
+  background:
+    linear-gradient(180deg, rgba(7, 9, 20, 0.14) 0%, rgba(7, 9, 20, 0.92) 100%),
+    radial-gradient(circle at top right, rgba(255, 174, 96, 0.24), transparent 24%);
+}
+
+.global-hero-mission-copy {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  gap: 8px;
+}
+
+.global-hero-mission-copy span {
+  color: rgba(235, 239, 255, 0.72);
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.global-hero-mission-copy strong {
+  color: #fff;
+  font-size: 1.24rem;
+  line-height: 1.05;
+}
+
+.global-hero-mission-copy p {
+  margin: 0;
+  color: rgba(227, 230, 255, 0.78);
+  line-height: 1.45;
+}
+
+.global-hero-mission-meta,
+.global-hero-mission-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.global-hero-mission-meta small,
+.global-hero-mission-footer small {
+  color: rgba(233, 238, 255, 0.72);
+  font-size: 0.8rem;
+}
+
+.global-hero-mission-footer span {
+  color: #ffd787;
+  font-size: 0.84rem;
+  font-weight: 800;
+}
+
+.global-hero-mission-progress,
+.global-hero-mission-progress span {
+  display: block;
+  height: 7px;
+  border-radius: 999px;
+}
+
+.global-hero-mission-progress {
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.global-hero-mission-progress span {
+  background: linear-gradient(90deg, #8d59ff, #c674ff 55%, #ffcb74 100%);
+  box-shadow: 0 0 26px rgba(170, 111, 255, 0.4);
+}
+
+@keyframes heroSceneFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(1.03);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes heroSceneFadeOut {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(1.02);
+  }
+}
+
+@media (min-width: 861px) {
+  .global-hero-app {
+    padding: 28px;
+  }
+
+  .global-hero-shell {
+    max-width: 1460px;
+    min-height: calc(100vh - 56px);
+    margin: 0 auto;
+    border-radius: 42px;
+    border: 1px solid rgba(154, 126, 255, 0.16);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 40px 90px rgba(0, 0, 0, 0.42);
+  }
+
+  .global-hero-header {
+    padding: 28px 32px 0;
+  }
+
+  .global-hero-copy-safe.scene-safe-area {
+    width: min(28%, 410px);
+  }
+
+  .global-hero-copy {
+    width: min(100%, 390px);
+    gap: 20px;
+  }
+
+  .global-hero-copy h1 {
+    font-size: clamp(4.7rem, 7vw, 6.4rem);
+  }
+
+  .global-hero-copy > p {
+    max-width: 18rem;
+    font-size: 1.02rem;
+  }
+
+  .global-hero-cta {
+    width: min(100%, 370px);
+    min-height: 62px;
+    font-size: 1.18rem;
+    padding: 18px 22px;
+  }
+
+  .global-hero-carousel-shell {
+    inset: auto 28px 28px 28px;
+    width: min(48%, 640px);
+    padding: 20px;
+  }
+
+  .global-hero-carousel-track {
+    grid-auto-columns: minmax(250px, 88%);
+  }
+}
+
+@media (max-width: 860px) {
+  .global-hero-header {
+    padding:
+      calc(18px + env(safe-area-inset-top))
+      16px
+      0
+      16px;
+  }
+
+  .global-hero-brand {
+    padding: 12px 14px;
+  }
+
+  .global-hero-brand strong {
+    font-size: 1.18rem;
+  }
+
+  .global-hero-status {
+    flex: 1;
+    justify-content: flex-end;
+  }
+
+  .global-hero-pill {
+    padding: 8px 10px;
+  }
+
+  .global-hero-pill span {
+    display: none;
+  }
+
+  .global-hero-copy {
+    width: min(100%, 310px);
+    gap: 16px;
+  }
+
+  .global-hero-copy h1 {
+    font-size: clamp(3.45rem, 16vw, 4.95rem);
+  }
+
+  .global-hero-copy > p {
+    max-width: 15rem;
+  }
+
+  .global-hero-cta {
+    width: min(100%, 312px);
+  }
+
+  .global-hero-mascot-safe.scene-safe-area-character {
+    pointer-events: none;
+  }
+
+  .global-hero-mascot {
+    width: 100%;
+    height: 100%;
+  }
+
+  .global-hero-mascot img {
+    object-position: center bottom;
+  }
+
+  .global-hero-carousel-shell {
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .global-hero-carousel-head strong {
+    font-size: 1.1rem;
+  }
+
+  .global-hero-carousel-track {
+    grid-auto-columns: 86%;
+  }
+
+  .global-hero-mission-poster {
+    min-height: 248px;
+  }
+}

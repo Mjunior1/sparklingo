@@ -61,27 +61,31 @@ export function AuthScreen() {
   const [submitting, setSubmitting] = useState(false)
 
   const title = authMode === 'login' ? 'Volte para sua jornada' : 'Crie sua aventura'
-  const subtitle = authMode === 'login'
-    ? 'Entre para continuar sua streak, seus combos e sua evolução.'
-    : 'Comece sua conta, salve progresso e conecte o produto a uma base real.'
+  const subtitle =
+    authMode === 'login'
+      ? 'Entre para continuar sua streak, seus combos e sua evolução.'
+      : 'Comece sua conta, salve progresso e conecte o produto a uma base real.'
 
-  const benefits = useMemo(() => ([
-    {
-      label: 'Progresso',
-      title: 'XP salvo na nuvem',
-      copy: 'Seu ritmo, streak e evolução ficam sincronizados com o backend.',
-    },
-    {
-      label: 'Sessão',
-      title: 'Run contínua',
-      copy: 'A experiência deixa de ser estática e passa a responder à sua jornada real.',
-    },
-    {
-      label: 'Conta',
-      title: 'Base de produto',
-      copy: 'Autenticação, perfil, preferências e configuração de plataforma em Firestore.',
-    },
-  ]), [])
+  const benefits = useMemo(
+    () => [
+      {
+        label: 'Progresso',
+        title: 'XP salvo na nuvem',
+        copy: 'Seu ritmo, streak e evolução ficam sincronizados com o backend.',
+      },
+      {
+        label: 'Sessão',
+        title: 'Run contínua',
+        copy: 'A experiência deixa de ser estática e passa a responder à sua jornada real.',
+      },
+      {
+        label: 'Conta',
+        title: 'Base de produto',
+        copy: 'Autenticação, perfil, preferências e configuração de plataforma em Firestore.',
+      },
+    ],
+    [],
+  )
 
   const handleGoogle = async () => {
     try {
@@ -119,7 +123,10 @@ export function AuthScreen() {
         <section className="auth-story">
           <span className="auth-story-label">SparkLingo access</span>
           <h1>{platformConfig?.heroHeadline ?? 'Uma sessão curta pode virar um hábito forte.'}</h1>
-          <p>{platformConfig?.heroSubtitle ?? 'Entre, continue sua jornada e deixe o Spark manter o ritmo da sua aventura.'}</p>
+          <p>
+            {platformConfig?.heroSubheadline ??
+              'Entre, continue sua jornada e deixe o Spark manter o ritmo da sua aventura.'}
+          </p>
 
           <div className="auth-benefits">
             {benefits.map((benefit) => (
@@ -140,7 +147,7 @@ export function AuthScreen() {
               <span>auth + progresso + backend real</span>
             </div>
             <div className="auth-floating-card bottom-left">
-              <strong>{platformConfig?.playCta ?? 'Começar minha aventura'}</strong>
+              <strong>{platformConfig?.heroCTA ?? 'Começar minha aventura'}</strong>
               <span>5 min podem virar 30+</span>
             </div>
           </div>
