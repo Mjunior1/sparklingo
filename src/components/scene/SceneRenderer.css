@@ -134,6 +134,7 @@
   line-height: 0.92;
   letter-spacing: -0.04em;
   text-wrap: balance;
+  white-space: pre-line;
 }
 
 .scene-copy p {

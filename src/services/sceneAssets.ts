@@ -29,6 +29,9 @@ export type SceneAssetRecord = {
   chapter: string
   mission: string
   emotionalTone: string
+  heroHeadline: string
+  heroSubtitle: string
+  missionCardDescription: string
   backgroundImageUrl: string
   imageUrl: string
   mobileImageUrl: string
@@ -107,6 +110,9 @@ export const defaultSceneAssetDraft: SceneAssetRecord = {
   chapter: 'Chapter 1',
   mission: '',
   emotionalTone: 'urgent wonder',
+  heroHeadline: 'Continue\nyour\nadventure',
+  heroSubtitle: 'Entre, continue sua jornada e deixe o Spark manter o ritmo da sua aventura.',
+  missionCardDescription: 'Follow the next scene and keep moving through your journey.',
   backgroundImageUrl: '',
   imageUrl: '',
   mobileImageUrl: '',
@@ -140,6 +146,9 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     chapter: 'Chapter 1',
     mission: 'Airport Arrival',
     emotionalTone: 'hopeful urgency',
+    heroHeadline: 'Continue\nyour\nadventure',
+    heroSubtitle: 'Entre, continue sua jornada e deixe o Spark manter o ritmo da sua aventura.',
+    missionCardDescription: 'Pedir ajuda e entender o próximo passo no aeroporto.',
     backgroundImageUrl: '/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png',
     imageUrl: '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png',
     mobileImageUrl: '/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png',
@@ -170,6 +179,9 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     chapter: 'Chapter 2',
     mission: 'Coffee Shop Confidence',
     emotionalTone: 'warm social courage',
+    heroHeadline: 'Take a warm\nstep forward',
+    heroSubtitle: 'Respire, peça com clareza e transforme um momento comum em confiança real.',
+    missionCardDescription: 'Fazer o pedido, entender o total e reagir com naturalidade no café.',
     backgroundImageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
     imageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
     mobileImageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
@@ -200,6 +212,9 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     chapter: 'Chapter 3',
     mission: 'Park Reflection',
     emotionalTone: 'calm confidence',
+    heroHeadline: 'Pause,\nreflect,\nand grow',
+    heroSubtitle: 'Use o parque como uma cena segura para recuperar fluidez e confiança.',
+    missionCardDescription: 'Descrever o que você vê, reagir a pequenos imprevistos e seguir com calma.',
     backgroundImageUrl: '/Images/Park/fox_in_the_park_draw.png',
     imageUrl: '/Images/Park/fox_in_the_park_draw.png',
     mobileImageUrl: '/Images/Park/fox_in_the_park_draw.png',
@@ -249,6 +264,9 @@ const sanitizeSceneAsset = (asset: SceneAssetRecord): SceneAssetRecord => {
     chapter: cleanString(asset.chapter),
     mission: cleanString(asset.mission),
     emotionalTone: cleanString(asset.emotionalTone),
+    heroHeadline: cleanString(asset.heroHeadline),
+    heroSubtitle: cleanString(asset.heroSubtitle),
+    missionCardDescription: cleanString(asset.missionCardDescription),
     backgroundImageUrl,
     imageUrl,
     mobileImageUrl,
@@ -283,6 +301,9 @@ const fromSceneDoc = (docData: DocumentData): SceneAssetRecord =>
     chapter: cleanString(docData.chapter),
     mission: cleanString(docData.mission),
     emotionalTone: cleanString(docData.emotionalTone),
+    heroHeadline: cleanString(docData.heroHeadline),
+    heroSubtitle: cleanString(docData.heroSubtitle),
+    missionCardDescription: cleanString(docData.missionCardDescription),
     backgroundImageUrl: cleanString(docData.backgroundImageUrl),
     imageUrl: cleanString(docData.imageUrl),
     mobileImageUrl: cleanString(docData.mobileImageUrl),

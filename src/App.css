@@ -7270,8 +7270,10 @@
 
 .mission-block-copy {
   display: grid;
-  gap: 18px;
-  width: min(100%, 360px);
+  align-content: start;
+  gap: 16px;
+  width: min(100%, 368px);
+  padding-bottom: calc(env(safe-area-inset-bottom) + 18px);
 }
 
 .mission-block-greeting {
@@ -7286,7 +7288,7 @@
   display: grid;
   gap: 0;
   color: #ffffff;
-  font-size: clamp(3.7rem, 17vw, 5rem);
+  font-size: clamp(3.35rem, 15vw, 4.65rem);
   line-height: 0.9;
   letter-spacing: -0.08em;
   text-wrap: balance;
@@ -7294,7 +7296,7 @@
 
 .mission-block-copy > p {
   margin: 0;
-  max-width: 16rem;
+  max-width: 18rem;
   color: rgba(231, 235, 255, 0.84);
   font-size: 0.96rem;
   line-height: 1.6;
@@ -7305,8 +7307,8 @@
   overflow: hidden;
   display: grid;
   align-content: end;
-  min-height: 248px;
-  padding: 16px;
+  min-height: 224px;
+  padding: 14px;
   border-radius: 26px;
   background: rgba(7, 10, 24, 0.54);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -7359,15 +7361,15 @@
 
 .mission-block-card-copy strong {
   color: #fff;
-  font-size: 1.86rem;
+  font-size: 1.74rem;
   line-height: 1.02;
 }
 
 .mission-block-card-copy p {
   margin: 0;
   color: rgba(233, 236, 255, 0.82);
-  font-size: 0.96rem;
-  line-height: 1.48;
+  font-size: 0.92rem;
+  line-height: 1.42;
 }
 
 .mission-block-card-meta {
@@ -7408,13 +7410,16 @@
   justify-content: space-between;
   gap: 12px;
   width: 100%;
-  padding: 18px 20px;
+  min-height: 58px;
+  padding: 15px 18px;
   border: 0;
   border-radius: 22px;
   background: linear-gradient(90deg, #7d49ff 0%, #aa63ff 100%);
   color: #fff;
-  font-size: 1.18rem;
+  font-size: 1.08rem;
   font-weight: 800;
+  line-height: 1.2;
+  white-space: normal;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
     0 22px 40px rgba(111, 61, 255, 0.3);
@@ -7445,12 +7450,12 @@
   }
 
   .mission-block-copy {
-    width: min(100%, 420px);
-    gap: 22px;
+    width: min(100%, 400px);
+    gap: 18px;
   }
 
   .mission-block-copy h1 {
-    font-size: clamp(5.1rem, 7.4vw, 7rem);
+    font-size: clamp(4.45rem, 6.8vw, 6.2rem);
   }
 
   .mission-block-copy > p {
@@ -7459,15 +7464,16 @@
   }
 
   .mission-block-card {
-    min-height: 286px;
+    min-height: 258px;
   }
 
   .mission-block-card-copy strong {
-    font-size: 2.1rem;
+    font-size: 1.96rem;
   }
 
   .mission-block-cta {
-    font-size: 1.32rem;
-    padding: 20px 24px;
+    min-height: 62px;
+    font-size: 1.2rem;
+    padding: 17px 21px;
   }
 }

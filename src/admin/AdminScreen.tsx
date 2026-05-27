@@ -1543,6 +1543,27 @@ export function AdminScreen({
               <label>Tom emocional
                 <input value={sceneAssetDraft.emotionalTone} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, emotionalTone: event.target.value }))} />
               </label>
+              <label>Headline da Hero
+                <textarea
+                  value={sceneAssetDraft.heroHeadline}
+                  onChange={(event) => setSceneAssetDraft((current) => ({ ...current, heroHeadline: event.target.value }))}
+                  placeholder={'Continue\nyour\nadventure'}
+                />
+              </label>
+              <label>Subtítulo da Hero
+                <textarea
+                  value={sceneAssetDraft.heroSubtitle}
+                  onChange={(event) => setSceneAssetDraft((current) => ({ ...current, heroSubtitle: event.target.value }))}
+                  placeholder="Entre, continue sua jornada e deixe o Spark manter o ritmo da sua aventura."
+                />
+              </label>
+              <label>Texto da missão
+                <textarea
+                  value={sceneAssetDraft.missionCardDescription}
+                  onChange={(event) => setSceneAssetDraft((current) => ({ ...current, missionCardDescription: event.target.value }))}
+                  placeholder="Pedir ajuda e entender o próximo passo no aeroporto."
+                />
+              </label>
               <label>URL desktop
                 <input value={sceneAssetDraft.imageUrl} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, imageUrl: event.target.value, imageUrlDesktop: event.target.value }))} placeholder="/Images/Airport/..." />
               </label>
@@ -1613,11 +1634,11 @@ export function AdminScreen({
             <div className="scene-asset-safearea-panel">
               <div className="media-slot-head">
                 <strong>Safe areas</strong>
-                <span>Defina onde o texto pode viver e onde o personagem principal não pode ser cortado.</span>
+                <span>Defina onde headline, subtítulo, mission card e CTA podem viver e onde o personagem principal não pode ser cortado.</span>
               </div>
               <div className="scene-asset-safearea-grid">
                 <SafeAreaFieldset
-                  title="Text safe area"
+                  title="Hero text block"
                   area={sceneAssetDraft.textSafeArea}
                   onChange={(field, value) => updateSceneAssetSafeArea('textSafeArea', field, value)}
                 />
@@ -1638,10 +1659,10 @@ export function AdminScreen({
                 asset={{ ...sceneAssetDraft, id: sceneAssetDraft.id || sceneAssetIdPreview }}
                 showGuides
                 eyebrow={sceneAssetDraft.chapter || 'Chapter'}
-                title={sceneAssetDraft.title || 'Narrative scene'}
-                subtitle={sceneAssetDraft.mission || 'Define the mission beat for this cinematic asset.'}
+                title={sceneAssetDraft.heroHeadline || 'Continue\nyour\nadventure'}
+                subtitle={sceneAssetDraft.heroSubtitle || 'Entre, continue sua jornada e deixe o Spark manter o ritmo da sua aventura.'}
                 badge={sceneAssetDraft.emotionalTone || 'emotional tone'}
-                cta="Safe area preview"
+                cta={sceneAssetDraft.missionCardDescription || 'Pedir ajuda e entender o próximo passo no aeroporto.'}
                 footer={sceneAssetDraft.recommendedAspectRatio || '9:16'}
               />
             </div>

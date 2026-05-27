@@ -189,15 +189,26 @@ function App() {
   const heroBackgroundDesktop = getAssetImage(featuredHeroAsset, 'background-desktop')
   const heroBackgroundMobile = getAssetImage(featuredHeroAsset, 'background-mobile')
   const missionCardImage = getAssetImage(featuredHeroAsset, 'mission-card')
+  const heroHeadlineLines = (
+    featuredHeroAsset.heroHeadline ||
+    platformConfig?.heroHeadline ||
+    'Continue\nyour\nadventure'
+  )
+    .split('\n')
+    .map((line) => line.trim())
+    .filter(Boolean)
+  const heroSubtitle =
+    featuredHeroAsset.heroSubtitle ||
+    platformConfig?.heroSubtitle ||
+    selectedMissionLesson?.emotionalContext ||
+    'Every conversation moves you closer to fluency.'
   const missionTitle =
     selectedMissionLesson?.missionTitle ||
     selectedMissionLesson?.title ||
     featuredHeroAsset.mission ||
     featuredHeroAsset.title
-  const missionDescription =
-    selectedMissionLesson?.emotionalContext ||
-    'Every conversation moves you closer to fluency.'
   const missionNarrative =
+    featuredHeroAsset.missionCardDescription ||
     selectedMissionLesson?.practicalGoal ||
     selectedMissionLesson?.blurb ||
     'Follow the next scene and keep moving through your journey.'
@@ -325,11 +336,11 @@ function App() {
               {greeting}, {firstName}! 👋
             </p>
             <h1>
-              <span>Continue</span>
-              <span>your</span>
-              <span>adventure</span>
+              {heroHeadlineLines.map((line) => (
+                <span key={line}>{line}</span>
+              ))}
             </h1>
-            <p>{platformConfig?.heroSubtitle || missionDescription}</p>
+            <p>{heroSubtitle}</p>
 
             <article className="mission-block-card">
               <div className="mission-block-card-media">
