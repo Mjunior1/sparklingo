@@ -1,10 +1,11 @@
 import './App.css'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
+  ArrowLeft,
   ArrowRight,
   Flame,
-  Heart,
   Medal,
+  Shield,
   UserRound,
   Volume2,
   Zap,
@@ -40,18 +41,26 @@ const getGreeting = () => {
   return 'Good evening'
 }
 
-const getFallbackChoices = (category?: string) => {
-  const normalizedCategory = (category ?? '')
+const normalizeText = (value?: string) =>
+  (value ?? '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
+    .trim()
+
+const getFallbackChoices = (category?: string) => {
+  const normalizedCategory = normalizeText(category)
 
   if (normalizedCategory.includes('vocab')) {
     return ['Go to the information desk', 'Call the airline', 'Recheck departures']
   }
 
-  if (normalizedCategory.includes('listening')) {
+  if (normalizedCategory.includes('listen')) {
     return ['Listen again carefully', 'Ask someone to repeat', 'Look for the gate update']
+  }
+
+  if (normalizedCategory.includes('gram')) {
+    return ['Introduce yourself clearly', 'Explain your routine', 'Answer with a short sentence']
   }
 
   return ['Take the next step', 'Ask for help', 'Find a calm checkpoint']
@@ -74,11 +83,64 @@ const buildChoiceOptions = (question: QuizQuestionItem | null, lesson: LessonCat
       .join(' ')
       .split(' ')
       .slice(0, 3)
-      .map((line) => line.trim())
+      .map((chunk) => chunk.trim())
       .filter(Boolean)
   }
 
   return getFallbackChoices(lesson?.category)
+}
+
+const resolveLessonForAsset = (asset: SceneAssetRecord | null, lessons: LessonCatalogItem[]) => {
+  if (!asset || !lessons.length) return lessons[0] ?? null
+
+  const missionToken = normalizeText(asset.mission)
+  const chapterToken = normalizeText(asset.chapter)
+  const categoryToken = normalizeText(asset.category)
+
+  return (
+    lessons.find((lesson) => {
+      const lessonMission = normalizeText(lesson.missionTitle)
+      const lessonTitle = normalizeText(lesson.title)
+      return (
+        (missionToken && (lessonMission.includes(missionToken) || missionToken.includes(lessonMission))) ||
+        (missionToken && (lessonTitle.includes(missionToken) || missionToken.includes(lessonTitle))) ||
+        (categoryToken === 'airport' && lessonTitle.includes('airport')) ||
+        (categoryToken === 'coffeeshop' && lessonMission.includes('daily routine')) ||
+        (categoryToken === 'park' && lesson.category.toLowerCase().includes('listening')) ||
+        (chapterToken && lessonMission.includes(chapterToken))
+      )
+    }) ??
+    lessons[Math.max(0, asset.progressionOrder - 1)] ??
+    lessons[0] ??
+    null
+  )
+}
+
+const getAssetImage = (
+  asset: SceneAssetRecord,
+  mode: 'background-desktop' | 'background-mobile' | 'scene-desktop' | 'scene-mobile' | 'poster' | 'character',
+) => {
+  if (mode === 'background-desktop') {
+    return asset.backgroundImageUrl || asset.imageUrlDesktop || asset.imageUrl || asset.mobileImageUrl || asset.imageUrlMobile
+  }
+
+  if (mode === 'background-mobile') {
+    return asset.mobileImageUrl || asset.imageUrlMobile || asset.backgroundImageUrl || asset.imageUrlDesktop || asset.imageUrl
+  }
+
+  if (mode === 'scene-mobile') {
+    return asset.mobileImageUrl || asset.imageUrlMobile || asset.imageUrl || asset.imageUrlDesktop || asset.backgroundImageUrl
+  }
+
+  if (mode === 'scene-desktop') {
+    return asset.imageUrlDesktop || asset.imageUrl || asset.backgroundImageUrl || asset.mobileImageUrl || asset.imageUrlMobile
+  }
+
+  if (mode === 'character') {
+    return asset.mobileImageUrl || asset.imageUrlMobile || asset.backgroundImageUrl || asset.imageUrlDesktop || asset.imageUrl
+  }
+
+  return asset.imageUrl || asset.imageUrlDesktop || asset.backgroundImageUrl || asset.mobileImageUrl || asset.imageUrlMobile
 }
 
 function App() {
@@ -92,6 +154,9 @@ function App() {
   const [quizQuestionCatalog, setQuizQuestionCatalog] = useState<QuizQuestionItem[]>(defaultQuizQuestions)
   const [sceneAssetsCatalog, setSceneAssetsCatalog] = useState<SceneAssetRecord[]>(defaultSceneAssetsCatalog)
   const [selectedChoice, setSelectedChoice] = useState<string | null>(null)
+  const [activeSceneId, setActiveSceneId] = useState('')
+  const [pauseCarousel, setPauseCarousel] = useState(false)
+  const carouselRef = useRef<HTMLDivElement | null>(null)
 
   const isAdmin = profile?.role === 'admin'
   const firstName = profile?.displayName?.split(' ')[0] ?? user?.displayName?.split(' ')[0] ?? 'Learner'
@@ -160,86 +225,144 @@ function App() {
     }
   }, [refreshBackendCatalog, user])
 
-  const currentMissionLesson = useMemo(() => {
-    if (!lessonsCatalog.length) return null
-
-    const unfinished = lessonsCatalog
-      .filter((lesson) => lesson.progress < 100)
-      .sort((a, b) => (b.progress ?? 0) - (a.progress ?? 0))
-
-    return unfinished[0] ?? lessonsCatalog[0]
-  }, [lessonsCatalog])
-
-  const currentMissionQuizzes = useMemo(
+  const activeSceneAssets = useMemo(
     () =>
-      currentMissionLesson
-        ? quizCatalog.filter((quiz) => quiz.lessonId === currentMissionLesson.id)
-        : quizCatalog,
-    [currentMissionLesson, quizCatalog],
-  )
-
-  const currentMissionQuestion = useMemo(() => {
-    const currentQuizIds = new Set(currentMissionQuizzes.map((quiz) => quiz.id))
-    return (
-      quizQuestionCatalog.find((question) => question.active && currentQuizIds.has(question.quizId)) ??
-      quizQuestionCatalog.find((question) => question.active) ??
-      null
-    )
-  }, [currentMissionQuizzes, quizQuestionCatalog])
-
-  const featuredHeroAsset = useMemo(
-    () =>
-      sceneAssetsCatalog.find((asset) => asset.active && asset.featuredHero) ??
-      sceneAssetsCatalog.find((asset) => asset.active) ??
-      defaultSceneAssetsCatalog[0],
+      [...sceneAssetsCatalog]
+        .filter((asset) => asset.active)
+        .sort((a, b) => a.progressionOrder - b.progressionOrder || a.title.localeCompare(b.title)),
     [sceneAssetsCatalog],
   )
 
-  const heroSceneDesktopImage =
-    featuredHeroAsset.imageUrlDesktop ||
-    featuredHeroAsset.imageUrl ||
-    featuredHeroAsset.mobileImageUrl ||
-    featuredHeroAsset.imageUrlMobile
-  const heroSceneMobileImage =
-    featuredHeroAsset.imageUrlMobile ||
-    featuredHeroAsset.mobileImageUrl ||
-    featuredHeroAsset.imageUrlDesktop ||
-    featuredHeroAsset.imageUrl
-
-  const missionSceneCount = Math.max(5, currentMissionQuizzes.length || 0)
-  const missionProgressPercent = clampPercent(
-    currentMissionLesson?.progress ??
-      Math.round((Math.max(1, currentMissionQuizzes.length) / missionSceneCount) * 100),
+  const featuredHeroAsset = useMemo(
+    () =>
+      activeSceneAssets.find((asset) => asset.featuredHero) ??
+      activeSceneAssets[0] ??
+      defaultSceneAssetsCatalog[0],
+    [activeSceneAssets],
   )
-  const missionTitle =
-    featuredHeroAsset.mission ||
-    currentMissionLesson?.missionTitle ||
-    currentMissionLesson?.title ||
-    'Airport Arrival'
-  const missionChapter = featuredHeroAsset.chapter || 'Chapter 1'
-  const missionContext =
-    currentMissionLesson?.emotionalContext ||
-    'You missed your flight and need to recover the journey with calm, clear English.'
-  const missionEmotionalGoal =
-    currentMissionLesson?.emotionalGoal || 'Keep going. Every choice rebuilds your confidence.'
+
+  useEffect(() => {
+    if (!featuredHeroAsset) return
+    setActiveSceneId((current) =>
+      current && activeSceneAssets.some((asset) => asset.id === current) ? current : featuredHeroAsset.id,
+    )
+  }, [activeSceneAssets, featuredHeroAsset])
+
+  const selectedSceneAsset = useMemo(
+    () =>
+      activeSceneAssets.find((asset) => asset.id === activeSceneId) ??
+      featuredHeroAsset ??
+      defaultSceneAssetsCatalog[0],
+    [activeSceneAssets, activeSceneId, featuredHeroAsset],
+  )
+
+  const selectedMissionLesson = useMemo(
+    () => resolveLessonForAsset(selectedSceneAsset, lessonsCatalog),
+    [lessonsCatalog, selectedSceneAsset],
+  )
+
+  const selectedMissionQuizzes = useMemo(
+    () =>
+      selectedMissionLesson
+        ? quizCatalog.filter((quiz) => quiz.lessonId === selectedMissionLesson.id)
+        : quizCatalog,
+    [quizCatalog, selectedMissionLesson],
+  )
+
+  const selectedMissionQuestion = useMemo(() => {
+    const quizIds = new Set(selectedMissionQuizzes.map((quiz) => quiz.id))
+    return (
+      quizQuestionCatalog.find((question) => question.active && quizIds.has(question.quizId)) ??
+      quizQuestionCatalog.find((question) => question.active) ??
+      null
+    )
+  }, [quizQuestionCatalog, selectedMissionQuizzes])
+
+  const sceneCount = Math.max(5, selectedMissionQuizzes.length || 0)
+  const missionProgressPercent = clampPercent(
+    selectedMissionLesson?.progress ??
+      Math.round((Math.max(1, selectedMissionQuizzes.length) / Math.max(1, sceneCount)) * 100),
+  )
   const scenePrompt =
-    currentMissionQuestion?.prompt || currentMissionLesson?.practicalGoal || 'What should you do first?'
-  const sceneBadge = currentMissionLesson?.tensionLabel || featuredHeroAsset.emotionalTone || 'hopeful urgency'
-  const choiceOptions = buildChoiceOptions(currentMissionQuestion, currentMissionLesson)
-  const sceneReward = currentMissionQuestion?.reward ?? 25
+    selectedMissionQuestion?.prompt ||
+    selectedMissionLesson?.practicalGoal ||
+    'What should you do first?'
+  const choiceOptions = buildChoiceOptions(selectedMissionQuestion, selectedMissionLesson)
+  const sceneReward = selectedMissionQuestion?.reward ?? 25
   const xpProgress = clampPercent((totalXp / 750) * 100)
+  const heroBackgroundDesktop = getAssetImage(selectedSceneAsset, 'background-desktop')
+  const heroBackgroundMobile = getAssetImage(selectedSceneAsset, 'background-mobile')
+  const heroCharacterImage = getAssetImage(selectedSceneAsset, 'character')
+  const scenePromptImageDesktop = getAssetImage(selectedSceneAsset, 'scene-desktop')
+  const scenePromptImageMobile = getAssetImage(selectedSceneAsset, 'scene-mobile')
+  const carouselMissionLabel =
+    selectedMissionLesson?.missionTitle ||
+    selectedMissionLesson?.title ||
+    selectedSceneAsset.mission ||
+    selectedSceneAsset.title
+  const emotionalDescription =
+    selectedMissionLesson?.emotionalContext ||
+    'Every conversation moves you closer to fluency.'
+  const missionGoalCopy =
+    selectedMissionLesson?.emotionalGoal ||
+    'Keep moving. Every choice rebuilds your confidence.'
 
   useEffect(() => {
     setSelectedChoice(null)
-  }, [currentMissionQuestion?.id, featuredHeroAsset.id])
+  }, [selectedMissionQuestion?.id, selectedSceneAsset.id])
+
+  useEffect(() => {
+    if (pauseCarousel || activeSceneAssets.length < 2) return
+
+    const interval = window.setInterval(() => {
+      setActiveSceneId((current) => {
+        const currentIndex = activeSceneAssets.findIndex((asset) => asset.id === current)
+        const nextIndex = currentIndex === -1 ? 0 : (currentIndex + 1) % activeSceneAssets.length
+        return activeSceneAssets[nextIndex]?.id ?? current
+      })
+    }, 5200)
+
+    return () => window.clearInterval(interval)
+  }, [activeSceneAssets, pauseCarousel])
+
+  useEffect(() => {
+    const selectedCard = carouselRef.current?.querySelector<HTMLElement>(`[data-scene-id="${activeSceneId}"]`)
+    selectedCard?.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' })
+  }, [activeSceneId])
+
+  const cycleScene = useCallback(
+    (direction: 'prev' | 'next') => {
+      if (!activeSceneAssets.length) return
+      setActiveSceneId((current) => {
+        const currentIndex = activeSceneAssets.findIndex((asset) => asset.id === current)
+        if (currentIndex === -1) return activeSceneAssets[0].id
+        const nextIndex =
+          direction === 'next'
+            ? (currentIndex + 1) % activeSceneAssets.length
+            : (currentIndex - 1 + activeSceneAssets.length) % activeSceneAssets.length
+        return activeSceneAssets[nextIndex].id
+      })
+    },
+    [activeSceneAssets],
+  )
+
+  const heroStageStyle = {
+    '--hero-overlay-opacity': `${selectedSceneAsset.overlayOpacity / 100}`,
+    '--hero-overlay-color': selectedSceneAsset.overlayColor,
+    '--hero-blur-strength': `${selectedSceneAsset.blurIntensity}px`,
+    '--hero-brightness': `${selectedSceneAsset.brightness / 100}`,
+    '--hero-focal-x': `${selectedSceneAsset.focalPointX}%`,
+    '--hero-focal-y': `${selectedSceneAsset.focalPointY}%`,
+  } as React.CSSProperties
 
   const handleContinueMission = () => {
     if (choiceOptions.length && !selectedChoice) {
       setSelectedChoice(choiceOptions[0])
+      return
     }
   }
 
-  if (status === 'loading' || (user && catalogLoading && !currentMissionLesson)) {
+  if (status === 'loading' || (user && catalogLoading && !selectedMissionLesson)) {
     return (
       <div className="spark-app-shell spark-app-shell-loading">
         <main className="spark-loading-panel">
@@ -286,37 +409,50 @@ function App() {
   }
 
   return (
-    <div className="spark-hero-app">
-      {isAdmin && (
-        <button className="spark-admin-pill" type="button" onClick={() => setView('admin')}>
-          <span>Admin</span>
-        </button>
-      )}
+    <div className="spark-hero-app spark-hero-app-immersive">
+      <main className="spark-story-hero" style={heroStageStyle}>
+        <div className="spark-story-backdrop" aria-hidden="true">
+          <picture>
+            <source media="(max-width: 860px)" srcSet={heroBackgroundMobile} />
+            <img src={heroBackgroundDesktop} alt={selectedSceneAsset.title} />
+          </picture>
+          <div className={`spark-story-backdrop-overlay spark-story-backdrop-overlay-${selectedSceneAsset.cinematicStyle}`} />
+          <div className="spark-story-backdrop-vignette" />
+        </div>
 
-      <main className="spark-cinematic-hero">
-        <section className="spark-cinematic-left">
-          <header className="spark-cinematic-topbar">
-            <div className="spark-cinematic-logo">
+        <section className="spark-story-column">
+          <header className="spark-story-topbar">
+            <div className="spark-story-logo">
               <Zap size={18} />
               <strong>SparkLingo</strong>
             </div>
 
-            <div className="spark-cinematic-status">
-              <div className="spark-cinematic-badge">
+            <div className="spark-story-status">
+              <div className="spark-story-pill">
                 <Flame size={15} />
                 <div>
                   <strong>{streakDays}</strong>
                   <span>day streak</span>
                 </div>
               </div>
-              <div className="spark-cinematic-badge">
+              <div className="spark-story-pill">
                 <Medal size={15} />
                 <div>
                   <strong>{totalXp}</strong>
                   <span>XP</span>
                 </div>
               </div>
-              <button className="spark-cinematic-avatar" type="button" title="Sign out" onClick={() => signOut()}>
+              {isAdmin && (
+                <button
+                  className="spark-story-avatar spark-story-admin-entry"
+                  type="button"
+                  title="Open admin"
+                  onClick={() => setView('admin')}
+                >
+                  <Shield size={18} />
+                </button>
+              )}
+              <button className="spark-story-avatar" type="button" title="Sign out" onClick={() => signOut()}>
                 {profile?.avatarUrl ? (
                   <img src={profile.avatarUrl} alt={profile.displayName} className="avatar-image" />
                 ) : (
@@ -326,110 +462,157 @@ function App() {
             </div>
           </header>
 
-          <div className="spark-cinematic-copy">
-            <p className="spark-cinematic-greeting">{greeting}, {firstName}!</p>
+          <div className="spark-story-copy">
+            <p className="spark-story-greeting">{greeting}, {firstName}! 👋</p>
             <h1>
               <span>Continue</span>
               <span>your</span>
               <span>adventure</span>
             </h1>
-            <p>Every conversation moves you closer to fluency.</p>
+            <p>{platformConfig?.heroSubtitle || emotionalDescription}</p>
           </div>
 
-          <div className="spark-cinematic-fox">
-            <img src={heroSceneMobileImage} alt={missionTitle} />
+          <div className="spark-story-mascot" aria-hidden="true">
+            <img src={heroCharacterImage} alt="" />
           </div>
 
-          <article className="spark-cinematic-mission-card">
-            <div className="spark-cinematic-mission-media">
-              <img src={heroSceneDesktopImage} alt={missionTitle} />
+          <section
+            className="spark-story-carousel-block"
+            onMouseEnter={() => setPauseCarousel(true)}
+            onMouseLeave={() => setPauseCarousel(false)}
+          >
+            <div className="spark-story-carousel-head">
+              <div>
+                <span className="spark-story-kicker">Current mission</span>
+                <strong>{carouselMissionLabel}</strong>
+                <small>{missionProgressPercent}% complete • Scene 1 of {sceneCount}</small>
+              </div>
+              <div className="spark-story-carousel-nav">
+                <button type="button" aria-label="Previous mission" onClick={() => cycleScene('prev')}>
+                  <ArrowLeft size={16} />
+                </button>
+                <button type="button" aria-label="Next mission" onClick={() => cycleScene('next')}>
+                  <ArrowRight size={16} />
+                </button>
+              </div>
             </div>
 
-            <div className="spark-cinematic-mission-copy">
-              <span className="spark-cinematic-chip">Current mission</span>
-              <h2>{missionTitle}</h2>
-              <p>{missionContext}</p>
+            <div className="spark-story-carousel" ref={carouselRef}>
+              {activeSceneAssets.map((asset) => {
+                const lesson = resolveLessonForAsset(asset, lessonsCatalog)
+                const posterProgress = clampPercent(lesson?.progress ?? 0)
+                const posterImage = getAssetImage(asset, 'poster')
+                const isActive = asset.id === selectedSceneAsset.id
 
-              <div className="spark-cinematic-mission-meta">
-                <span>{missionChapter}</span>
-                <span>Scene 1 of {missionSceneCount}</span>
-                <strong>{missionProgressPercent}% completed</strong>
-              </div>
-
-              <div className="spark-cinematic-progress">
-                <span style={{ width: `${missionProgressPercent}%` }} />
-              </div>
+                return (
+                  <button
+                    key={asset.id}
+                    type="button"
+                    data-scene-id={asset.id}
+                    className={`spark-story-poster${isActive ? ' is-active' : ''}`}
+                    onClick={() => setActiveSceneId(asset.id)}
+                  >
+                    <div className="spark-story-poster-art">
+                      <img src={posterImage} alt={asset.title} />
+                    </div>
+                    <div className="spark-story-poster-overlay" />
+                    <div className="spark-story-poster-copy">
+                      <span>{asset.chapter || 'Chapter 1'}</span>
+                      <strong>{asset.mission || asset.title}</strong>
+                      <p>{lesson?.emotionalContext || missionGoalCopy}</p>
+                      <div className="spark-story-poster-footer">
+                        <small>Scene 1 of {Math.max(5, quizzesCatalogLengthFor(lesson, quizCatalog))}</small>
+                        <small>{posterProgress}% complete</small>
+                      </div>
+                      <div className="spark-story-poster-progress">
+                        <span style={{ width: `${posterProgress}%` }} />
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
-          </article>
+          </section>
 
-          <button className="spark-cinematic-cta" type="button" onClick={handleContinueMission}>
-            <span>Continue Mission</span>
+          <button className="spark-story-cta" type="button" onClick={handleContinueMission}>
+            <span>{platformConfig?.playCta || 'Continue Mission'}</span>
             <ArrowRight size={18} />
           </button>
-
-          <div className="spark-cinematic-note">
-            <Heart size={18} />
-            <div>
-              <strong>You're doing amazing!</strong>
-              <span>{missionEmotionalGoal}</span>
-            </div>
-          </div>
         </section>
 
-        <section className="spark-cinematic-right">
-          <article className="spark-cinematic-scene">
-            <CinematicImage asset={featuredHeroAsset} mode="desktop" />
-            <NarrativeOverlay asset={featuredHeroAsset} />
+        <section className="spark-story-scene">
+          <article className="spark-story-scene-frame">
+            <div className="spark-story-scene-shell">
+              <CinematicImage
+                asset={{
+                  ...selectedSceneAsset,
+                  imageUrl: scenePromptImageDesktop,
+                  imageUrlDesktop: scenePromptImageDesktop,
+                  mobileImageUrl: scenePromptImageMobile,
+                  imageUrlMobile: scenePromptImageMobile,
+                }}
+                mode="auto"
+              />
+              <NarrativeOverlay asset={selectedSceneAsset} />
 
-            <header className="spark-cinematic-scene-head">
-              <div className="spark-cinematic-scene-label">
-                <strong>{missionTitle}</strong>
-                <span>Scene 1 of {missionSceneCount}</span>
-              </div>
-              <div className="spark-cinematic-scene-chip">{missionTitle}</div>
-            </header>
-
-            <SafeAreaContainer area={featuredHeroAsset.textSafeArea} className="spark-cinematic-safe-copy">
-              <div className="spark-cinematic-dialogue">
-                <span>{sceneBadge}</span>
-                <strong>{scenePrompt}</strong>
-                <p>Choose the next move and keep the mission alive.</p>
-              </div>
-
-              <div className="spark-cinematic-choices">
-                {choiceOptions.map((choice) => (
-                  <button
-                    key={choice}
-                    type="button"
-                    className={`spark-cinematic-choice${selectedChoice === choice ? ' is-selected' : ''}`}
-                    onClick={() => setSelectedChoice(choice)}
-                  >
-                    <span>{choice}</span>
-                    {selectedChoice === choice && <Volume2 size={16} />}
-                  </button>
-                ))}
-              </div>
-
-              <footer className="spark-cinematic-scene-footer">
-                <div className="spark-cinematic-level-pill">
-                  <span>Level {level}</span>
+              <header className="spark-story-scene-head">
+                <button type="button" className="spark-story-scene-back" aria-label="Back">
+                  <ArrowLeft size={18} />
+                </button>
+                <div className="spark-story-scene-label">
+                  <strong>{selectedSceneAsset.mission || selectedSceneAsset.title}</strong>
+                  <span>Scene 1 of {sceneCount}</span>
                 </div>
+                <div className="spark-story-scene-heart">3</div>
+              </header>
 
-                <div className="spark-cinematic-xp-bar">
-                  <strong>{totalXp} / 750 XP</strong>
-                  <div className="spark-cinematic-xp-track">
-                    <span style={{ width: `${xpProgress}%` }} />
+              <SafeAreaContainer area={selectedSceneAsset.textSafeArea} className="spark-story-safe-copy">
+                <div className="spark-story-dialogue">
+                  <div className="spark-story-bubble">
+                    <span>Mission prompt</span>
+                    <strong>{scenePrompt}</strong>
+                    <button type="button" aria-label="Play audio">
+                      <Volume2 size={14} />
+                    </button>
                   </div>
-                </div>
 
-                <strong className="spark-cinematic-reward">+{sceneReward} XP</strong>
-              </footer>
-            </SafeAreaContainer>
+                  <div className="spark-story-options">
+                    {choiceOptions.map((choice) => (
+                      <button
+                        key={choice}
+                        type="button"
+                        className={`spark-story-option${selectedChoice === choice ? ' is-selected' : ''}`}
+                        onClick={() => setSelectedChoice(choice)}
+                      >
+                        <span>{choice}</span>
+                        {selectedChoice === choice && <Volume2 size={16} />}
+                      </button>
+                    ))}
+                  </div>
+
+                  <footer className="spark-story-xp-footer">
+                    <strong>Level {level}</strong>
+                    <div className="spark-story-xp-track">
+                      <div className="spark-story-xp-meta">
+                        <span>{totalXp} / 750 XP</span>
+                        <small>+{sceneReward} XP</small>
+                      </div>
+                      <div className="spark-story-xp-bar">
+                        <span style={{ width: `${xpProgress}%` }} />
+                      </div>
+                    </div>
+                  </footer>
+                </div>
+              </SafeAreaContainer>
+            </div>
           </article>
         </section>
       </main>
     </div>
   )
 }
+
+const quizzesCatalogLengthFor = (lesson: LessonCatalogItem | null, quizzes: QuizCatalogItem[]) =>
+  lesson ? quizzes.filter((quiz) => quiz.lessonId === lesson.id).length : 0
 
 export default App

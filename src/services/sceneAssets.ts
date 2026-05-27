@@ -29,6 +29,7 @@ export type SceneAssetRecord = {
   chapter: string
   mission: string
   emotionalTone: string
+  backgroundImageUrl: string
   imageUrl: string
   mobileImageUrl: string
   imageUrlDesktop: string
@@ -63,10 +64,12 @@ const cleanNumber = (value: unknown, fallback = 0) => {
   return Number.isFinite(parsed) ? parsed : fallback
 }
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
 const normalizeSceneAssetPath = (value: string) =>
   value
     .replace('/Images/coffee shop/', '/Images/CoffeeShop/')
     .replace('/Images/coffee%20shop/', '/Images/CoffeeShop/')
+    .replace('Ã¢â‚¬â€', '—')
     .replace('â€”', '—')
 
 const safeArea = (x: number, y: number, width: number, height: number): SceneAssetSafeArea => ({
@@ -104,6 +107,7 @@ export const defaultSceneAssetDraft: SceneAssetRecord = {
   chapter: 'Chapter 1',
   mission: '',
   emotionalTone: 'urgent wonder',
+  backgroundImageUrl: '',
   imageUrl: '',
   mobileImageUrl: '',
   imageUrlDesktop: '',
@@ -136,6 +140,7 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     chapter: 'Chapter 1',
     mission: 'Airport Arrival',
     emotionalTone: 'hopeful urgency',
+    backgroundImageUrl: '/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png',
     imageUrl: '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png',
     mobileImageUrl: '/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png',
     imageUrlDesktop: '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png',
@@ -165,6 +170,7 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     chapter: 'Chapter 2',
     mission: 'Coffee Shop Confidence',
     emotionalTone: 'warm social courage',
+    backgroundImageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
     imageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
     mobileImageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
     imageUrlDesktop: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
@@ -194,6 +200,7 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     chapter: 'Chapter 3',
     mission: 'Park Reflection',
     emotionalTone: 'calm confidence',
+    backgroundImageUrl: '/Images/Park/fox_in_the_park_draw.png',
     imageUrl: '/Images/Park/fox_in_the_park_draw.png',
     mobileImageUrl: '/Images/Park/fox_in_the_park_draw.png',
     imageUrlDesktop: '/Images/Park/fox_in_the_park_draw.png',
@@ -220,8 +227,13 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
 const sanitizeSceneAsset = (asset: SceneAssetRecord): SceneAssetRecord => {
   const focalPoint = validFocalPoints.includes(asset.focalPoint) ? asset.focalPoint : 'center'
   const fallbackXY = focalPointToXY(focalPoint)
+  const backgroundImageUrl = normalizeSceneAssetPath(
+    cleanString(asset.backgroundImageUrl) || cleanString(asset.imageUrlDesktop) || cleanString(asset.imageUrl),
+  )
   const imageUrl = normalizeSceneAssetPath(cleanString(asset.imageUrl) || cleanString(asset.imageUrlDesktop))
-  const mobileImageUrl = normalizeSceneAssetPath(cleanString(asset.mobileImageUrl) || cleanString(asset.imageUrlMobile) || imageUrl)
+  const mobileImageUrl = normalizeSceneAssetPath(
+    cleanString(asset.mobileImageUrl) || cleanString(asset.imageUrlMobile) || imageUrl || backgroundImageUrl,
+  )
   const cinematicStyle = validOverlayStyles.includes(asset.cinematicStyle)
     ? asset.cinematicStyle
     : validOverlayStyles.includes(asset.uiOverlayStyle)
@@ -237,10 +249,11 @@ const sanitizeSceneAsset = (asset: SceneAssetRecord): SceneAssetRecord => {
     chapter: cleanString(asset.chapter),
     mission: cleanString(asset.mission),
     emotionalTone: cleanString(asset.emotionalTone),
+    backgroundImageUrl,
     imageUrl,
     mobileImageUrl,
-    imageUrlDesktop: imageUrl,
-    imageUrlMobile: mobileImageUrl,
+    imageUrlDesktop: imageUrl || backgroundImageUrl,
+    imageUrlMobile: mobileImageUrl || backgroundImageUrl,
     recommendedAspectRatio: cleanString(asset.recommendedAspectRatio) || '9:16',
     focalPoint,
     focalPointX: clamp(cleanNumber(asset.focalPointX, fallbackXY.x), 0, 100),
@@ -270,6 +283,7 @@ const fromSceneDoc = (docData: DocumentData): SceneAssetRecord =>
     chapter: cleanString(docData.chapter),
     mission: cleanString(docData.mission),
     emotionalTone: cleanString(docData.emotionalTone),
+    backgroundImageUrl: cleanString(docData.backgroundImageUrl),
     imageUrl: cleanString(docData.imageUrl),
     mobileImageUrl: cleanString(docData.mobileImageUrl),
     imageUrlDesktop: cleanString(docData.imageUrlDesktop),
@@ -317,8 +331,8 @@ export const upsertSceneAsset = async (asset: SceneAssetRecord) => {
   if (!sanitized.id) throw new Error('Defina um id valido para o scene asset.')
   if (!sanitized.title) throw new Error('Defina um titulo para o scene asset.')
   if (!sanitized.slug) throw new Error('Defina um slug para o scene asset.')
-  if (!sanitized.imageUrl && !sanitized.mobileImageUrl) {
-    throw new Error('Informe pelo menos uma URL de imagem para o scene asset.')
+  if (!sanitized.imageUrl && !sanitized.mobileImageUrl && !sanitized.backgroundImageUrl) {
+    throw new Error('Informe pelo menos uma URL visual para o scene asset.')
   }
 
   await setDoc(

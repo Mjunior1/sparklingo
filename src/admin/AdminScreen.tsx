@@ -1549,6 +1549,13 @@ export function AdminScreen({
               <label>URL mobile
                 <input value={sceneAssetDraft.mobileImageUrl} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, mobileImageUrl: event.target.value, imageUrlMobile: event.target.value }))} placeholder="/Images/Airport/..." />
               </label>
+              <label>Background URL
+                <input
+                  value={sceneAssetDraft.backgroundImageUrl}
+                  onChange={(event) => setSceneAssetDraft((current) => ({ ...current, backgroundImageUrl: event.target.value }))}
+                  placeholder="/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png"
+                />
+              </label>
               <div className="scene-asset-inline-grid">
                 <label>Aspect ratio recomendado
                   <input value={sceneAssetDraft.recommendedAspectRatio} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, recommendedAspectRatio: event.target.value }))} placeholder="9:16" />
@@ -1642,7 +1649,7 @@ export function AdminScreen({
 
           <div className="admin-drawer-footer">
             <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
-            <button className="admin-primary" type="button" disabled={saving || !sceneAssetDraft.title || !(sceneAssetDraft.imageUrl || sceneAssetDraft.mobileImageUrl)} onClick={saveSceneAssetItem}>
+            <button className="admin-primary" type="button" disabled={saving || !sceneAssetDraft.title || !(sceneAssetDraft.imageUrl || sceneAssetDraft.mobileImageUrl || sceneAssetDraft.backgroundImageUrl)} onClick={saveSceneAssetItem}>
               <Save size={16} />
               {saving ? 'Salvando...' : 'Salvar scene asset'}
             </button>
