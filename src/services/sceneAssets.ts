@@ -29,9 +29,8 @@ export type SceneAssetRecord = {
   chapter: string
   mission: string
   emotionalTone: string
-  heroHeadline: string
-  heroSubtitle: string
   missionCardDescription: string
+  heroBackgroundImageUrl: string
   backgroundImageUrl: string
   imageUrl: string
   mobileImageUrl: string
@@ -52,6 +51,7 @@ export type SceneAssetRecord = {
   uiOverlayStyle: SceneAssetOverlayStyle
   progressionOrder: number
   featuredHero: boolean
+  showInHero: boolean
   active: boolean
 }
 
@@ -72,8 +72,7 @@ const normalizeSceneAssetPath = (value: string) =>
   value
     .replace('/Images/coffee shop/', '/Images/CoffeeShop/')
     .replace('/Images/coffee%20shop/', '/Images/CoffeeShop/')
-    .replace('Ã¢â‚¬â€', '—')
-    .replace('â€”', '—')
+    .replace('/Images/Airport/MISSION SCENE â€” AIRPORT IMMIGRATION.png', '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png')
 
 const safeArea = (x: number, y: number, width: number, height: number): SceneAssetSafeArea => ({
   x,
@@ -110,9 +109,8 @@ export const defaultSceneAssetDraft: SceneAssetRecord = {
   chapter: 'Chapter 1',
   mission: '',
   emotionalTone: 'urgent wonder',
-  heroHeadline: 'Continue\nyour\nadventure',
-  heroSubtitle: 'Entre, continue sua jornada e deixe o Spark manter o ritmo da sua aventura.',
   missionCardDescription: 'Follow the next scene and keep moving through your journey.',
+  heroBackgroundImageUrl: '',
   backgroundImageUrl: '',
   imageUrl: '',
   mobileImageUrl: '',
@@ -133,6 +131,7 @@ export const defaultSceneAssetDraft: SceneAssetRecord = {
   uiOverlayStyle: 'cinematic-violet',
   progressionOrder: 1,
   featuredHero: false,
+  showInHero: true,
   active: true,
 }
 
@@ -146,9 +145,8 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     chapter: 'Chapter 1',
     mission: 'Airport Arrival',
     emotionalTone: 'hopeful urgency',
-    heroHeadline: 'Continue\nyour\nadventure',
-    heroSubtitle: 'Entre, continue sua jornada e deixe o Spark manter o ritmo da sua aventura.',
     missionCardDescription: 'Pedir ajuda e entender o próximo passo no aeroporto.',
+    heroBackgroundImageUrl: '/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png',
     backgroundImageUrl: '/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png',
     imageUrl: '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png',
     mobileImageUrl: '/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png',
@@ -168,6 +166,7 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     uiOverlayStyle: 'cinematic-violet',
     progressionOrder: 1,
     featuredHero: true,
+    showInHero: true,
     active: true,
   },
   {
@@ -179,9 +178,8 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     chapter: 'Chapter 2',
     mission: 'Coffee Shop Confidence',
     emotionalTone: 'warm social courage',
-    heroHeadline: 'Take a warm\nstep forward',
-    heroSubtitle: 'Respire, peça com clareza e transforme um momento comum em confiança real.',
-    missionCardDescription: 'Fazer o pedido, entender o total e reagir com naturalidade no café.',
+    missionCardDescription: 'Peça seu café e converse como um nativo.',
+    heroBackgroundImageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
     backgroundImageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
     imageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
     mobileImageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
@@ -201,6 +199,7 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     uiOverlayStyle: 'ember-glow',
     progressionOrder: 2,
     featuredHero: false,
+    showInHero: true,
     active: true,
   },
   {
@@ -212,9 +211,8 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     chapter: 'Chapter 3',
     mission: 'Park Reflection',
     emotionalTone: 'calm confidence',
-    heroHeadline: 'Pause,\nreflect,\nand grow',
-    heroSubtitle: 'Use o parque como uma cena segura para recuperar fluidez e confiança.',
-    missionCardDescription: 'Descrever o que você vê, reagir a pequenos imprevistos e seguir com calma.',
+    missionCardDescription: 'Peça seu sorvete favorito e aproveite o passeio no parque.',
+    heroBackgroundImageUrl: '/Images/Park/fox_in_the_park_draw.png',
     backgroundImageUrl: '/Images/Park/fox_in_the_park_draw.png',
     imageUrl: '/Images/Park/fox_in_the_park_draw.png',
     mobileImageUrl: '/Images/Park/fox_in_the_park_draw.png',
@@ -235,24 +233,33 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     uiOverlayStyle: 'aurora-soft',
     progressionOrder: 3,
     featuredHero: false,
+    showInHero: true,
     active: true,
   },
 ]
 
-const sanitizeSceneAsset = (asset: SceneAssetRecord): SceneAssetRecord => {
-  const focalPoint = validFocalPoints.includes(asset.focalPoint) ? asset.focalPoint : 'center'
+const sanitizeSceneAsset = (asset: SceneAssetRecord | (Partial<SceneAssetRecord> & Record<string, unknown>)): SceneAssetRecord => {
+  const focalPoint = validFocalPoints.includes((asset.focalPoint as SceneAssetFocalPoint) ?? 'center')
+    ? (asset.focalPoint as SceneAssetFocalPoint)
+    : 'center'
   const fallbackXY = focalPointToXY(focalPoint)
-  const backgroundImageUrl = normalizeSceneAssetPath(
-    cleanString(asset.backgroundImageUrl) || cleanString(asset.imageUrlDesktop) || cleanString(asset.imageUrl),
+  const heroBackgroundImageUrl = normalizeSceneAssetPath(
+    cleanString(asset.heroBackgroundImageUrl) ||
+      cleanString(asset.backgroundImageUrl) ||
+      cleanString(asset.imageUrlDesktop) ||
+      cleanString(asset.imageUrl),
   )
   const imageUrl = normalizeSceneAssetPath(cleanString(asset.imageUrl) || cleanString(asset.imageUrlDesktop))
   const mobileImageUrl = normalizeSceneAssetPath(
-    cleanString(asset.mobileImageUrl) || cleanString(asset.imageUrlMobile) || imageUrl || backgroundImageUrl,
+    cleanString(asset.mobileImageUrl) ||
+      cleanString(asset.imageUrlMobile) ||
+      imageUrl ||
+      heroBackgroundImageUrl,
   )
-  const cinematicStyle = validOverlayStyles.includes(asset.cinematicStyle)
-    ? asset.cinematicStyle
-    : validOverlayStyles.includes(asset.uiOverlayStyle)
-      ? asset.uiOverlayStyle
+  const cinematicStyle = validOverlayStyles.includes((asset.cinematicStyle as SceneAssetOverlayStyle) ?? 'cinematic-violet')
+    ? (asset.cinematicStyle as SceneAssetOverlayStyle)
+    : validOverlayStyles.includes((asset.uiOverlayStyle as SceneAssetOverlayStyle) ?? 'cinematic-violet')
+      ? (asset.uiOverlayStyle as SceneAssetOverlayStyle)
       : 'cinematic-violet'
   const overlayOpacity = clamp(cleanNumber(asset.overlayOpacity ?? asset.overlayIntensity, 55), 0, 100)
 
@@ -260,18 +267,19 @@ const sanitizeSceneAsset = (asset: SceneAssetRecord): SceneAssetRecord => {
     id: cleanString(asset.id),
     title: cleanString(asset.title),
     slug: cleanString(asset.slug),
-    category: validCategories.includes(asset.category) ? asset.category : 'General',
+    category: validCategories.includes((asset.category as SceneAssetCategory) ?? 'General')
+      ? (asset.category as SceneAssetCategory)
+      : 'General',
     chapter: cleanString(asset.chapter),
     mission: cleanString(asset.mission),
     emotionalTone: cleanString(asset.emotionalTone),
-    heroHeadline: cleanString(asset.heroHeadline),
-    heroSubtitle: cleanString(asset.heroSubtitle),
     missionCardDescription: cleanString(asset.missionCardDescription),
-    backgroundImageUrl,
+    heroBackgroundImageUrl,
+    backgroundImageUrl: heroBackgroundImageUrl,
     imageUrl,
     mobileImageUrl,
-    imageUrlDesktop: imageUrl || backgroundImageUrl,
-    imageUrlMobile: mobileImageUrl || backgroundImageUrl,
+    imageUrlDesktop: imageUrl || heroBackgroundImageUrl,
+    imageUrlMobile: mobileImageUrl || heroBackgroundImageUrl,
     recommendedAspectRatio: cleanString(asset.recommendedAspectRatio) || '9:16',
     focalPoint,
     focalPointX: clamp(cleanNumber(asset.focalPointX, fallbackXY.x), 0, 100),
@@ -287,6 +295,7 @@ const sanitizeSceneAsset = (asset: SceneAssetRecord): SceneAssetRecord => {
     uiOverlayStyle: cinematicStyle,
     progressionOrder: clamp(cleanNumber(asset.progressionOrder, 1), 1, 999),
     featuredHero: typeof asset.featuredHero === 'boolean' ? asset.featuredHero : false,
+    showInHero: typeof asset.showInHero === 'boolean' ? asset.showInHero : true,
     active: typeof asset.active === 'boolean' ? asset.active : true,
   }
 }
@@ -301,9 +310,8 @@ const fromSceneDoc = (docData: DocumentData): SceneAssetRecord =>
     chapter: cleanString(docData.chapter),
     mission: cleanString(docData.mission),
     emotionalTone: cleanString(docData.emotionalTone),
-    heroHeadline: cleanString(docData.heroHeadline),
-    heroSubtitle: cleanString(docData.heroSubtitle),
     missionCardDescription: cleanString(docData.missionCardDescription),
+    heroBackgroundImageUrl: cleanString(docData.heroBackgroundImageUrl),
     backgroundImageUrl: cleanString(docData.backgroundImageUrl),
     imageUrl: cleanString(docData.imageUrl),
     mobileImageUrl: cleanString(docData.mobileImageUrl),
@@ -324,6 +332,7 @@ const fromSceneDoc = (docData: DocumentData): SceneAssetRecord =>
     uiOverlayStyle: docData.uiOverlayStyle as SceneAssetOverlayStyle,
     progressionOrder: cleanNumber(docData.progressionOrder, defaultSceneAssetDraft.progressionOrder),
     featuredHero: typeof docData.featuredHero === 'boolean' ? docData.featuredHero : false,
+    showInHero: typeof docData.showInHero === 'boolean' ? docData.showInHero : true,
     active: Boolean(docData.active),
   })
 
@@ -349,10 +358,10 @@ export const getFeaturedHeroSceneAsset = async () => {
 export const upsertSceneAsset = async (asset: SceneAssetRecord) => {
   const { db } = requireFirebase()
   const sanitized = sanitizeSceneAsset(asset)
-  if (!sanitized.id) throw new Error('Defina um id valido para o scene asset.')
-  if (!sanitized.title) throw new Error('Defina um titulo para o scene asset.')
+  if (!sanitized.id) throw new Error('Defina um id válido para o scene asset.')
+  if (!sanitized.title) throw new Error('Defina um título para o scene asset.')
   if (!sanitized.slug) throw new Error('Defina um slug para o scene asset.')
-  if (!sanitized.imageUrl && !sanitized.mobileImageUrl && !sanitized.backgroundImageUrl) {
+  if (!sanitized.imageUrl && !sanitized.mobileImageUrl && !sanitized.heroBackgroundImageUrl) {
     throw new Error('Informe pelo menos uma URL visual para o scene asset.')
   }
 

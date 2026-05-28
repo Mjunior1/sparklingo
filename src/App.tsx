@@ -7,6 +7,7 @@ import { useAuth } from './auth/AuthProvider'
 import { OnboardingScreen } from './auth/OnboardingScreen'
 import { CinematicImage, NarrativeOverlay, SafeAreaContainer } from './components/scene/SceneRenderer'
 import {
+  defaultAchievementCatalog,
   defaultLessonsCatalog,
   defaultQuizCatalog,
   defaultQuizQuestions,
@@ -20,6 +21,7 @@ import {
   type QuizQuestionItem,
 } from './services/catalog'
 import { getLessonProgressMap } from './services/lessonProgress'
+import { defaultPlatformConfig } from './services/platform'
 import { getUserProgress, type UserProgress } from './services/progress'
 import { defaultSceneAssetsCatalog, getSceneAssets, type SceneAssetRecord } from './services/sceneAssets'
 
@@ -71,14 +73,28 @@ const getAssetImage = (
   mode: 'background-desktop' | 'background-mobile' | 'poster',
 ) => {
   if (mode === 'background-desktop') {
-    return asset.backgroundImageUrl || asset.imageUrlDesktop || asset.imageUrl || asset.mobileImageUrl || asset.imageUrlMobile
+    return (
+      asset.heroBackgroundImageUrl ||
+      asset.backgroundImageUrl ||
+      asset.imageUrlDesktop ||
+      asset.imageUrl ||
+      asset.mobileImageUrl ||
+      asset.imageUrlMobile
+    )
   }
 
   if (mode === 'background-mobile') {
-    return asset.mobileImageUrl || asset.imageUrlMobile || asset.backgroundImageUrl || asset.imageUrlDesktop || asset.imageUrl
+    return (
+      asset.mobileImageUrl ||
+      asset.imageUrlMobile ||
+      asset.heroBackgroundImageUrl ||
+      asset.backgroundImageUrl ||
+      asset.imageUrlDesktop ||
+      asset.imageUrl
+    )
   }
 
-  return asset.imageUrl || asset.imageUrlDesktop || asset.mobileImageUrl || asset.imageUrlMobile || asset.backgroundImageUrl
+  return asset.imageUrl || asset.imageUrlDesktop || asset.mobileImageUrl || asset.imageUrlMobile || asset.heroBackgroundImageUrl
 }
 
 type MissionVisual = {
@@ -97,6 +113,37 @@ type MissionVisual = {
   backgroundMobile: string
 }
 
+const buildMissionVisual = (
+  asset: SceneAssetRecord,
+  lessons: LessonCatalogItem[],
+  quizzes: QuizCatalogItem[],
+): MissionVisual => {
+  const lesson = resolveLessonForAsset(asset, lessons)
+  const lessonQuizzes = lesson ? quizzes.filter((quiz) => quiz.lessonId === lesson.id) : []
+  const sceneCount = Math.max(lessonQuizzes.length || 0, 5)
+  const progressPercent = clampPercent(lesson?.progress ?? 0)
+
+  return {
+    asset,
+    lesson,
+    title: lesson?.missionTitle || lesson?.title || asset.mission || asset.title,
+    description:
+      asset.missionCardDescription ||
+      lesson?.practicalGoal ||
+      lesson?.blurb ||
+      'Siga a próxima cena e continue avançando na jornada.',
+    chapterLabel: asset.chapter || `Chapter ${asset.progressionOrder}`,
+    sceneCount,
+    sceneLabel: `Scene 1 of ${sceneCount}`,
+    progressPercent,
+    progressLabel: `${progressPercent}% completed`,
+    statusLabel: progressPercent >= 100 ? 'Completed' : progressPercent > 0 ? 'In progress' : 'Ready',
+    posterImage: getAssetImage(asset, 'poster'),
+    backgroundDesktop: getAssetImage(asset, 'background-desktop'),
+    backgroundMobile: getAssetImage(asset, 'background-mobile'),
+  }
+}
+
 function App() {
   const { status, user, profile, signOut, platformConfig, patchProfile } = useAuth()
   const [view, setView] = useState<'home' | 'admin'>('home')
@@ -104,18 +151,17 @@ function App() {
   const [progressSnapshot, setProgressSnapshot] = useState<UserProgress | null>(null)
   const [lessonsCatalog, setLessonsCatalog] = useState<LessonCatalogItem[]>(defaultLessonsCatalog)
   const [quizCatalog, setQuizCatalog] = useState<QuizCatalogItem[]>(defaultQuizCatalog)
-  const [achievementCatalog, setAchievementCatalog] = useState<AchievementCatalogItem[]>([])
+  const [achievementCatalog, setAchievementCatalog] = useState<AchievementCatalogItem[]>(defaultAchievementCatalog)
   const [quizQuestionCatalog, setQuizQuestionCatalog] = useState<QuizQuestionItem[]>(defaultQuizQuestions)
   const [sceneAssetsCatalog, setSceneAssetsCatalog] = useState<SceneAssetRecord[]>(defaultSceneAssetsCatalog)
   const [activeMissionId, setActiveMissionId] = useState<string | null>(null)
   const [previousMissionId, setPreviousMissionId] = useState<string | null>(null)
   const [pauseCarousel, setPauseCarousel] = useState(false)
 
-  const carouselRef = useRef<HTMLDivElement | null>(null)
   const missionCardRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const activeMissionRef = useRef<string | null>(null)
-  const greeting = useMemo(() => getGreeting(), [])
 
+  const greeting = useMemo(() => getGreeting(), [])
   const isAdmin = profile?.role === 'admin'
   const firstName = profile?.displayName?.split(' ')[0] ?? user?.displayName?.split(' ')[0] ?? 'Learner'
   const streakDays = progressSnapshot?.streakDays ?? profile?.streak ?? 0
@@ -147,7 +193,7 @@ function App() {
       })),
     )
     setQuizCatalog(nextQuizCatalog.length ? nextQuizCatalog : defaultQuizCatalog)
-    setAchievementCatalog(nextAchievementCatalog)
+    setAchievementCatalog(nextAchievementCatalog.length ? nextAchievementCatalog : defaultAchievementCatalog)
     setQuizQuestionCatalog(nextQuizQuestions.length ? nextQuizQuestions : defaultQuizQuestions)
     setSceneAssetsCatalog(nextSceneAssets.length ? nextSceneAssets : defaultSceneAssetsCatalog)
 
@@ -169,8 +215,7 @@ function App() {
 
     Promise.all([refreshBackendCatalog(), getUserProgress(user.uid).catch(() => null)])
       .then(([, progress]) => {
-        if (cancelled) return
-        setProgressSnapshot(progress)
+        if (!cancelled) setProgressSnapshot(progress)
       })
       .finally(() => {
         if (!cancelled) setCatalogLoading(false)
@@ -189,41 +234,22 @@ function App() {
     [sceneAssetsCatalog],
   )
 
-  const missionVisuals = useMemo<MissionVisual[]>(
-    () =>
-      activeSceneAssets.map((asset) => {
-        const lesson = resolveLessonForAsset(asset, lessonsCatalog)
-        const lessonQuizzes = lesson ? quizCatalog.filter((quiz) => quiz.lessonId === lesson.id) : []
-        const sceneCount = Math.max(lessonQuizzes.length || 0, 5)
-        const progressPercent = clampPercent(lesson?.progress ?? 0)
+  const heroCarouselAssets = useMemo(() => {
+    const visibleAssets = activeSceneAssets.filter((asset) => asset.showInHero)
+    return visibleAssets.length ? visibleAssets : activeSceneAssets
+  }, [activeSceneAssets])
 
-        return {
-          asset,
-          lesson,
-          title: lesson?.missionTitle || lesson?.title || asset.mission || asset.title,
-          description:
-            asset.missionCardDescription ||
-            lesson?.practicalGoal ||
-            lesson?.blurb ||
-            'Siga a próxima cena e continue avançando na jornada.',
-          chapterLabel: asset.chapter || `Chapter ${asset.progressionOrder}`,
-          sceneCount,
-          sceneLabel: `Scene 1 of ${sceneCount}`,
-          progressPercent,
-          progressLabel: `${progressPercent}% completed`,
-          statusLabel: progressPercent >= 100 ? 'Completed' : progressPercent > 0 ? 'In progress' : 'Ready',
-          posterImage: getAssetImage(asset, 'poster'),
-          backgroundDesktop: getAssetImage(asset, 'background-desktop'),
-          backgroundMobile: getAssetImage(asset, 'background-mobile'),
-        }
-      }),
-    [activeSceneAssets, lessonsCatalog, quizCatalog],
+  const missionVisuals = useMemo(
+    () => heroCarouselAssets.map((asset) => buildMissionVisual(asset, lessonsCatalog, quizCatalog)),
+    [heroCarouselAssets, lessonsCatalog, quizCatalog],
   )
 
-  const featuredMission = useMemo(
-    () => missionVisuals.find((mission) => mission.asset.featuredHero) ?? missionVisuals[0] ?? null,
-    [missionVisuals],
-  )
+  const featuredMission = useMemo(() => {
+    const featuredAsset =
+      activeSceneAssets.find((asset) => asset.featuredHero) ?? heroCarouselAssets[0] ?? activeSceneAssets[0] ?? null
+
+    return featuredAsset ? buildMissionVisual(featuredAsset, lessonsCatalog, quizCatalog) : null
+  }, [activeSceneAssets, heroCarouselAssets, lessonsCatalog, quizCatalog])
 
   useEffect(() => {
     if (!missionVisuals.length) return
@@ -233,25 +259,31 @@ function App() {
     }
   }, [activeMissionId, featuredMission, missionVisuals])
 
+  const activeMission =
+    missionVisuals.find((mission) => mission.asset.id === activeMissionId) ??
+    featuredMission ??
+    missionVisuals[0] ??
+    null
+
   useEffect(() => {
     if (!activeMissionId) return
 
     const previousId = activeMissionRef.current
     if (previousId && previousId !== activeMissionId) {
       setPreviousMissionId(previousId)
-      const timeout = window.setTimeout(() => setPreviousMissionId(null), 700)
+      const timeout = window.setTimeout(
+        () => setPreviousMissionId(null),
+        (platformConfig?.heroTransitionDuration ?? defaultPlatformConfig.heroTransitionDuration) + 180,
+      )
       activeMissionRef.current = activeMissionId
       return () => window.clearTimeout(timeout)
     }
 
     activeMissionRef.current = activeMissionId
     return undefined
-  }, [activeMissionId])
+  }, [activeMissionId, platformConfig?.heroTransitionDuration])
 
-  const activeMission =
-    missionVisuals.find((mission) => mission.asset.id === activeMissionId) ?? featuredMission ?? missionVisuals[0] ?? null
-  const previousMission =
-    missionVisuals.find((mission) => mission.asset.id === previousMissionId) ?? null
+  const previousMission = missionVisuals.find((mission) => mission.asset.id === previousMissionId) ?? null
   const heroReferenceMission = featuredMission ?? activeMission
 
   useEffect(() => {
@@ -270,39 +302,60 @@ function App() {
       const currentIndex = missionVisuals.findIndex((mission) => mission.asset.id === activeMission.asset.id)
       const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % missionVisuals.length : 0
       setActiveMissionId(missionVisuals[nextIndex]?.asset.id ?? null)
-    }, 6800)
+    }, platformConfig?.heroAutoplayDelay ?? defaultPlatformConfig.heroAutoplayDelay)
 
     return () => window.clearInterval(interval)
-  }, [activeMission, missionVisuals, pauseCarousel])
+  }, [activeMission, missionVisuals, pauseCarousel, platformConfig?.heroAutoplayDelay])
 
   const heroHeadlineLines = useMemo(
     () =>
-      (platformConfig?.heroHeadline || 'Continue\nyour\nadventure')
+      (platformConfig?.heroHeadline || defaultPlatformConfig.heroHeadline)
         .split('\n')
         .map((line) => line.trim())
         .filter(Boolean),
     [platformConfig?.heroHeadline],
   )
 
-  const heroSubheadline =
-    platformConfig?.heroSubheadline ||
-    'Entre, continue sua jornada e deixe o Spark manter o ritmo da sua aventura.'
-  const heroCTA = platformConfig?.heroCTA || 'Começar minha aventura'
-  const heroMascotImageUrl = platformConfig?.heroMascotImageUrl || '/Images/Mascote/Sparklingo.png'
+  const heroSubheadline = platformConfig?.heroSubheadline || defaultPlatformConfig.heroSubheadline
+  const heroCTA = platformConfig?.heroCTA || defaultPlatformConfig.heroCTA
+  const heroHeadlineColor = platformConfig?.heroHeadlineColor || defaultPlatformConfig.heroHeadlineColor
+  const heroSubheadlineColor = platformConfig?.heroSubheadlineColor || defaultPlatformConfig.heroSubheadlineColor
+  const heroHeadlineSize = platformConfig?.heroHeadlineSize ?? defaultPlatformConfig.heroHeadlineSize
+  const heroSubheadlineSize = platformConfig?.heroSubheadlineSize ?? defaultPlatformConfig.heroSubheadlineSize
+  const heroMascotImageUrl = platformConfig?.heroMascotImageUrl || defaultPlatformConfig.heroMascotImageUrl
   const heroAmbientBackgroundUrl =
-    platformConfig?.heroAmbientBackgroundUrl || heroReferenceMission?.backgroundDesktop || activeMission?.backgroundDesktop || ''
-  const heroOverlayStrength = (platformConfig?.heroOverlayStrength ?? 58) / 100
-  const heroGlowColor = platformConfig?.heroGlowColor || '#8f58ff'
+    platformConfig?.heroAmbientBackgroundUrl ||
+    heroReferenceMission?.asset.heroBackgroundImageUrl ||
+    activeMission?.asset.heroBackgroundImageUrl ||
+    defaultPlatformConfig.heroAmbientBackgroundUrl
+  const heroOverlayStrength = (platformConfig?.heroOverlayStrength ?? defaultPlatformConfig.heroOverlayStrength) / 100
+  const heroGlowColor = platformConfig?.heroGlowColor || defaultPlatformConfig.heroGlowColor
+  const heroTransitionDuration = platformConfig?.heroTransitionDuration ?? defaultPlatformConfig.heroTransitionDuration
 
   const heroStyle = useMemo(
     () =>
       ({
         '--hero-global-overlay-strength': `${heroOverlayStrength}`,
         '--hero-glow-color': heroGlowColor,
+        '--hero-headline-color': heroHeadlineColor,
+        '--hero-subheadline-color': heroSubheadlineColor,
+        '--hero-headline-size': `${heroHeadlineSize}`,
+        '--hero-subheadline-size': `${heroSubheadlineSize}`,
+        '--hero-transition-duration': `${heroTransitionDuration}ms`,
         '--hero-focal-x': `${activeMission?.asset.focalPointX ?? 50}%`,
         '--hero-focal-y': `${activeMission?.asset.focalPointY ?? 50}%`,
       }) as CSSProperties,
-    [activeMission?.asset.focalPointX, activeMission?.asset.focalPointY, heroGlowColor, heroOverlayStrength],
+    [
+      activeMission?.asset.focalPointX,
+      activeMission?.asset.focalPointY,
+      heroGlowColor,
+      heroHeadlineColor,
+      heroHeadlineSize,
+      heroOverlayStrength,
+      heroSubheadlineColor,
+      heroSubheadlineSize,
+      heroTransitionDuration,
+    ],
   )
 
   const changeMission = useCallback((id: string) => {
@@ -380,27 +433,27 @@ function App() {
     )
   }
 
-  const backgroundAsset: SceneAssetRecord = {
-    ...activeMission.asset,
-    imageUrl: activeMission.backgroundDesktop,
-    imageUrlDesktop: activeMission.backgroundDesktop,
-    mobileImageUrl: activeMission.backgroundMobile,
-    imageUrlMobile: activeMission.backgroundMobile,
-  }
-
   const ambientAsset: SceneAssetRecord = {
     ...activeMission.asset,
     imageUrl: heroAmbientBackgroundUrl,
     imageUrlDesktop: heroAmbientBackgroundUrl,
-    mobileImageUrl: heroAmbientBackgroundUrl || activeMission.backgroundMobile,
-    imageUrlMobile: heroAmbientBackgroundUrl || activeMission.backgroundMobile,
+    mobileImageUrl: heroAmbientBackgroundUrl,
+    imageUrlMobile: heroAmbientBackgroundUrl,
+  }
+
+  const backgroundAsset: SceneAssetRecord = {
+    ...activeMission.asset,
+    imageUrl: activeMission.asset.heroBackgroundImageUrl || activeMission.backgroundDesktop,
+    imageUrlDesktop: activeMission.asset.heroBackgroundImageUrl || activeMission.backgroundDesktop,
+    mobileImageUrl: activeMission.backgroundMobile,
+    imageUrlMobile: activeMission.backgroundMobile,
   }
 
   const previousBackgroundAsset = previousMission
     ? {
         ...previousMission.asset,
-        imageUrl: previousMission.backgroundDesktop,
-        imageUrlDesktop: previousMission.backgroundDesktop,
+        imageUrl: previousMission.asset.heroBackgroundImageUrl || previousMission.backgroundDesktop,
+        imageUrlDesktop: previousMission.asset.heroBackgroundImageUrl || previousMission.backgroundDesktop,
         mobileImageUrl: previousMission.backgroundMobile,
         imageUrlMobile: previousMission.backgroundMobile,
       }
@@ -504,28 +557,16 @@ function App() {
           onMouseEnter={() => setPauseCarousel(true)}
           onMouseLeave={() => setPauseCarousel(false)}
         >
-          <div className="global-hero-carousel-head">
-            <div>
-              <span className="global-hero-kicker">Mission Carousel</span>
-              <strong>Choose your next emotional scene</strong>
-              <small>As missões mudam a atmosfera da Hero sem quebrar a identidade global do SparkLingo.</small>
-            </div>
-            <div className="global-hero-carousel-nav">
-              <button type="button" aria-label="Previous mission" onClick={() => goToAdjacentMission(-1)}>
-                <ChevronLeft size={18} />
-              </button>
-              <button type="button" aria-label="Next mission" onClick={() => goToAdjacentMission(1)}>
-                <ChevronRight size={18} />
-              </button>
-            </div>
-          </div>
-
-          <div
-            ref={carouselRef}
-            className="global-hero-carousel-track"
-            role="list"
-            aria-label="Mission carousel"
+          <button
+            className="global-hero-carousel-arrow is-left"
+            type="button"
+            aria-label="Previous mission"
+            onClick={() => goToAdjacentMission(-1)}
           >
+            <ChevronLeft size={18} />
+          </button>
+
+          <div className="global-hero-carousel-track" role="list" aria-label="Mission carousel">
             {missionVisuals.map((mission) => (
               <button
                 key={mission.asset.id}
@@ -548,11 +589,13 @@ function App() {
                 </div>
                 <div className="global-hero-mission-overlay" />
                 <div className="global-hero-mission-copy">
-                  <span>{mission.chapterLabel}</span>
+                  <span className="global-hero-mission-chip">Current Mission</span>
                   <strong>{mission.title}</strong>
                   <p>{mission.description}</p>
                   <div className="global-hero-mission-meta">
-                    <small>{mission.sceneLabel}</small>
+                    <small>
+                      {mission.chapterLabel} • {mission.sceneLabel}
+                    </small>
                     <small>{mission.statusLabel}</small>
                   </div>
                   <div className="global-hero-mission-progress">
@@ -560,12 +603,21 @@ function App() {
                   </div>
                   <div className="global-hero-mission-footer">
                     <small>{mission.progressLabel}</small>
-                    <span>{mission.progressPercent >= 100 ? 'Replay' : 'Continue'}</span>
+                    <span>{mission.progressPercent >= 100 ? 'Replay' : 'Começar minha aventura'}</span>
                   </div>
                 </div>
               </button>
             ))}
           </div>
+
+          <button
+            className="global-hero-carousel-arrow is-right"
+            type="button"
+            aria-label="Next mission"
+            onClick={() => goToAdjacentMission(1)}
+          >
+            <ChevronRight size={18} />
+          </button>
         </section>
       </main>
     </div>

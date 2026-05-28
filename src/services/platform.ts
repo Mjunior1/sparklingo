@@ -7,11 +7,17 @@ export type PlatformConfig = {
   onboardingEnabled: boolean
   heroHeadline: string
   heroSubheadline: string
+  heroHeadlineColor: string
+  heroSubheadlineColor: string
+  heroHeadlineSize: number
+  heroSubheadlineSize: number
   heroCTA: string
   heroMascotImageUrl: string
   heroAmbientBackgroundUrl: string
   heroOverlayStrength: number
   heroGlowColor: string
+  heroTransitionDuration: number
+  heroAutoplayDelay: number
   supportEmail: string
 }
 
@@ -19,13 +25,19 @@ export const defaultPlatformConfig: PlatformConfig = {
   allowEmailAuth: true,
   allowGoogleAuth: true,
   onboardingEnabled: true,
-  heroHeadline: 'Continue\nyour\nadventure',
-  heroSubheadline: 'Entre, continue sua jornada e deixe o Spark manter o ritmo da sua aventura.',
+  heroHeadline: 'Descubra.\nAprenda.\nViva novas\nhistórias.',
+  heroSubheadline: 'Cada missão é um novo passo para fluência e experiências inesquecíveis.',
+  heroHeadlineColor: '#ffffff',
+  heroSubheadlineColor: 'rgba(240, 240, 255, 0.9)',
+  heroHeadlineSize: 124,
+  heroSubheadlineSize: 20,
   heroCTA: 'Começar minha aventura',
   heroMascotImageUrl: '/Images/Mascote/Sparklingo.png',
   heroAmbientBackgroundUrl: '/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png',
   heroOverlayStrength: 58,
   heroGlowColor: '#8f58ff',
+  heroTransitionDuration: 900,
+  heroAutoplayDelay: 6800,
   supportEmail: 'support@sparklingo.app',
 }
 
@@ -50,6 +62,19 @@ const sanitizePlatformConfig = (config: Partial<PlatformConfig> & Record<string,
       cleanString(config.heroSubheadline) ||
       legacyHeroSubtitle ||
       defaultPlatformConfig.heroSubheadline,
+    heroHeadlineColor: cleanString(config.heroHeadlineColor) || defaultPlatformConfig.heroHeadlineColor,
+    heroSubheadlineColor:
+      cleanString(config.heroSubheadlineColor) || defaultPlatformConfig.heroSubheadlineColor,
+    heroHeadlineSize: clamp(
+      cleanNumber(config.heroHeadlineSize, defaultPlatformConfig.heroHeadlineSize),
+      72,
+      180,
+    ),
+    heroSubheadlineSize: clamp(
+      cleanNumber(config.heroSubheadlineSize, defaultPlatformConfig.heroSubheadlineSize),
+      14,
+      36,
+    ),
     heroCTA: cleanString(config.heroCTA) || legacyPlayCta || defaultPlatformConfig.heroCTA,
     heroMascotImageUrl:
       cleanString(config.heroMascotImageUrl) || defaultPlatformConfig.heroMascotImageUrl,
@@ -61,6 +86,16 @@ const sanitizePlatformConfig = (config: Partial<PlatformConfig> & Record<string,
       100,
     ),
     heroGlowColor: cleanString(config.heroGlowColor) || defaultPlatformConfig.heroGlowColor,
+    heroTransitionDuration: clamp(
+      cleanNumber(config.heroTransitionDuration, defaultPlatformConfig.heroTransitionDuration),
+      300,
+      3000,
+    ),
+    heroAutoplayDelay: clamp(
+      cleanNumber(config.heroAutoplayDelay, defaultPlatformConfig.heroAutoplayDelay),
+      2500,
+      20000,
+    ),
     supportEmail: cleanString(config.supportEmail) || defaultPlatformConfig.supportEmail,
   }
 }

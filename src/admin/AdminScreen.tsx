@@ -1556,10 +1556,16 @@ export function AdminScreen({
               <label>URL mobile
                 <input value={sceneAssetDraft.mobileImageUrl} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, mobileImageUrl: event.target.value, imageUrlMobile: event.target.value }))} placeholder="/Images/Airport/..." />
               </label>
-              <label>Background URL
+              <label>Hero background URL
                 <input
-                  value={sceneAssetDraft.backgroundImageUrl}
-                  onChange={(event) => setSceneAssetDraft((current) => ({ ...current, backgroundImageUrl: event.target.value }))}
+                  value={sceneAssetDraft.heroBackgroundImageUrl}
+                  onChange={(event) =>
+                    setSceneAssetDraft((current) => ({
+                      ...current,
+                      heroBackgroundImageUrl: event.target.value,
+                      backgroundImageUrl: event.target.value,
+                    }))
+                  }
                   placeholder="/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png"
                 />
               </label>
@@ -1605,6 +1611,10 @@ export function AdminScreen({
               <label className="scene-asset-toggle">
                 <span>Featured hero</span>
                 <input type="checkbox" checked={sceneAssetDraft.featuredHero} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, featuredHero: event.target.checked }))} />
+              </label>
+              <label className="scene-asset-toggle">
+                <span>Mostrar na Hero</span>
+                <input type="checkbox" checked={sceneAssetDraft.showInHero} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, showInHero: event.target.checked }))} />
               </label>
               <div className="scene-asset-inline-grid">
                 <label>Ordem de progressão
@@ -1656,7 +1666,7 @@ export function AdminScreen({
 
           <div className="admin-drawer-footer">
             <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
-            <button className="admin-primary" type="button" disabled={saving || !sceneAssetDraft.title || !(sceneAssetDraft.imageUrl || sceneAssetDraft.mobileImageUrl || sceneAssetDraft.backgroundImageUrl)} onClick={saveSceneAssetItem}>
+            <button className="admin-primary" type="button" disabled={saving || !sceneAssetDraft.title || !(sceneAssetDraft.imageUrl || sceneAssetDraft.mobileImageUrl || sceneAssetDraft.heroBackgroundImageUrl)} onClick={saveSceneAssetItem}>
               <Save size={16} />
               {saving ? 'Salvando...' : 'Salvar scene asset'}
             </button>
@@ -2687,6 +2697,22 @@ export function AdminScreen({
                     <label>Hero subheadline
                       <textarea value={platformDraft.heroSubheadline} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroSubheadline: event.target.value }))} />
                     </label>
+                    <div className="scene-asset-inline-grid">
+                      <label>Headline color
+                        <input value={platformDraft.heroHeadlineColor} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroHeadlineColor: event.target.value }))} placeholder="#ffffff" />
+                      </label>
+                      <label>Subheadline color
+                        <input value={platformDraft.heroSubheadlineColor} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroSubheadlineColor: event.target.value }))} placeholder="rgba(240, 240, 255, 0.9)" />
+                      </label>
+                    </div>
+                    <div className="scene-asset-inline-grid">
+                      <label>Headline size
+                        <input type="number" min="72" max="180" value={platformDraft.heroHeadlineSize} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroHeadlineSize: Number(event.target.value) || 72 }))} />
+                      </label>
+                      <label>Subheadline size
+                        <input type="number" min="14" max="36" value={platformDraft.heroSubheadlineSize} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroSubheadlineSize: Number(event.target.value) || 14 }))} />
+                      </label>
+                    </div>
                     <label>Hero CTA
                       <input value={platformDraft.heroCTA} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroCTA: event.target.value }))} />
                     </label>
@@ -2702,6 +2728,14 @@ export function AdminScreen({
                     <label>Hero glow color
                       <input value={platformDraft.heroGlowColor} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroGlowColor: event.target.value }))} placeholder="#8f58ff" />
                     </label>
+                    <div className="scene-asset-inline-grid">
+                      <label>Transition duration (ms)
+                        <input type="number" min="300" max="3000" step="50" value={platformDraft.heroTransitionDuration} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroTransitionDuration: Number(event.target.value) || 300 }))} />
+                      </label>
+                      <label>Autoplay delay (ms)
+                        <input type="number" min="2500" max="20000" step="100" value={platformDraft.heroAutoplayDelay} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroAutoplayDelay: Number(event.target.value) || 2500 }))} />
+                      </label>
+                    </div>
                   </div>
                   <button
                     className="admin-primary"
