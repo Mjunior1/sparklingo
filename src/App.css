@@ -7784,12 +7784,14 @@
   inset: auto 18px calc(18px + env(safe-area-inset-bottom)) 18px;
   display: grid;
   align-items: center;
+  grid-template-columns: minmax(0, 1fr);
   --hero-carousel-gap: 14px;
   --hero-carousel-pad-left: 56px;
   --hero-carousel-pad-right: 72px;
 }
 
 .global-hero-carousel-track {
+  min-width: 0;
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 82%;
@@ -8019,12 +8021,32 @@
 
   .global-hero-carousel-shell {
     inset: auto 32px 30px 32px;
-    --hero-carousel-pad-left: 62px;
-    --hero-carousel-pad-right: 92px;
+    grid-template-columns: 56px minmax(0, 1fr) 56px;
+    column-gap: 18px;
+    --hero-carousel-pad-left: 0px;
+    --hero-carousel-pad-right: 0px;
   }
 
   .global-hero-carousel-track {
-    grid-auto-columns: calc((100% - var(--hero-carousel-pad-left) - var(--hero-carousel-pad-right) - (2 * var(--hero-carousel-gap))) / 3);
+    grid-column: 2;
+    grid-auto-columns: calc((100% - (2 * var(--hero-carousel-gap))) / 3);
+    scroll-padding-inline: 0;
+  }
+
+  .global-hero-carousel-arrow {
+    position: relative;
+    top: auto;
+    transform: none;
+  }
+
+  .global-hero-carousel-arrow.is-left {
+    grid-column: 1;
+    left: auto;
+  }
+
+  .global-hero-carousel-arrow.is-right {
+    grid-column: 3;
+    right: auto;
   }
 }
 

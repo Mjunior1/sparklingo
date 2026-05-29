@@ -7,14 +7,10 @@ import { useAuth } from './auth/AuthProvider'
 import { OnboardingScreen } from './auth/OnboardingScreen'
 import { CinematicImage, NarrativeOverlay, SafeAreaContainer } from './components/scene/SceneRenderer'
 import {
-  defaultAchievementCatalog,
-  defaultLessonsCatalog,
-  defaultQuizCatalog,
-  defaultQuizQuestions,
-  getAchievementCatalog,
-  getLessonsCatalog,
-  getQuizCatalog,
-  getQuizQuestions,
+  getAchievementCatalogRaw,
+  getLessonsCatalogRaw,
+  getQuizCatalogRaw,
+  getQuizQuestionsRaw,
   type AchievementCatalogItem,
   type LessonCatalogItem,
   type QuizCatalogItem,
@@ -238,11 +234,11 @@ function App() {
   const [view, setView] = useState<'home' | 'admin'>('home')
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [progressSnapshot, setProgressSnapshot] = useState<UserProgress | null>(null)
-  const [lessonsCatalog, setLessonsCatalog] = useState<LessonCatalogItem[]>(defaultLessonsCatalog)
-  const [quizCatalog, setQuizCatalog] = useState<QuizCatalogItem[]>(defaultQuizCatalog)
-  const [achievementCatalog, setAchievementCatalog] = useState<AchievementCatalogItem[]>(defaultAchievementCatalog)
-  const [quizQuestionCatalog, setQuizQuestionCatalog] = useState<QuizQuestionItem[]>(defaultQuizQuestions)
-  const [sceneAssetsCatalog, setSceneAssetsCatalog] = useState<SceneAssetRecord[]>(defaultSceneAssetsCatalog)
+  const [lessonsCatalog, setLessonsCatalog] = useState<LessonCatalogItem[]>([])
+  const [quizCatalog, setQuizCatalog] = useState<QuizCatalogItem[]>([])
+  const [achievementCatalog, setAchievementCatalog] = useState<AchievementCatalogItem[]>([])
+  const [quizQuestionCatalog, setQuizQuestionCatalog] = useState<QuizQuestionItem[]>([])
+  const [sceneAssetsCatalog, setSceneAssetsCatalog] = useState<SceneAssetRecord[]>([])
   const [activeMissionId, setActiveMissionId] = useState<string | null>(null)
   const [previousMissionId, setPreviousMissionId] = useState<string | null>(null)
   const [pauseCarousel, setPauseCarousel] = useState(false)
@@ -268,23 +264,23 @@ function App() {
       nextSceneAssets,
     ] = await Promise.all([
       getLessonProgressMap(user.uid),
-      getLessonsCatalog(),
-      getQuizCatalog(),
-      getAchievementCatalog(),
-      getQuizQuestions(),
+      getLessonsCatalogRaw(),
+      getQuizCatalogRaw(),
+      getAchievementCatalogRaw(),
+      getQuizQuestionsRaw(),
       getSceneAssets(),
     ])
 
     setLessonsCatalog(
-      (nextLessonsCatalog.length ? nextLessonsCatalog : defaultLessonsCatalog).map((lesson) => ({
+      nextLessonsCatalog.map((lesson) => ({
         ...lesson,
         progress: nextLessonProgress[lesson.id] ?? lesson.progress,
       })),
     )
-    setQuizCatalog(nextQuizCatalog.length ? nextQuizCatalog : defaultQuizCatalog)
-    setAchievementCatalog(nextAchievementCatalog.length ? nextAchievementCatalog : defaultAchievementCatalog)
-    setQuizQuestionCatalog(nextQuizQuestions.length ? nextQuizQuestions : defaultQuizQuestions)
-    setSceneAssetsCatalog(nextSceneAssets.length ? nextSceneAssets : defaultSceneAssetsCatalog)
+    setQuizCatalog(nextQuizCatalog)
+    setAchievementCatalog(nextAchievementCatalog)
+    setQuizQuestionCatalog(nextQuizQuestions)
+    setSceneAssetsCatalog(nextSceneAssets)
 
     return {
       nextLessonProgress,

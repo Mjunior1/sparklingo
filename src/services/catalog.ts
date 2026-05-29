@@ -676,6 +676,10 @@ export const getLessonsCatalog = () => getCollectionDocs<LessonCatalogItem>('les
 export const getQuizCatalog = () => getCollectionDocs<QuizCatalogItem>('quizzes', defaultQuizCatalog)
 export const getQuizQuestions = () => getCollectionDocs<QuizQuestionItem>('quizQuestions', defaultQuizQuestions)
 export const getAchievementCatalog = () => getCollectionDocs<AchievementCatalogItem>('achievements', defaultAchievementCatalog)
+export const getLessonsCatalogRaw = () => getCollectionDocs<LessonCatalogItem>('lessons', [])
+export const getQuizCatalogRaw = () => getCollectionDocs<QuizCatalogItem>('quizzes', [])
+export const getQuizQuestionsRaw = () => getCollectionDocs<QuizQuestionItem>('quizQuestions', [])
+export const getAchievementCatalogRaw = () => getCollectionDocs<AchievementCatalogItem>('achievements', [])
 
 export const upsertLesson = async (lesson: LessonCatalogItem) => {
   const safeLesson = sanitizeLesson(lesson)
