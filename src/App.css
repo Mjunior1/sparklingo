@@ -7713,8 +7713,7 @@
     rgba(11, 14, 32, 0.58);
 }
 
-.global-hero-copy-safe.scene-safe-area,
-.global-hero-mascot-safe.scene-safe-area-character {
+.global-hero-copy-safe.scene-safe-area {
   z-index: 10;
 }
 
@@ -7779,20 +7778,6 @@
   white-space: nowrap;
 }
 
-.global-hero-mascot {
-  position: relative;
-  width: 100%;
-  height: 100%;
-}
-
-.global-hero-mascot img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center bottom;
-  filter: drop-shadow(0 36px 52px rgba(0, 0, 0, 0.34));
-}
-
 .global-hero-carousel-shell {
   position: absolute;
   z-index: 12;
@@ -7807,8 +7792,9 @@
   grid-auto-columns: 82%;
   gap: 14px;
   overflow-x: auto;
-  padding: 0 56px;
+  padding: 0 64px 0 56px;
   scroll-snap-type: x mandatory;
+  scroll-padding-inline: 56px 64px;
   scroll-behavior: smooth;
   scrollbar-width: none;
 }
@@ -8034,7 +8020,8 @@
 
   .global-hero-carousel-track {
     grid-auto-columns: calc((100% - 40px) / 3);
-    padding: 0 62px;
+    padding: 0 84px 0 62px;
+    scroll-padding-inline: 62px 84px;
   }
 }
 
@@ -8083,17 +8070,14 @@
     padding: 16px 18px;
   }
 
-  .global-hero-mascot-safe.scene-safe-area-character {
-    pointer-events: none;
-  }
-
   .global-hero-carousel-shell {
     inset: auto 18px calc(18px + env(safe-area-inset-bottom)) 18px;
   }
 
   .global-hero-carousel-track {
     grid-auto-columns: 84%;
-    padding: 0 18px;
+    padding: 0 24px 0 18px;
+    scroll-padding-inline: 18px 24px;
   }
 
   .global-hero-carousel-arrow {

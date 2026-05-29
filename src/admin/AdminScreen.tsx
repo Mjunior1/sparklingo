@@ -2716,9 +2716,6 @@ export function AdminScreen({
                     <label>Hero CTA
                       <input value={platformDraft.heroCTA} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroCTA: event.target.value }))} />
                     </label>
-                    <label>Mascot image URL
-                      <input value={platformDraft.heroMascotImageUrl} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroMascotImageUrl: event.target.value }))} placeholder="/Images/Mascote/Sparklingo.png" />
-                    </label>
                     <label>Ambient background URL
                       <input value={platformDraft.heroAmbientBackgroundUrl} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroAmbientBackgroundUrl: event.target.value }))} placeholder="/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png" />
                     </label>

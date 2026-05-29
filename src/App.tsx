@@ -322,7 +322,6 @@ function App() {
   const heroSubheadlineColor = platformConfig?.heroSubheadlineColor || defaultPlatformConfig.heroSubheadlineColor
   const heroHeadlineSize = platformConfig?.heroHeadlineSize ?? defaultPlatformConfig.heroHeadlineSize
   const heroSubheadlineSize = platformConfig?.heroSubheadlineSize ?? defaultPlatformConfig.heroSubheadlineSize
-  const heroMascotImageUrl = platformConfig?.heroMascotImageUrl || defaultPlatformConfig.heroMascotImageUrl
   const heroAmbientBackgroundUrl =
     platformConfig?.heroAmbientBackgroundUrl ||
     heroReferenceMission?.asset.heroBackgroundImageUrl ||
@@ -540,16 +539,6 @@ function App() {
               <ArrowRight size={18} />
             </button>
           </section>
-        </SafeAreaContainer>
-
-        <SafeAreaContainer
-          area={heroReferenceMission?.asset.characterSafeArea ?? activeMission.asset.characterSafeArea}
-          kind="character"
-          className="global-hero-mascot-safe"
-        >
-          <div className="global-hero-mascot">
-            <img src={heroMascotImageUrl} alt="Spark mascote" />
-          </div>
         </SafeAreaContainer>
 
         <section
