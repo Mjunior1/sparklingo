@@ -68,6 +68,93 @@ const resolveLessonForAsset = (asset: SceneAssetRecord | null, lessons: LessonCa
   )
 }
 
+const resolveSceneAssetForLesson = (lesson: LessonCatalogItem, sceneAssets: SceneAssetRecord[]) => {
+  const lessonMission = normalizeText(lesson.missionTitle || lesson.title)
+  const lessonTitle = normalizeText(lesson.title)
+
+  return (
+    sceneAssets.find((asset) => {
+      const assetMission = normalizeText(asset.mission)
+      const assetTitle = normalizeText(asset.title)
+
+      return (
+        (lessonMission && assetMission && (lessonMission.includes(assetMission) || assetMission.includes(lessonMission))) ||
+        (lessonMission && assetTitle && (lessonMission.includes(assetTitle) || assetTitle.includes(lessonMission))) ||
+        (lessonTitle && assetMission && (lessonTitle.includes(assetMission) || assetMission.includes(lessonTitle))) ||
+        (lessonTitle && assetTitle && (lessonTitle.includes(assetTitle) || assetTitle.includes(lessonTitle)))
+      )
+    }) ?? null
+  )
+}
+
+const toneToOverlayStyle = (tone: LessonCatalogItem['tone']): SceneAssetRecord['cinematicStyle'] => {
+  if (tone === 'mint') return 'aurora-soft'
+  if (tone === 'sky') return 'cinematic-violet'
+  return 'ember-glow'
+}
+
+const lessonCategoryToSceneCategory = (lesson: LessonCatalogItem): SceneAssetRecord['category'] => {
+  const lessonTitle = normalizeText(lesson.title)
+  const missionTitle = normalizeText(lesson.missionTitle)
+
+  if (lessonTitle.includes('airport') || missionTitle.includes('airport')) return 'Airport'
+  if (lessonTitle.includes('coffee') || missionTitle.includes('coffee')) return 'CoffeeShop'
+  if (lessonTitle.includes('park') || missionTitle.includes('park')) return 'Park'
+  return 'General'
+}
+
+const buildFallbackSceneAssetForLesson = (lesson: LessonCatalogItem, progressionOrder: number): SceneAssetRecord => {
+  const heroDesktop =
+    lesson.mediaSlots?.heroImageDesktop?.path ||
+    lesson.mediaSlots?.emotionalBackground?.path ||
+    lesson.mediaSlots?.thumbnail?.path ||
+    lesson.image
+  const heroMobile =
+    lesson.mediaSlots?.heroImageMobile?.path ||
+    lesson.mediaSlots?.heroImageDesktop?.path ||
+    lesson.mediaSlots?.emotionalBackground?.path ||
+    lesson.image
+  const poster =
+    lesson.mediaSlots?.thumbnail?.path ||
+    lesson.mediaSlots?.heroImageDesktop?.path ||
+    lesson.mediaSlots?.heroImageMobile?.path ||
+    lesson.image
+
+  return {
+    ...defaultSceneAssetsCatalog[0],
+    id: `lesson-${lesson.id}`,
+    title: lesson.missionTitle || lesson.title,
+    slug: normalizeText(lesson.missionTitle || lesson.title).replace(/\s+/g, '-'),
+    category: lessonCategoryToSceneCategory(lesson),
+    chapter: `Chapter ${progressionOrder + 1}`,
+    mission: lesson.missionTitle || lesson.title,
+    emotionalTone: lesson.emotionalGoal || lesson.emotionalContext || lesson.blurb,
+    missionCardDescription: lesson.practicalGoal || lesson.blurb,
+    heroBackgroundImageUrl: heroDesktop,
+    backgroundImageUrl: heroDesktop,
+    imageUrl: poster,
+    mobileImageUrl: heroMobile,
+    imageUrlDesktop: poster,
+    imageUrlMobile: heroMobile,
+    focalPoint: 'center',
+    focalPointX: 50,
+    focalPointY: 50,
+    overlayOpacity: 54,
+    overlayColor: '#090d24',
+    overlayIntensity: 54,
+    brightness: 100,
+    blurIntensity: 8,
+    textSafeArea: defaultSceneAssetsCatalog[0].textSafeArea,
+    characterSafeArea: defaultSceneAssetsCatalog[0].characterSafeArea,
+    cinematicStyle: toneToOverlayStyle(lesson.tone),
+    uiOverlayStyle: toneToOverlayStyle(lesson.tone),
+    progressionOrder: progressionOrder + 1,
+    featuredHero: false,
+    showInHero: true,
+    active: true,
+  }
+}
+
 const getAssetImage = (
   asset: SceneAssetRecord,
   mode: 'background-desktop' | 'background-mobile' | 'poster',
@@ -98,6 +185,7 @@ const getAssetImage = (
 }
 
 type MissionVisual = {
+  id: string
   asset: SceneAssetRecord
   lesson: LessonCatalogItem | null
   title: string
@@ -114,16 +202,17 @@ type MissionVisual = {
 }
 
 const buildMissionVisual = (
-  asset: SceneAssetRecord,
-  lessons: LessonCatalogItem[],
+  lesson: LessonCatalogItem | null,
   quizzes: QuizCatalogItem[],
+  asset: SceneAssetRecord,
+  progressionOrder: number,
 ): MissionVisual => {
-  const lesson = resolveLessonForAsset(asset, lessons)
   const lessonQuizzes = lesson ? quizzes.filter((quiz) => quiz.lessonId === lesson.id) : []
   const sceneCount = Math.max(lessonQuizzes.length || 0, 5)
   const progressPercent = clampPercent(lesson?.progress ?? 0)
 
   return {
+    id: lesson?.id || asset.id,
     asset,
     lesson,
     title: lesson?.missionTitle || lesson?.title || asset.mission || asset.title,
@@ -132,7 +221,7 @@ const buildMissionVisual = (
       lesson?.practicalGoal ||
       lesson?.blurb ||
       'Siga a próxima cena e continue avançando na jornada.',
-    chapterLabel: asset.chapter || `Chapter ${asset.progressionOrder}`,
+    chapterLabel: asset.chapter || `Chapter ${progressionOrder + 1}`,
     sceneCount,
     sceneLabel: `Scene 1 of ${sceneCount}`,
     progressPercent,
@@ -234,33 +323,51 @@ function App() {
     [sceneAssetsCatalog],
   )
 
-  const heroCarouselAssets = useMemo(() => {
-    const visibleAssets = activeSceneAssets.filter((asset) => asset.showInHero)
-    return visibleAssets.length ? visibleAssets : activeSceneAssets
-  }, [activeSceneAssets])
+  const missionVisuals = useMemo(() => {
+    if (lessonsCatalog.length) {
+      const lessonsFromBackend = lessonsCatalog
+        .map((lesson, index) => {
+          const matchingAsset = resolveSceneAssetForLesson(lesson, activeSceneAssets)
+          const asset = matchingAsset ?? buildFallbackSceneAssetForLesson(lesson, index)
+          const shouldShow = matchingAsset ? matchingAsset.showInHero : true
+          return shouldShow ? buildMissionVisual(lesson, quizCatalog, asset, index) : null
+        })
+        .filter((mission): mission is MissionVisual => mission !== null)
 
-  const missionVisuals = useMemo(
-    () => heroCarouselAssets.map((asset) => buildMissionVisual(asset, lessonsCatalog, quizCatalog)),
-    [heroCarouselAssets, lessonsCatalog, quizCatalog],
-  )
+      if (lessonsFromBackend.length) return lessonsFromBackend
+    }
+
+    const visibleAssets = activeSceneAssets.filter((asset) => asset.showInHero)
+    return visibleAssets.map((asset, index) =>
+      buildMissionVisual(resolveLessonForAsset(asset, lessonsCatalog), quizCatalog, asset, index),
+    )
+  }, [activeSceneAssets, lessonsCatalog, quizCatalog])
 
   const featuredMission = useMemo(() => {
-    const featuredAsset =
-      activeSceneAssets.find((asset) => asset.featuredHero) ?? heroCarouselAssets[0] ?? activeSceneAssets[0] ?? null
+    const featuredAsset = activeSceneAssets.find((asset) => asset.featuredHero) ?? null
+    if (featuredAsset) {
+      const matchingMission =
+        missionVisuals.find((mission) => mission.asset.id === featuredAsset.id) ||
+        missionVisuals.find(
+          (mission) => mission.lesson && resolveSceneAssetForLesson(mission.lesson, activeSceneAssets)?.id === featuredAsset.id,
+        )
 
-    return featuredAsset ? buildMissionVisual(featuredAsset, lessonsCatalog, quizCatalog) : null
-  }, [activeSceneAssets, heroCarouselAssets, lessonsCatalog, quizCatalog])
+      if (matchingMission) return matchingMission
+    }
+
+    return missionVisuals[0] ?? null
+  }, [activeSceneAssets, missionVisuals])
 
   useEffect(() => {
     if (!missionVisuals.length) return
 
-    if (!activeMissionId || !missionVisuals.some((mission) => mission.asset.id === activeMissionId)) {
-      setActiveMissionId(featuredMission?.asset.id ?? missionVisuals[0]?.asset.id ?? null)
+    if (!activeMissionId || !missionVisuals.some((mission) => mission.id === activeMissionId)) {
+      setActiveMissionId(featuredMission?.id ?? missionVisuals[0]?.id ?? null)
     }
   }, [activeMissionId, featuredMission, missionVisuals])
 
   const activeMission =
-    missionVisuals.find((mission) => mission.asset.id === activeMissionId) ??
+    missionVisuals.find((mission) => mission.id === activeMissionId) ??
     featuredMission ??
     missionVisuals[0] ??
     null
@@ -283,25 +390,25 @@ function App() {
     return undefined
   }, [activeMissionId, platformConfig?.heroTransitionDuration])
 
-  const previousMission = missionVisuals.find((mission) => mission.asset.id === previousMissionId) ?? null
+  const previousMission = missionVisuals.find((mission) => mission.id === previousMissionId) ?? null
   const heroReferenceMission = featuredMission ?? activeMission
 
   useEffect(() => {
-    if (!activeMission?.asset.id) return
-    missionCardRefs.current[activeMission.asset.id]?.scrollIntoView({
+    if (!activeMission?.id) return
+    missionCardRefs.current[activeMission.id]?.scrollIntoView({
       behavior: 'smooth',
       block: 'nearest',
       inline: 'center',
     })
-  }, [activeMission?.asset.id])
+  }, [activeMission?.id])
 
   useEffect(() => {
     if (pauseCarousel || missionVisuals.length < 2 || !activeMission) return
 
     const interval = window.setInterval(() => {
-      const currentIndex = missionVisuals.findIndex((mission) => mission.asset.id === activeMission.asset.id)
+      const currentIndex = missionVisuals.findIndex((mission) => mission.id === activeMission.id)
       const nextIndex = currentIndex >= 0 ? (currentIndex + 1) % missionVisuals.length : 0
-      setActiveMissionId(missionVisuals[nextIndex]?.asset.id ?? null)
+      setActiveMissionId(missionVisuals[nextIndex]?.id ?? null)
     }, platformConfig?.heroAutoplayDelay ?? defaultPlatformConfig.heroAutoplayDelay)
 
     return () => window.clearInterval(interval)
@@ -364,12 +471,12 @@ function App() {
   const goToAdjacentMission = useCallback(
     (direction: -1 | 1) => {
       if (!missionVisuals.length || !activeMission) return
-      const currentIndex = missionVisuals.findIndex((mission) => mission.asset.id === activeMission.asset.id)
+      const currentIndex = missionVisuals.findIndex((mission) => mission.id === activeMission.id)
       const nextIndex =
         currentIndex < 0
           ? 0
           : (currentIndex + direction + missionVisuals.length) % missionVisuals.length
-      setActiveMissionId(missionVisuals[nextIndex]?.asset.id ?? null)
+      setActiveMissionId(missionVisuals[nextIndex]?.id ?? null)
     },
     [activeMission, missionVisuals],
   )
@@ -470,7 +577,7 @@ function App() {
               <CinematicImage asset={previousBackgroundAsset} mode="auto" />
             </div>
           )}
-          <div className="global-hero-background-layer global-hero-background-layer-current" key={activeMission.asset.id}>
+          <div className="global-hero-background-layer global-hero-background-layer-current" key={activeMission.id}>
             <CinematicImage asset={backgroundAsset} mode="auto" />
           </div>
           <div className="global-hero-global-overlay" />
@@ -558,20 +665,20 @@ function App() {
           <div className="global-hero-carousel-track" role="list" aria-label="Mission carousel">
             {missionVisuals.map((mission) => (
               <button
-                key={mission.asset.id}
+                key={mission.id}
                 ref={(element) => {
-                  missionCardRefs.current[mission.asset.id] = element
+                  missionCardRefs.current[mission.id] = element
                 }}
                 type="button"
                 role="listitem"
-                className={`global-hero-mission-poster${mission.asset.id === activeMission.asset.id ? ' is-active' : ''}`}
-                onMouseEnter={() => changeMission(mission.asset.id)}
+                className={`global-hero-mission-poster${mission.id === activeMission.id ? ' is-active' : ''}`}
+                onMouseEnter={() => changeMission(mission.id)}
                 onFocus={() => {
                   setPauseCarousel(true)
-                  changeMission(mission.asset.id)
+                  changeMission(mission.id)
                 }}
                 onBlur={() => setPauseCarousel(false)}
-                onClick={() => changeMission(mission.asset.id)}
+                onClick={() => changeMission(mission.id)}
               >
                 <div className="global-hero-mission-art">
                   <img src={mission.posterImage} alt={mission.title} />
