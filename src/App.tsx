@@ -525,8 +525,6 @@ function App() {
     )
   }, [activeMission?.lesson?.id, lessonsCatalog, progressSnapshot, quizCatalog, quizQuestionCatalog])
 
-  const momentumQuickWins = useMemo(() => quickWins.slice(0, 4), [quickWins])
-
   const changeMission = useCallback((id: string) => {
     setActiveMissionId(id)
   }, [])
@@ -784,50 +782,9 @@ function App() {
           </button>
         </section>
 
-        {momentumQuickWins.length > 0 && (
-          <section
-            className={`hero-momentum-layer hero-momentum-layer-${activeMission.asset.cinematicStyle}`}
-            aria-label="Quick wins momentum"
-          >
-            <div className="hero-momentum-cloud" role="list" aria-label="Momentum prompts">
-              {momentumQuickWins.map((quickWin, index) => {
-                const Icon = quickWinIconByKind[quickWin.kind]
-                const variant = ['is-spark', 'is-focus', 'is-reward', 'is-timer'][index % 4]
-
-                return (
-                  <button
-                    key={quickWin.id}
-                    type="button"
-                    role="listitem"
-                    className={`hero-momentum-node hero-momentum-node-${quickWin.toneClass} ${variant}`}
-                    style={{ '--momentum-delay': `${index * 160}ms` } as CSSProperties}
-                  >
-                    <span className="hero-momentum-node-glow" aria-hidden="true" />
-                    <span className="hero-momentum-node-icon" aria-hidden="true">
-                      <Icon size={variant === 'is-spark' ? 16 : 18} />
-                    </span>
-                    <span className="hero-momentum-node-copy">
-                      <strong>{quickWin.title}</strong>
-                      <small>
-                        {variant === 'is-timer' && quickWin.timerLabel
-                          ? quickWin.timerLabel
-                          : variant === 'is-reward'
-                            ? quickWin.progressLabel
-                            : `+${quickWin.reward} XP`}
-                      </small>
-                    </span>
-                    {(variant === 'is-focus' || variant === 'is-reward') && (
-                      <span className="hero-momentum-node-pill">{quickWin.ctaLabel}</span>
-                    )}
-                  </button>
-                )
-              })}
-            </div>
-          </section>
-        )}
       </main>
 
-      {false && quickWins.length > 0 && (
+      {quickWins.length > 0 && (
         <section
           className={`quick-wins-engine quick-wins-engine-${activeMission.asset.cinematicStyle}`}
           aria-labelledby="quick-wins-title"
@@ -843,6 +800,10 @@ function App() {
               <h2 id="quick-wins-title">Quick Wins</h2>
               <p>Desafios rápidos para ganhar XP e manter o ritmo.</p>
             </div>
+            <button className="quick-wins-view-all" type="button">
+              <span>Ver todas</span>
+              <ArrowRight size={16} />
+            </button>
           </header>
 
           <div className="quick-wins-track" role="list" aria-label="Quick wins">
@@ -858,6 +819,7 @@ function App() {
                   style={{ '--quick-win-delay': `${index * 140}ms` } as CSSProperties}
                 >
                   <div className="quick-wins-card-bloom" aria-hidden="true" />
+                  <div className="quick-wins-card-sheen" aria-hidden="true" />
 
                   <div className="quick-wins-card-top">
                     <span className="quick-wins-card-icon" aria-hidden="true">
