@@ -82,6 +82,10 @@ export function QuickWinCard({ item, index = 0 }: QuickWinCardProps) {
 
       <div className="spark-qw-card-top">
         <span className="spark-qw-card-icon" aria-hidden="true">
+          <span className="spark-qw-card-icon-coreglow" />
+          <span className="spark-qw-card-icon-midbloom" />
+          <span className="spark-qw-card-icon-diffusion" />
+          <span className="spark-qw-card-icon-particles" />
           {item.iconUrl ? <img src={item.iconUrl} alt="" /> : <Icon size={34} strokeWidth={2.2} />}
         </span>
         <span className="spark-qw-card-badge">
