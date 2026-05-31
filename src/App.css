@@ -7480,7 +7480,9 @@
 
 .global-hero-app {
   min-height: 100vh;
+  width: 100%;
   padding: 0;
+  overflow-x: clip;
   background:
     radial-gradient(circle at 10% 0%, rgba(115, 80, 255, 0.2), transparent 26%),
     radial-gradient(circle at 100% 0%, rgba(255, 165, 104, 0.16), transparent 24%),
@@ -7490,6 +7492,7 @@
 .global-hero-shell {
   position: relative;
   isolation: isolate;
+  width: 100%;
   min-height: 100svh;
   overflow: hidden;
   background: rgba(3, 6, 18, 0.92);
@@ -7860,6 +7863,221 @@
 .global-hero-cta:focus-visible::after {
   opacity: 1;
   transform: translateX(340%) rotate(18deg);
+}
+
+.hero-momentum-layer {
+  position: absolute;
+  z-index: 11;
+  left: 18px;
+  right: 18px;
+  bottom: calc(332px + env(safe-area-inset-bottom));
+  pointer-events: none;
+}
+
+.hero-momentum-cloud {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: max-content;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 2px 2px 6px;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  scroll-snap-type: x proximity;
+  overscroll-behavior-x: contain;
+  pointer-events: auto;
+}
+
+.hero-momentum-cloud::-webkit-scrollbar {
+  display: none;
+}
+
+.hero-momentum-layer-cinematic-violet {
+  --hero-momentum-accent: rgba(148, 101, 255, 0.22);
+  --hero-momentum-secondary: rgba(255, 186, 104, 0.18);
+}
+
+.hero-momentum-layer-ember-glow {
+  --hero-momentum-accent: rgba(255, 148, 86, 0.2);
+  --hero-momentum-secondary: rgba(255, 202, 117, 0.16);
+}
+
+.hero-momentum-layer-aurora-soft {
+  --hero-momentum-accent: rgba(101, 222, 171, 0.18);
+  --hero-momentum-secondary: rgba(137, 220, 255, 0.15);
+}
+
+.hero-momentum-layer-midnight-glass {
+  --hero-momentum-accent: rgba(103, 134, 255, 0.18);
+  --hero-momentum-secondary: rgba(171, 129, 255, 0.14);
+}
+
+.hero-momentum-node {
+  --momentum-y: 0px;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 54px;
+  padding: 12px 14px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  background:
+    linear-gradient(180deg, rgba(16, 20, 43, 0.84), rgba(8, 11, 29, 0.92)),
+    radial-gradient(circle at 10% 0%, rgba(255, 255, 255, 0.08), transparent 28%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 34px rgba(2, 6, 20, 0.24);
+  backdrop-filter: blur(20px);
+  scroll-snap-align: start;
+  transform: translate3d(0, var(--momentum-y), 0);
+  transition:
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 360ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: heroMomentumFloat 8.4s ease-in-out var(--momentum-delay, 0ms) infinite alternate;
+  will-change: transform;
+}
+
+.hero-momentum-node:hover,
+.hero-momentum-node:focus-visible {
+  transform: translate3d(0, calc(var(--momentum-y) - 4px), 0);
+  border-color: rgba(255, 255, 255, 0.14);
+  filter: brightness(1.05) saturate(1.02);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 24px 42px rgba(3, 8, 24, 0.32);
+}
+
+.hero-momentum-node-glow {
+  position: absolute;
+  inset: auto auto -30px -18px;
+  width: 110px;
+  height: 110px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--hero-momentum-accent, rgba(148, 101, 255, 0.22)), transparent 70%);
+  filter: blur(8px);
+  opacity: 0.88;
+  animation: heroMomentumGlow 7.2s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+.hero-momentum-node-icon,
+.hero-momentum-node-copy,
+.hero-momentum-node-pill {
+  position: relative;
+  z-index: 1;
+}
+
+.hero-momentum-node-icon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background:
+    radial-gradient(circle at 30% 20%, rgba(255, 255, 255, 0.24), transparent 30%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0.04));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 12px 24px rgba(0, 0, 0, 0.18);
+  color: #fff;
+}
+
+.hero-momentum-node-copy {
+  display: grid;
+  gap: 3px;
+  text-align: left;
+}
+
+.hero-momentum-node-copy strong {
+  color: #fff;
+  font-size: 0.98rem;
+  line-height: 1;
+}
+
+.hero-momentum-node-copy small {
+  color: rgba(231, 236, 255, 0.72);
+  font-size: 0.76rem;
+  line-height: 1.2;
+  font-weight: 700;
+}
+
+.hero-momentum-node-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  padding: 8px 11px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff2d0;
+  font-size: 0.74rem;
+  font-weight: 800;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hero-momentum-node.is-spark {
+  --momentum-y: 2px;
+  min-width: 172px;
+}
+
+.hero-momentum-node.is-focus {
+  --momentum-y: 12px;
+  min-width: 224px;
+}
+
+.hero-momentum-node.is-reward {
+  --momentum-y: -8px;
+  min-width: 214px;
+}
+
+.hero-momentum-node.is-timer {
+  --momentum-y: 6px;
+  min-width: 186px;
+}
+
+.hero-momentum-node-violet {
+  --hero-momentum-accent: rgba(149, 103, 255, 0.28);
+}
+
+.hero-momentum-node-emerald {
+  --hero-momentum-accent: rgba(82, 218, 162, 0.24);
+}
+
+.hero-momentum-node-amber {
+  --hero-momentum-accent: rgba(255, 189, 92, 0.26);
+}
+
+.hero-momentum-node-azure {
+  --hero-momentum-accent: rgba(91, 172, 255, 0.24);
+}
+
+.hero-momentum-node-fuchsia {
+  --hero-momentum-accent: rgba(255, 103, 184, 0.24);
+}
+
+@keyframes heroMomentumFloat {
+  from {
+    transform: translate3d(0, var(--momentum-y), 0);
+  }
+  to {
+    transform: translate3d(0, calc(var(--momentum-y) - 5px), 0);
+  }
+}
+
+@keyframes heroMomentumGlow {
+  from {
+    opacity: 0.72;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1.08);
+  }
 }
 
 .global-hero-carousel-shell {
@@ -8588,6 +8806,7 @@
   }
 
   .global-hero-shell {
+    width: min(100%, 1520px);
     max-width: 1520px;
     min-height: calc(100vh - 56px);
     margin: 0 auto;
@@ -8622,6 +8841,22 @@
 
   .global-hero-cta {
     width: min(100%, 360px);
+  }
+
+  .hero-momentum-layer {
+    left: 34px;
+    right: auto;
+    bottom: 404px;
+    max-width: min(48vw, 620px);
+  }
+
+  .hero-momentum-cloud {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 14px;
+    overflow: visible;
+    max-width: 100%;
+    padding: 0;
   }
 
   .global-hero-carousel-shell {
@@ -8716,6 +8951,12 @@
     width: min(100%, 318px);
     min-height: 60px;
     padding: 16px 18px;
+  }
+
+  .hero-momentum-layer {
+    left: 18px;
+    right: 18px;
+    bottom: calc(326px + env(safe-area-inset-bottom));
   }
 
   .global-hero-carousel-shell {
