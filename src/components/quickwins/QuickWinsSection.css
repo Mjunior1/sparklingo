@@ -50,28 +50,28 @@
 }
 
 .spark-qw-section-violet {
-  --qw-ambient: rgba(151, 111, 255, 0.2);
-  --qw-secondary: rgba(255, 182, 104, 0.12);
+  --qw-ambient: rgba(119, 106, 186, 0.15);
+  --qw-secondary: rgba(195, 151, 111, 0.08);
 }
 
 .spark-qw-section-emerald {
-  --qw-ambient: rgba(62, 226, 146, 0.18);
-  --qw-secondary: rgba(105, 248, 195, 0.1);
+  --qw-ambient: rgba(72, 154, 133, 0.14);
+  --qw-secondary: rgba(112, 187, 169, 0.08);
 }
 
 .spark-qw-section-amber {
-  --qw-ambient: rgba(255, 183, 72, 0.18);
-  --qw-secondary: rgba(255, 113, 72, 0.1);
+  --qw-ambient: rgba(177, 132, 79, 0.14);
+  --qw-secondary: rgba(205, 138, 96, 0.08);
 }
 
 .spark-qw-section-azure {
-  --qw-ambient: rgba(86, 163, 255, 0.18);
-  --qw-secondary: rgba(112, 212, 255, 0.1);
+  --qw-ambient: rgba(90, 128, 186, 0.14);
+  --qw-secondary: rgba(118, 166, 206, 0.08);
 }
 
 .spark-qw-section-fuchsia {
-  --qw-ambient: rgba(255, 96, 170, 0.16);
-  --qw-secondary: rgba(255, 142, 199, 0.1);
+  --qw-ambient: rgba(168, 96, 134, 0.14);
+  --qw-secondary: rgba(194, 136, 166, 0.08);
 }
 
 .spark-qw-header,
@@ -201,21 +201,21 @@
 .spark-qw-card::before {
   inset: 0;
   background:
-    radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 34%, transparent), transparent 26%),
-    radial-gradient(circle at 76% 18%, rgba(255, 255, 255, 0.08) 0 1px, transparent 1.8px),
-    radial-gradient(circle at 68% 30%, rgba(255, 255, 255, 0.05) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 22%, rgba(22, 24, 52, 0.18)), transparent 30%),
+    radial-gradient(circle at 76% 18%, rgba(255, 255, 255, 0.06) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 68% 30%, rgba(255, 255, 255, 0.04) 0 1px, transparent 1.8px),
     linear-gradient(180deg, rgba(255, 255, 255, 0.055), transparent 36%);
-  opacity: 0.88;
+  opacity: 0.76;
   z-index: 0;
 }
 
 .spark-qw-card::after {
   inset: 0;
   background:
-    radial-gradient(ellipse at 28% 20%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 18%, transparent), transparent 36%),
-    radial-gradient(ellipse at 38% 78%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 12%, transparent), transparent 44%),
-    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--qw-card-overlay, rgba(46, 28, 91, 0.6)) 78%, transparent) 100%);
-  opacity: 0.54;
+    radial-gradient(ellipse at 28% 20%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 12%, rgba(12, 14, 34, 0.08)), transparent 40%),
+    radial-gradient(ellipse at 38% 78%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 8%, rgba(9, 12, 28, 0.08)), transparent 46%),
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--qw-card-overlay, rgba(46, 28, 91, 0.6)) 54%, transparent) 100%);
+  opacity: 0.42;
   z-index: 0;
 }
 
@@ -225,10 +225,10 @@
   height: 134px;
   border-radius: 46% 54% 58% 42% / 46% 44% 56% 54%;
   background:
-    radial-gradient(circle at 40% 42%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 62%, transparent), transparent 32%),
-    radial-gradient(ellipse at 62% 72%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 22%, transparent), transparent 62%);
-  opacity: 0.74;
-  filter: blur(14px);
+    radial-gradient(circle at 40% 42%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 40%, rgba(16, 18, 32, 0.04)), transparent 34%),
+    radial-gradient(ellipse at 62% 72%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 16%, transparent), transparent 64%);
+  opacity: 0.54;
+  filter: blur(18px);
   mix-blend-mode: screen;
   z-index: 0;
   animation: spark-qw-card-breathe 4.8s ease-in-out infinite;
@@ -247,19 +247,19 @@
 .spark-qw-card:hover,
 .spark-qw-card:focus-visible {
   transform: translateY(-6px);
-  border-color: color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 52%, rgba(255, 255, 255, 0.24));
+  border-color: color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 28%, rgba(255, 255, 255, 0.22));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     inset 0 -20px 30px rgba(3, 6, 17, 0.22),
     0 28px 56px rgba(8, 10, 24, 0.42),
-    0 0 0 1px color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 28%, transparent);
-  filter: saturate(1.08) brightness(1.05);
+    0 0 0 1px color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 16%, transparent);
+  filter: saturate(1.02) brightness(1.03);
 }
 
 .spark-qw-card:hover .spark-qw-card-bloom,
 .spark-qw-card:focus-visible .spark-qw-card-bloom {
-  opacity: 0.96;
-  transform: translate3d(4px, 6px, 0) scale(1.1);
+  opacity: 0.72;
+  transform: translate3d(4px, 6px, 0) scale(1.06);
 }
 
 .spark-qw-card:hover .spark-qw-card-sheen,
@@ -287,15 +287,15 @@
   place-items: center;
   color: #ffffff;
   background:
-    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.52), transparent 28%),
-    radial-gradient(circle at 50% 52%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 34%, rgba(255, 255, 255, 0.08)), transparent 56%),
-    radial-gradient(circle, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 88%, white 7%), color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 42%, rgba(10, 13, 36, 0.14)));
+    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.44), transparent 28%),
+    radial-gradient(circle at 50% 52%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 22%, rgba(255, 255, 255, 0.06)), transparent 58%),
+    radial-gradient(circle, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 66%, rgba(233, 237, 255, 0.08)), color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 24%, rgba(10, 13, 36, 0.2)));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.24),
     inset 0 -10px 16px rgba(5, 8, 24, 0.18),
     0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 22px 34px color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 32%, transparent),
-    0 0 32px color-mix(in srgb, var(--qw-card-glow, #a06bff) 12%, transparent);
+    0 22px 34px color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 18%, transparent),
+    0 0 32px color-mix(in srgb, var(--qw-card-glow, #a06bff) 8%, transparent);
   isolation: isolate;
   overflow: visible;
 }
@@ -305,9 +305,9 @@
   position: absolute;
   inset: -14px;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--qw-card-glow, #a06bff) 42%, transparent), transparent 70%);
-  opacity: 0.8;
-  filter: blur(8px);
+  background: radial-gradient(circle, color-mix(in srgb, var(--qw-card-glow, #a06bff) 24%, rgba(255, 255, 255, 0.04)), transparent 72%);
+  opacity: 0.56;
+  filter: blur(10px);
   animation: spark-qw-orb-breathe 4.4s ease-in-out infinite;
 }
 
@@ -317,11 +317,11 @@
   inset: -28px -22px -34px -30px;
   border-radius: 48% 52% 56% 44% / 44% 42% 58% 56%;
   background:
-    radial-gradient(circle at 38% 34%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 20%, rgba(255, 255, 255, 0.12)), transparent 18%),
-    radial-gradient(circle at 62% 58%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 16%, transparent), transparent 42%),
-    radial-gradient(ellipse at 64% 72%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 14%, transparent), transparent 64%);
+    radial-gradient(circle at 38% 34%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 12%, rgba(255, 255, 255, 0.08)), transparent 22%),
+    radial-gradient(circle at 62% 58%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 10%, transparent), transparent 44%),
+    radial-gradient(ellipse at 64% 72%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 8%, transparent), transparent 66%);
   filter: blur(22px);
-  opacity: 0.55;
+  opacity: 0.38;
   mix-blend-mode: screen;
   animation: spark-qw-diffusion-drift 7.2s ease-in-out infinite alternate;
   z-index: 0;
@@ -344,9 +344,9 @@
   border-radius: 50%;
   background:
     radial-gradient(circle at 48% 42%, rgba(255, 255, 255, 0.44), transparent 24%),
-    radial-gradient(circle, color-mix(in srgb, var(--qw-card-glow, #a06bff) 92%, white 6%), color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 72%, transparent) 58%, transparent 78%);
-  filter: blur(4px) saturate(1.18);
-  opacity: 0.98;
+    radial-gradient(circle, color-mix(in srgb, var(--qw-card-glow, #a06bff) 62%, rgba(255, 255, 255, 0.08)), color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 38%, transparent) 58%, transparent 80%);
+  filter: blur(5px) saturate(1.08);
+  opacity: 0.82;
   z-index: 0;
   animation: spark-qw-core-breathe 4.2s ease-in-out infinite;
 }
@@ -355,10 +355,10 @@
   inset: -6px;
   border-radius: 50%;
   background:
-    radial-gradient(circle at 40% 36%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 52%, rgba(255, 255, 255, 0.14)), transparent 28%),
-    radial-gradient(circle, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 36%, transparent), transparent 68%);
+    radial-gradient(circle at 40% 36%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 28%, rgba(255, 255, 255, 0.1)), transparent 32%),
+    radial-gradient(circle, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 18%, transparent), transparent 72%);
   filter: blur(12px);
-  opacity: 0.72;
+  opacity: 0.5;
   z-index: 0;
   animation: spark-qw-mid-bloom 5.2s ease-in-out infinite;
 }
@@ -367,11 +367,11 @@
   inset: -22px -16px -28px -24px;
   border-radius: 42% 58% 52% 48% / 46% 38% 62% 54%;
   background:
-    radial-gradient(circle at 38% 34%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 26%, transparent), transparent 22%),
-    radial-gradient(ellipse at 68% 66%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 24%, transparent), transparent 58%),
-    radial-gradient(ellipse at 46% 80%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 14%, transparent), transparent 62%);
+    radial-gradient(circle at 38% 34%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 16%, transparent), transparent 24%),
+    radial-gradient(ellipse at 68% 66%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 14%, transparent), transparent 60%),
+    radial-gradient(ellipse at 46% 80%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 8%, transparent), transparent 64%);
   filter: blur(20px);
-  opacity: 0.56;
+  opacity: 0.4;
   mix-blend-mode: screen;
   z-index: 0;
   animation: spark-qw-atmospheric-drift 8.8s ease-in-out infinite alternate;
@@ -386,35 +386,35 @@
     radial-gradient(circle at 34% 76%, rgba(255, 255, 255, 0.16) 0 1px, transparent 1.6px),
     radial-gradient(circle at 66% 72%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 28%, rgba(255, 255, 255, 0.1)) 0 1.2px, transparent 1.8px);
   filter: blur(0.4px);
-  opacity: 0.48;
+  opacity: 0.28;
   z-index: 0;
   animation: spark-qw-particles 6.8s ease-in-out infinite;
 }
 
 .spark-qw-card:hover .spark-qw-card-icon-coreglow,
 .spark-qw-card:focus-visible .spark-qw-card-icon-coreglow {
-  opacity: 1;
-  transform: scale(1.08);
-  filter: blur(5px) saturate(1.28);
+  opacity: 0.9;
+  transform: scale(1.05);
+  filter: blur(5px) saturate(1.12);
 }
 
 .spark-qw-card:hover .spark-qw-card-icon-midbloom,
 .spark-qw-card:focus-visible .spark-qw-card-icon-midbloom {
-  opacity: 0.92;
-  transform: scale(1.12);
+  opacity: 0.66;
+  transform: scale(1.08);
 }
 
 .spark-qw-card:hover .spark-qw-card-icon-diffusion,
 .spark-qw-card:focus-visible .spark-qw-card-icon-diffusion,
 .spark-qw-card:hover .spark-qw-card-icon::after,
 .spark-qw-card:focus-visible .spark-qw-card-icon::after {
-  opacity: 0.86;
-  transform: translate3d(4px, 6px, 0) scale(1.08);
+  opacity: 0.58;
+  transform: translate3d(4px, 6px, 0) scale(1.04);
 }
 
 .spark-qw-card:hover .spark-qw-card-icon-particles,
 .spark-qw-card:focus-visible .spark-qw-card-icon-particles {
-  opacity: 0.72;
+  opacity: 0.42;
 }
 
 .spark-qw-card-icon svg,
@@ -434,8 +434,8 @@
 
 .spark-qw-card-icon svg {
   filter:
-    drop-shadow(0 0 8px color-mix(in srgb, var(--qw-card-glow, #a06bff) 42%, transparent))
-    drop-shadow(0 0 18px color-mix(in srgb, var(--qw-card-glow, #a06bff) 18%, transparent));
+    drop-shadow(0 0 8px color-mix(in srgb, var(--qw-card-glow, #a06bff) 26%, transparent))
+    drop-shadow(0 0 18px color-mix(in srgb, var(--qw-card-glow, #a06bff) 10%, transparent));
 }
 
 .spark-qw-card:hover .spark-qw-card-icon svg,
@@ -444,8 +444,8 @@
 .spark-qw-card:focus-visible .spark-qw-card-icon img {
   transform: translate3d(0, -1px, 0) scale(1.03);
   filter:
-    drop-shadow(0 0 10px color-mix(in srgb, var(--qw-card-glow, #a06bff) 52%, transparent))
-    drop-shadow(0 0 24px color-mix(in srgb, var(--qw-card-glow, #a06bff) 22%, transparent));
+    drop-shadow(0 0 10px color-mix(in srgb, var(--qw-card-glow, #a06bff) 34%, transparent))
+    drop-shadow(0 0 24px color-mix(in srgb, var(--qw-card-glow, #a06bff) 14%, transparent));
 }
 
 .spark-qw-card-badge {
@@ -465,7 +465,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     inset 0 -10px 16px rgba(10, 7, 24, 0.2),
     0 0 0 1px rgba(255, 215, 143, 0.05),
-    0 16px 30px rgba(11, 8, 32, 0.28);
+    0 16px 30px rgba(11, 8, 32, 0.24);
   font-size: 0.92rem;
   font-weight: 900;
   overflow: hidden;
@@ -481,8 +481,8 @@
 
 .spark-qw-card-badge::before {
   background:
-    radial-gradient(circle at 22% 34%, rgba(255, 228, 146, 0.34), transparent 26%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 46%);
+    radial-gradient(circle at 22% 34%, rgba(255, 228, 146, 0.22), transparent 28%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 46%);
 }
 
 .spark-qw-card-badge::after {
@@ -491,15 +491,15 @@
   height: 170%;
   background: linear-gradient(180deg, rgba(255, 244, 196, 0.2), rgba(255, 244, 196, 0));
   transform: rotate(18deg);
-  opacity: 0.34;
+  opacity: 0.22;
   animation: spark-qw-badge-glint 5.8s ease-in-out infinite;
 }
 
 .spark-qw-card-badge svg {
   color: #ffc95b;
   filter:
-    drop-shadow(0 0 10px rgba(255, 201, 91, 0.42))
-    drop-shadow(0 0 18px rgba(255, 219, 124, 0.18));
+    drop-shadow(0 0 8px rgba(255, 201, 91, 0.28))
+    drop-shadow(0 0 16px rgba(255, 219, 124, 0.1));
 }
 
 .spark-qw-card-copy,
@@ -553,7 +553,7 @@
   height: 100%;
   border-radius: inherit;
   background: linear-gradient(90deg, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 88%, white 2%), #ffc76d);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 42%, transparent);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 24%, transparent);
   transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -575,7 +575,7 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
     inset 0 -10px 14px rgba(42, 18, 110, 0.28),
     0 16px 28px rgba(102, 68, 235, 0.28),
-    0 0 20px color-mix(in srgb, var(--qw-card-glow, #a06bff) 16%, transparent);
+    0 0 20px color-mix(in srgb, var(--qw-card-glow, #a06bff) 10%, transparent);
   transition:
     transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 240ms ease,
@@ -594,16 +594,16 @@
 
 .spark-qw-card-cta-circle::before {
   background:
-    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.28), transparent 28%),
-    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 20%, transparent), transparent 66%);
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.24), transparent 28%),
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 12%, transparent), transparent 66%);
 }
 
 .spark-qw-card-cta-circle::after {
   inset: -32%;
   border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--qw-card-glow, #a06bff) 18%, transparent), transparent 72%);
+  background: radial-gradient(circle, color-mix(in srgb, var(--qw-card-glow, #a06bff) 10%, transparent), transparent 74%);
   filter: blur(10px);
-  opacity: 0.64;
+  opacity: 0.44;
 }
 
 .spark-qw-card:hover .spark-qw-card-cta-circle,
@@ -613,8 +613,8 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
     inset 0 -10px 14px rgba(42, 18, 110, 0.3),
     0 18px 32px rgba(102, 68, 235, 0.34),
-    0 0 28px color-mix(in srgb, var(--qw-card-glow, #a06bff) 24%, transparent);
-  filter: brightness(1.06);
+    0 0 28px color-mix(in srgb, var(--qw-card-glow, #a06bff) 14%, transparent);
+  filter: brightness(1.04);
 }
 
 .spark-qw-card-progresslabel {
@@ -624,8 +624,8 @@
 }
 
 @keyframes spark-qw-card-breathe {
-  0%, 100% { transform: scale(0.98); opacity: 0.68; }
-  50% { transform: scale(1.06); opacity: 0.9; }
+  0%, 100% { transform: scale(0.98); opacity: 0.52; }
+  50% { transform: scale(1.03); opacity: 0.68; }
 }
 
 @keyframes spark-qw-core-breathe {
@@ -639,25 +639,25 @@
 }
 
 @keyframes spark-qw-orb-breathe {
-  0%, 100% { opacity: 0.64; transform: scale(0.96); }
-  50% { opacity: 0.92; transform: scale(1.06); }
+  0%, 100% { opacity: 0.48; transform: scale(0.98); }
+  50% { opacity: 0.66; transform: scale(1.04); }
 }
 
 @keyframes spark-qw-atmospheric-drift {
-  0% { opacity: 0.48; transform: translate3d(-2px, -1px, 0) scale(0.98); }
-  50% { opacity: 0.62; transform: translate3d(4px, 6px, 0) scale(1.04); }
-  100% { opacity: 0.54; transform: translate3d(8px, 10px, 0) scale(1.08); }
+  0% { opacity: 0.32; transform: translate3d(-2px, -1px, 0) scale(0.99); }
+  50% { opacity: 0.44; transform: translate3d(4px, 6px, 0) scale(1.02); }
+  100% { opacity: 0.38; transform: translate3d(8px, 10px, 0) scale(1.05); }
 }
 
 @keyframes spark-qw-diffusion-drift {
-  0% { opacity: 0.48; transform: translate3d(0, 0, 0) scale(0.96); }
-  50% { opacity: 0.62; transform: translate3d(6px, 8px, 0) scale(1.03); }
-  100% { opacity: 0.54; transform: translate3d(10px, 12px, 0) scale(1.08); }
+  0% { opacity: 0.32; transform: translate3d(0, 0, 0) scale(0.97); }
+  50% { opacity: 0.46; transform: translate3d(6px, 8px, 0) scale(1.01); }
+  100% { opacity: 0.38; transform: translate3d(10px, 12px, 0) scale(1.05); }
 }
 
 @keyframes spark-qw-particles {
-  0%, 100% { opacity: 0.42; transform: translate3d(0, 0, 0); }
-  50% { opacity: 0.64; transform: translate3d(3px, -2px, 0); }
+  0%, 100% { opacity: 0.2; transform: translate3d(0, 0, 0); }
+  50% { opacity: 0.34; transform: translate3d(3px, -2px, 0); }
 }
 
 @keyframes spark-qw-sheen {
@@ -679,14 +679,14 @@
       inset 0 1px 0 rgba(255, 255, 255, 0.16),
       inset 0 -10px 14px rgba(42, 18, 110, 0.28),
       0 16px 28px rgba(102, 68, 235, 0.28),
-      0 0 20px color-mix(in srgb, var(--qw-card-glow, #a06bff) 16%, transparent);
+      0 0 20px color-mix(in srgb, var(--qw-card-glow, #a06bff) 10%, transparent);
   }
   50% {
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.16),
       inset 0 -10px 14px rgba(42, 18, 110, 0.28),
       0 18px 30px rgba(102, 68, 235, 0.32),
-      0 0 28px color-mix(in srgb, var(--qw-card-glow, #a06bff) 22%, transparent);
+      0 0 28px color-mix(in srgb, var(--qw-card-glow, #a06bff) 14%, transparent);
   }
 }
 
