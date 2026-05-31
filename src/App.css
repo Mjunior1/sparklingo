@@ -7543,10 +7543,15 @@
 .global-hero-background .scene-image {
   object-fit: cover;
   object-position: var(--hero-focal-x, 50%) var(--hero-focal-y, 50%);
+  transition:
+    filter var(--hero-transition-duration, 900ms) cubic-bezier(0.22, 1, 0.36, 1),
+    transform 1400ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, filter;
 }
 
 .global-hero-background-layer {
   overflow: hidden;
+  will-change: opacity, filter;
 }
 
 .global-hero-background-layer-ambient {
@@ -7555,14 +7560,33 @@
   transform: scale(1.08);
 }
 
+.global-hero-background-layer-ambient .scene-image,
+.global-hero-background-layer-ambient .scene-picture {
+  animation: heroAmbientBreath 18s ease-in-out infinite alternate;
+}
+
 .global-hero-background-layer-current {
   z-index: 2;
   animation: heroSceneFadeIn var(--hero-transition-duration, 900ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
+.global-hero-background-layer-current .scene-image,
+.global-hero-background-layer-current .scene-picture {
+  animation:
+    heroSceneDrift 24s ease-in-out infinite alternate,
+    heroSceneFadeIn var(--hero-transition-duration, 900ms) cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
 .global-hero-background-layer-previous {
   z-index: 1;
   animation: heroSceneFadeOut var(--hero-transition-duration, 900ms) cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+.global-hero-background-layer-previous .scene-image,
+.global-hero-background-layer-previous .scene-picture {
+  animation:
+    heroSceneDriftPrevious 14s ease-in-out infinite alternate,
+    heroSceneFadeOut var(--hero-transition-duration, 900ms) cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .global-hero-global-overlay,
@@ -7581,6 +7605,7 @@
       rgba(3, 6, 18, calc(var(--hero-global-overlay-strength, 0.58) * 0.68)),
       rgba(3, 6, 18, calc(var(--hero-global-overlay-strength, 0.58) * 1.08))
     );
+  animation: heroOverlayBreath 16s ease-in-out infinite alternate;
 }
 
 .global-hero-background .scene-overlay {
@@ -7588,12 +7613,21 @@
   backdrop-filter: blur(var(--scene-blur-strength, 8px));
   transition:
     opacity var(--hero-transition-duration, 900ms) ease,
-    filter var(--hero-transition-duration, 900ms) ease;
+    filter var(--hero-transition-duration, 900ms) ease,
+    backdrop-filter var(--hero-transition-duration, 900ms) ease;
 }
 
 .global-hero-atmosphere {
   z-index: 5;
-  transition: opacity var(--hero-transition-duration, 900ms) ease;
+  mix-blend-mode: screen;
+  opacity: 0.96;
+  filter: blur(4px) saturate(1.06);
+  transition:
+    opacity var(--hero-transition-duration, 900ms) ease,
+    filter var(--hero-transition-duration, 900ms) ease;
+  animation:
+    heroAtmosphereFloat 22s ease-in-out infinite alternate,
+    heroAtmosphereBreath 12s ease-in-out infinite alternate;
 }
 
 .global-hero-atmosphere-cinematic-violet {
@@ -7625,6 +7659,7 @@
   background:
     linear-gradient(180deg, rgba(1, 4, 15, 0.08), rgba(1, 4, 15, 0.34)),
     radial-gradient(circle at center, transparent 38%, rgba(1, 4, 15, 0.56) 100%);
+  animation: heroVignetteBreath 18s ease-in-out infinite alternate;
 }
 
 .global-hero-header {
@@ -7753,6 +7788,7 @@
 }
 
 .global-hero-cta {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: space-between;
@@ -7766,9 +7802,17 @@
   color: #fff;
   font-size: 1.06rem;
   font-weight: 800;
+  overflow: hidden;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 -18px 24px rgba(77, 33, 195, 0.2),
     0 24px 48px rgba(111, 61, 255, 0.34);
+  transition:
+    transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 280ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 280ms cubic-bezier(0.22, 1, 0.36, 1);
+  animation: heroCtaBreath 7.2s ease-in-out infinite;
+  will-change: transform, box-shadow, filter;
 }
 
 .global-hero-cta span {
@@ -7776,6 +7820,46 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.global-hero-cta::before {
+  content: '';
+  position: absolute;
+  inset: 1px;
+  border-radius: 21px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0) 42%),
+    radial-gradient(circle at 18% 20%, rgba(255, 255, 255, 0.18), transparent 28%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.global-hero-cta::after {
+  content: '';
+  position: absolute;
+  inset: -40% auto -40% -34%;
+  width: 42%;
+  transform: translateX(-180%) rotate(18deg);
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.24), transparent);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform 700ms cubic-bezier(0.22, 1, 0.36, 1), opacity 320ms ease;
+}
+
+.global-hero-cta:hover,
+.global-hero-cta:focus-visible {
+  transform: translateY(-2px);
+  filter: brightness(1.05) saturate(1.04);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -18px 24px rgba(77, 33, 195, 0.24),
+    0 30px 56px rgba(111, 61, 255, 0.42);
+}
+
+.global-hero-cta:hover::after,
+.global-hero-cta:focus-visible::after {
+  opacity: 1;
+  transform: translateX(340%) rotate(18deg);
 }
 
 .global-hero-carousel-shell {
@@ -7802,6 +7886,10 @@
   scroll-padding-inline: var(--hero-carousel-pad-left) var(--hero-carousel-pad-right);
   scroll-behavior: smooth;
   scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+  will-change: scroll-position;
 }
 
 .global-hero-carousel-track::-webkit-scrollbar {
@@ -7824,6 +7912,10 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.18),
     0 18px 34px rgba(96, 52, 232, 0.34);
   transform: translateY(-50%);
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 240ms cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .global-hero-carousel-arrow.is-left {
@@ -7832,6 +7924,15 @@
 
 .global-hero-carousel-arrow.is-right {
   right: 0;
+}
+
+.global-hero-carousel-arrow:hover,
+.global-hero-carousel-arrow:focus-visible {
+  transform: translateY(-50%) scale(1.04);
+  filter: brightness(1.06);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.22),
+    0 22px 38px rgba(96, 52, 232, 0.42);
 }
 
 .global-hero-mission-poster {
@@ -7847,21 +7948,60 @@
   scroll-snap-align: center;
   scroll-snap-stop: always;
   text-align: left;
+  opacity: 0.82;
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 24px 44px rgba(0, 0, 0, 0.28);
   transition:
-    transform 260ms ease,
-    border-color 260ms ease,
-    box-shadow 260ms ease;
+    transform 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 460ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, opacity, box-shadow;
+}
+
+.global-hero-mission-poster::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid rgba(180, 154, 255, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(157, 123, 255, 0);
+  opacity: 0;
+  transition:
+    opacity 460ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 460ms cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
 }
 
 .global-hero-mission-poster.is-active {
-  transform: translateY(-6px);
+  opacity: 1;
+  transform: translateY(-8px);
   border-color: rgba(198, 178, 255, 0.22);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 34px 60px rgba(101, 59, 229, 0.34);
+    0 38px 72px rgba(101, 59, 229, 0.42);
+}
+
+.global-hero-carousel-track:hover .global-hero-mission-poster:not(.is-active),
+.global-hero-carousel-track:focus-within .global-hero-mission-poster:not(.is-active) {
+  opacity: 0.74;
+}
+
+.global-hero-mission-poster:hover:not(.is-active),
+.global-hero-mission-poster:focus-visible:not(.is-active) {
+  opacity: 0.92;
+  transform: translateY(-2px);
+}
+
+.global-hero-mission-poster.is-active::after {
+  opacity: 1;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 0 0 1px rgba(157, 123, 255, 0.1),
+    0 0 46px rgba(145, 88, 255, 0.18);
 }
 
 .global-hero-mission-art,
@@ -7876,12 +8016,37 @@
 .global-hero-mission-art img {
   object-fit: cover;
   object-position: var(--hero-focal-x, 50%) var(--hero-focal-y, 50%);
+  transform: scale(1.01);
+  filter: saturate(0.84) brightness(0.9) contrast(0.95);
+  transition:
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 900ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: transform, filter;
+}
+
+.global-hero-mission-poster:hover:not(.is-active) .global-hero-mission-art img,
+.global-hero-mission-poster:focus-visible:not(.is-active) .global-hero-mission-art img {
+  filter: saturate(0.96) brightness(0.96) contrast(0.98);
+}
+
+.global-hero-mission-poster.is-active .global-hero-mission-art img {
+  transform: scale(1.03);
+  filter: saturate(1.06) brightness(1.03) contrast(1.04);
 }
 
 .global-hero-mission-overlay {
   background:
     linear-gradient(180deg, rgba(7, 10, 21, 0.18) 0%, rgba(7, 10, 21, 0.94) 100%),
     radial-gradient(circle at top right, rgba(255, 175, 96, 0.18), transparent 26%);
+  transition:
+    opacity 600ms cubic-bezier(0.22, 1, 0.36, 1),
+    background 600ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.global-hero-mission-poster.is-active .global-hero-mission-overlay {
+  background:
+    linear-gradient(180deg, rgba(7, 10, 21, 0.12) 0%, rgba(7, 10, 21, 0.9) 100%),
+    radial-gradient(circle at top right, rgba(186, 112, 255, 0.22), transparent 28%);
 }
 
 .global-hero-mission-copy {
@@ -7958,22 +8123,101 @@
 @keyframes heroSceneFadeIn {
   from {
     opacity: 0;
-    transform: scale(1.025);
+    filter: blur(14px);
   }
   to {
     opacity: 1;
-    transform: scale(1);
+    filter: blur(0);
   }
 }
 
 @keyframes heroSceneFadeOut {
   from {
     opacity: 1;
-    transform: scale(1);
+    filter: blur(0);
   }
   to {
     opacity: 0;
-    transform: scale(1.02);
+    filter: blur(16px);
+  }
+}
+
+@keyframes heroAmbientBreath {
+  from {
+    transform: scale(1.08) translate3d(-1%, 0, 0);
+  }
+  to {
+    transform: scale(1.12) translate3d(1%, -1%, 0);
+  }
+}
+
+@keyframes heroSceneDrift {
+  from {
+    transform: scale(1.01) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.04) translate3d(-0.9%, -0.6%, 0);
+  }
+}
+
+@keyframes heroSceneDriftPrevious {
+  from {
+    transform: scale(1.02) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.05) translate3d(0.8%, 0.6%, 0);
+  }
+}
+
+@keyframes heroAtmosphereFloat {
+  from {
+    transform: translate3d(-1.5%, 0, 0) scale(1.02);
+  }
+  to {
+    transform: translate3d(1.5%, -1.25%, 0) scale(1.04);
+  }
+}
+
+@keyframes heroAtmosphereBreath {
+  from {
+    opacity: 0.82;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes heroOverlayBreath {
+  from {
+    opacity: 0.94;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes heroVignetteBreath {
+  from {
+    opacity: 0.88;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes heroCtaBreath {
+  0%,
+  100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.18),
+      inset 0 -18px 24px rgba(77, 33, 195, 0.2),
+      0 24px 48px rgba(111, 61, 255, 0.34);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.22),
+      inset 0 -18px 24px rgba(77, 33, 195, 0.24),
+      0 28px 54px rgba(111, 61, 255, 0.4);
   }
 }
 
@@ -8037,6 +8281,11 @@
     position: relative;
     top: auto;
     transform: none;
+  }
+
+  .global-hero-carousel-arrow:hover,
+  .global-hero-carousel-arrow:focus-visible {
+    transform: scale(1.04);
   }
 
   .global-hero-carousel-arrow.is-left {

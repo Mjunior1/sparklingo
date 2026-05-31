@@ -157,6 +157,7 @@ function App() {
   const [pauseCarousel, setPauseCarousel] = useState(false)
 
   const missionCardRefs = useRef<Record<string, HTMLButtonElement | null>>({})
+  const missionTrackRef = useRef<HTMLDivElement | null>(null)
   const activeMissionRef = useRef<string | null>(null)
 
   const greeting = useMemo(() => getGreeting(), [])
@@ -288,11 +289,29 @@ function App() {
 
   useEffect(() => {
     if (!activeMission?.id) return
-    missionCardRefs.current[activeMission.id]?.scrollIntoView({
-      behavior: 'smooth',
-      block: 'nearest',
-      inline: 'nearest',
-    })
+
+    const track = missionTrackRef.current
+    const card = missionCardRefs.current[activeMission.id]
+    if (!track || !card) return
+
+    const trackRect = track.getBoundingClientRect()
+    const cardRect = card.getBoundingClientRect()
+    const edgePadding = window.matchMedia('(min-width: 861px)').matches ? 18 : 12
+
+    let delta = 0
+
+    if (cardRect.left < trackRect.left + edgePadding) {
+      delta = cardRect.left - (trackRect.left + edgePadding)
+    } else if (cardRect.right > trackRect.right - edgePadding) {
+      delta = cardRect.right - (trackRect.right - edgePadding)
+    }
+
+    if (Math.abs(delta) > 2) {
+      track.scrollBy({
+        left: delta,
+        behavior: 'smooth',
+      })
+    }
   }, [activeMission?.id])
 
   useEffect(() => {
@@ -555,7 +574,12 @@ function App() {
             <ChevronLeft size={18} />
           </button>
 
-          <div className="global-hero-carousel-track" role="list" aria-label="Mission carousel">
+          <div
+            ref={missionTrackRef}
+            className="global-hero-carousel-track"
+            role="list"
+            aria-label="Mission carousel"
+          >
             {missionVisuals.map((mission) => (
               <button
                 key={mission.id}
