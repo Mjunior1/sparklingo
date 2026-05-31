@@ -33,8 +33,10 @@ import {
   Volume2,
   Mic,
   WandSparkles,
+  Zap,
   X,
 } from 'lucide-react'
+import { QuickWinCard, QuickWinsSection } from '../components/quickwins/QuickWinsSection'
 import {
   defaultAchievementCatalog,
   deleteAchievement,
@@ -100,6 +102,28 @@ import {
 } from '../services/media'
 import { defaultPlatformConfig, savePlatformConfig, type PlatformConfig } from '../services/platform'
 import {
+  createEmptyQuickWin,
+  defaultQuickWinsCatalog,
+  defaultQuickWinsConfig,
+  deleteQuickWin,
+  getQuickWins,
+  getQuickWinsConfig,
+  quickWinCategoryOptions,
+  quickWinCinematicStyleOptions,
+  quickWinCTATypeOptions,
+  quickWinHeaderIconOptions,
+  quickWinHoverEffectOptions,
+  quickWinIconOptions,
+  quickWinMotionPresetOptions,
+  quickWinProgressModeOptions,
+  saveQuickWinsConfig,
+  seedDefaultQuickWins,
+  upsertQuickWin,
+  type QuickWinCategory,
+  type QuickWinItem,
+  type QuickWinsConfig,
+} from '../services/quickWins'
+import {
   defaultSceneAssetDraft,
   defaultSceneAssetsCatalog,
   deleteSceneAsset,
@@ -126,6 +150,7 @@ type AdminScreenProps = {
 type SectionKey =
   | 'dashboard'
   | 'ai-control'
+  | 'quick-wins'
   | 'scene-assets'
   | 'lessons'
   | 'quizzes'
@@ -137,7 +162,7 @@ type SectionKey =
   | 'settings'
 
 type DrawerMode = 'create' | 'edit'
-type DrawerKind = 'lesson' | 'quiz' | 'question' | 'achievement' | 'scene-asset'
+type DrawerKind = 'lesson' | 'quiz' | 'question' | 'achievement' | 'scene-asset' | 'quick-win'
 
 type DrawerState =
   | { open: false }
@@ -169,12 +194,14 @@ type ToastState = {
 } | null
 
 type StatusFilter = 'all' | 'active' | 'inactive'
+type QuickWinStatusFilter = 'all' | 'active' | 'inactive'
 
 const questionKinds: Array<QuizQuestionItem['kind']> = ['multiple-choice', 'drag-fill', 'ordering', 'listening', 'speaking']
 
 const navItems: Array<{ key: SectionKey; label: string; icon: typeof LayoutDashboard }> = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'ai-control', label: 'AI Control Center', icon: BrainCircuit },
+  { key: 'quick-wins', label: 'Quick Wins', icon: Zap },
   { key: 'scene-assets', label: 'Scene Assets', icon: Image },
   { key: 'lessons', label: 'Lições', icon: BookOpen },
   { key: 'quizzes', label: 'Quizzes', icon: Gamepad2 },
@@ -336,6 +363,7 @@ const nextNumericId = (existingIds: string[], prefix: string) => {
 const sectionTitle: Record<SectionKey, string> = {
   dashboard: 'Dashboard operacional',
   'ai-control': 'AI Control Center',
+  'quick-wins': 'Quick Wins',
   'scene-assets': 'Scene Assets',
   lessons: 'Lições',
   quizzes: 'Quizzes',
@@ -349,6 +377,7 @@ const sectionTitle: Record<SectionKey, string> = {
 
 const sectionCopy: Record<SectionKey, string> = {
   dashboard: 'Acompanhe o catálogo, veja o volume de conteúdo e acesse ações rápidas sem abrir formulários gigantes.',
+  'quick-wins': 'Configure o momentum system da home com cards premium, timers, badges de XP e previews cinematográficos em tempo real.',
   'ai-control': 'Configure providers, guardrails, drafts e geração contextual sem quebrar a hierarquia atual de lições, quizzes e questões.',
   'scene-assets': 'Cadastre, organize e ajuste os assets narrativos cinematográficos que alimentam hero, missões e cenas do SparkLingo.',
   lessons: 'Crie e organize as trilhas principais. Cada lição agrupa quizzes e define o tom visual da jornada.',
@@ -413,6 +442,9 @@ export function AdminScreen({
   const [filterQuizId, setFilterQuizId] = useState<string>('all')
   const [questionStatus, setQuestionStatus] = useState<StatusFilter>('all')
   const [achievementSearch, setAchievementSearch] = useState('')
+  const [quickWinSearch, setQuickWinSearch] = useState('')
+  const [quickWinCategoryFilter, setQuickWinCategoryFilter] = useState<QuickWinCategory | 'all'>('all')
+  const [quickWinStatus, setQuickWinStatus] = useState<QuickWinStatusFilter>('all')
   const [sceneAssetSearch, setSceneAssetSearch] = useState('')
   const [sceneAssetCategoryFilter, setSceneAssetCategoryFilter] = useState<SceneAssetCategory | 'all'>('all')
   const [sceneAssetStatus, setSceneAssetStatus] = useState<SceneAssetStatusFilter>('all')
@@ -420,6 +452,10 @@ export function AdminScreen({
   const [quizDraft, setQuizDraft] = useState<QuizCatalogItem>(emptyQuiz)
   const [questionDraft, setQuestionDraft] = useState<QuizQuestionItem>(emptyQuestion)
   const [achievementDraft, setAchievementDraft] = useState<AchievementCatalogItem>(emptyAchievement)
+  const [quickWinDraft, setQuickWinDraft] = useState<QuickWinItem>(createEmptyQuickWin)
+  const [quickWins, setQuickWins] = useState<QuickWinItem[]>([])
+  const [quickWinsLoaded, setQuickWinsLoaded] = useState(false)
+  const [quickWinsConfigDraft, setQuickWinsConfigDraft] = useState<QuickWinsConfig>(defaultQuickWinsConfig)
   const [sceneAssetDraft, setSceneAssetDraft] = useState<SceneAssetRecord>(createEmptySceneAsset)
   const [sceneAssets, setSceneAssets] = useState<SceneAssetRecord[]>([])
   const [sceneAssetsLoaded, setSceneAssetsLoaded] = useState(false)
@@ -448,6 +484,7 @@ export function AdminScreen({
   const debouncedQuizSearch = useDebouncedValue(quizSearch)
   const debouncedQuestionSearch = useDebouncedValue(questionSearch)
   const debouncedAchievementSearch = useDebouncedValue(achievementSearch)
+  const debouncedQuickWinSearch = useDebouncedValue(quickWinSearch)
   const debouncedSceneAssetSearch = useDebouncedValue(sceneAssetSearch)
 
   useEffect(() => {
@@ -461,6 +498,16 @@ export function AdminScreen({
         setSceneAssetsLoaded(true)
       })
       .catch(() => setSceneAssetsLoaded(true))
+  }, [])
+
+  useEffect(() => {
+    Promise.all([getQuickWins(), getQuickWinsConfig()])
+      .then(([items, config]) => {
+        setQuickWins(items)
+        setQuickWinsLoaded(true)
+        setQuickWinsConfigDraft(config)
+      })
+      .catch(() => setQuickWinsLoaded(true))
   }, [])
 
   useEffect(() => {
@@ -503,6 +550,11 @@ export function AdminScreen({
     [achievementDraft.id, achievements],
   )
 
+  const quickWinIdPreview = useMemo(
+    () => quickWinDraft.id || nextNumericId(quickWins.map((item) => item.id), 'QW'),
+    [quickWinDraft.id, quickWins],
+  )
+
   const sceneAssetIdPreview = useMemo(
     () => sceneAssetDraft.id || nextNumericId(sceneAssets.map((item) => item.id), 'SA'),
     [sceneAssetDraft.id, sceneAssets],
@@ -512,9 +564,10 @@ export function AdminScreen({
   const quizDisplayIds = useMemo(() => buildDisplayIdMap(quizzes.map((item) => item.id), 'QZ'), [quizzes])
   const questionDisplayIds = useMemo(() => buildDisplayIdMap(questions.map((item) => item.id), 'QT'), [questions])
   const achievementDisplayIds = useMemo(() => buildDisplayIdMap(achievements.map((item) => item.id), 'AC'), [achievements])
+  const quickWinDisplayIds = useMemo(() => buildDisplayIdMap(quickWins.map((item) => item.id), 'QW'), [quickWins])
   const sceneAssetDisplayIds = useMemo(() => buildDisplayIdMap(sceneAssets.map((item) => item.id), 'SA'), [sceneAssets])
 
-  const displayId = (id: string, kind: 'lesson' | 'quiz' | 'question' | 'achievement' | 'scene-asset') => {
+  const displayId = (id: string, kind: 'lesson' | 'quiz' | 'question' | 'achievement' | 'quick-win' | 'scene-asset') => {
     if (!id) return ''
     const map =
       kind === 'lesson'
@@ -525,6 +578,8 @@ export function AdminScreen({
             ? questionDisplayIds
             : kind === 'achievement'
               ? achievementDisplayIds
+              : kind === 'quick-win'
+                ? quickWinDisplayIds
               : sceneAssetDisplayIds
 
     return map.get(id) ?? id.toUpperCase()
@@ -577,6 +632,18 @@ export function AdminScreen({
     })
   }, [achievements, debouncedAchievementSearch])
 
+  const filteredQuickWins = useMemo(() => {
+    return quickWins
+      .filter((item) => quickWinCategoryFilter === 'all' || item.category === quickWinCategoryFilter)
+      .filter((item) => quickWinStatus === 'all' || (quickWinStatus === 'active' ? item.active : !item.active))
+      .filter((item) => {
+        if (!debouncedQuickWinSearch.trim()) return true
+        const haystack = `${item.id} ${item.title} ${item.subtitle} ${item.category}`.toLowerCase()
+        return haystack.includes(debouncedQuickWinSearch.toLowerCase())
+      })
+      .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title))
+  }, [debouncedQuickWinSearch, quickWinCategoryFilter, quickWinStatus, quickWins])
+
   const filteredSceneAssets = useMemo(() => {
     return sceneAssets
       .filter((asset) => sceneAssetCategoryFilter === 'all' || asset.category === sceneAssetCategoryFilter)
@@ -599,6 +666,11 @@ export function AdminScreen({
   const sceneAssetCategories = useMemo(
     () => Array.from(new Set([...sceneAssetCategoryOptions, ...sceneAssets.map((asset) => asset.category)])).sort(),
     [sceneAssets],
+  )
+
+  const quickWinCategories = useMemo(
+    () => Array.from(new Set([...quickWinCategoryOptions, ...quickWins.map((item) => item.category)])).sort(),
+    [quickWins],
   )
 
   const currentQuestionQuiz = quizzes.find((quiz) => quiz.id === questionDraft.quizId)
@@ -733,6 +805,14 @@ export function AdminScreen({
     setSceneAssets(items)
     setSceneAssetsLoaded(true)
     return items
+  }
+
+  const refreshQuickWins = async () => {
+    const [items, config] = await Promise.all([getQuickWins(), getQuickWinsConfig()])
+    setQuickWins(items)
+    setQuickWinsLoaded(true)
+    setQuickWinsConfigDraft(config)
+    return { items, config }
   }
 
   const openDrawer = (kind: DrawerKind, mode: DrawerMode) => setDrawer({ open: true, kind, mode })
@@ -914,6 +994,17 @@ export function AdminScreen({
     },
   )
 
+  const saveQuickWinItem = () => runAdminTask(
+    'Salvando quick win...',
+    `Quick Win "${quickWinDraft.title}" salvo com sucesso.`,
+    async () => {
+      await upsertQuickWin({ ...quickWinDraft, id: quickWinDraft.id || quickWinIdPreview })
+      await refreshQuickWins()
+      setQuickWinDraft(createEmptyQuickWin())
+      closeDrawer()
+    },
+  )
+
   const saveSceneAssetItem = () => runAdminTask(
     'Salvando scene asset...',
     `Scene asset "${sceneAssetDraft.title}" salvo com sucesso.`,
@@ -944,6 +1035,19 @@ export function AdminScreen({
       async () => {
         await deleteSceneAsset(asset.id)
         await refreshSceneAssets()
+      },
+    )
+  }
+
+  const removeQuickWinItem = async (item: QuickWinItem) => {
+    if (!window.confirm(`Excluir "${item.title}" de Quick Wins?`)) return
+
+    await runAdminTask(
+      `Excluindo "${item.title}"...`,
+      `"${item.title}" removido de Quick Wins.`,
+      async () => {
+        await deleteQuickWin(item.id)
+        await refreshQuickWins()
       },
     )
   }
@@ -989,6 +1093,11 @@ export function AdminScreen({
     openDrawer('achievement', achievement  ? 'edit' : 'create')
   }
 
+  const openQuickWinEditor = (item?: QuickWinItem) => {
+    setQuickWinDraft(item ? { ...item } : createEmptyQuickWin())
+    openDrawer('quick-win', item ? 'edit' : 'create')
+  }
+
   const openSceneAssetEditor = (asset?: SceneAssetRecord) => {
     setSceneAssetDraft(
       asset
@@ -1011,6 +1120,16 @@ export function AdminScreen({
       },
     }))
   }
+
+  const saveQuickWinsSettings = () =>
+    runAdminTask(
+      'Salvando Quick Wins...',
+      'Configuração de Quick Wins salva com sucesso.',
+      async () => {
+        await saveQuickWinsConfig(quickWinsConfigDraft)
+        await refreshQuickWins()
+      },
+    )
 
   const applyMediaAsset = (path: string) => {
     if (!drawer.open) {
@@ -1494,6 +1613,135 @@ export function AdminScreen({
             <button className="admin-primary" type="button" disabled={saving || !questionDraft.quizId || !questionDraft.title} onClick={saveQuestion}>
               <Save size={16} />
               {saving  ? 'Salvando...' : 'Salvar questão'}
+            </button>
+          </div>
+        </>
+      )
+    }
+
+    if (drawer.kind === 'quick-win') {
+      return (
+        <>
+          <div className="admin-drawer-head">
+            <div>
+              <span className="admin-drawer-kicker">{drawer.mode === 'create' ? 'Novo quick win' : 'Editar quick win'}</span>
+              <h3>{quickWinDraft.title || 'Configure o momentum card'}</h3>
+              <p>ID automático: <strong>{displayId(quickWinDraft.id || quickWinIdPreview, 'quick-win')}</strong></p>
+            </div>
+            <button type="button" className="drawer-close" onClick={closeDrawer}><X size={18} /></button>
+          </div>
+
+          <div className="admin-drawer-body">
+            <div className="drawer-form">
+              <label>Título
+                <input value={quickWinDraft.title} onChange={(event) => setQuickWinDraft((current) => ({ ...current, title: event.target.value }))} />
+              </label>
+              <label>Subtítulo
+                <textarea value={quickWinDraft.subtitle} onChange={(event) => setQuickWinDraft((current) => ({ ...current, subtitle: event.target.value }))} />
+              </label>
+              <div className="scene-asset-inline-grid">
+                <label>Categoria
+                  <select value={quickWinDraft.category} onChange={(event) => setQuickWinDraft((current) => ({ ...current, category: event.target.value as QuickWinCategory }))}>
+                    {quickWinCategoryOptions.map((category) => <option key={category} value={category}>{category}</option>)}
+                  </select>
+                </label>
+                <label>Ícone
+                  <select value={quickWinDraft.iconType} onChange={(event) => setQuickWinDraft((current) => ({ ...current, iconType: event.target.value as QuickWinItem['iconType'] }))}>
+                    {quickWinIconOptions.map((icon) => <option key={icon} value={icon}>{icon}</option>)}
+                  </select>
+                </label>
+              </div>
+              <label>Ícone customizado (opcional)
+                <input value={quickWinDraft.iconUrl ?? ''} onChange={(event) => setQuickWinDraft((current) => ({ ...current, iconUrl: event.target.value }))} placeholder="/Images/..." />
+              </label>
+              <div className="scene-asset-inline-grid">
+                <label>Glow do ícone
+                  <input value={quickWinDraft.iconGlowColor} onChange={(event) => setQuickWinDraft((current) => ({ ...current, iconGlowColor: event.target.value }))} placeholder="#9b6bff" />
+                </label>
+                <label>Accent color
+                  <input value={quickWinDraft.accentColor} onChange={(event) => setQuickWinDraft((current) => ({ ...current, accentColor: event.target.value }))} placeholder="#9b6bff" />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Overlay color
+                  <input value={quickWinDraft.overlayColor} onChange={(event) => setQuickWinDraft((current) => ({ ...current, overlayColor: event.target.value }))} placeholder="rgba(76, 40, 154, 0.58)" />
+                </label>
+                <label>XP value
+                  <input type="number" min="1" max="250" value={quickWinDraft.XPValue} onChange={(event) => setQuickWinDraft((current) => ({ ...current, XPValue: Number(event.target.value) || 1 }))} />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Progress mode
+                  <select value={quickWinDraft.progressMode} onChange={(event) => setQuickWinDraft((current) => ({ ...current, progressMode: event.target.value as QuickWinItem['progressMode'] }))}>
+                    {quickWinProgressModeOptions.map((mode) => <option key={mode} value={mode}>{mode}</option>)}
+                  </select>
+                </label>
+                <label>CTA type
+                  <select value={quickWinDraft.CTAType} onChange={(event) => setQuickWinDraft((current) => ({ ...current, CTAType: event.target.value as QuickWinItem['CTAType'] }))}>
+                    {quickWinCTATypeOptions.map((type) => <option key={type} value={type}>{type}</option>)}
+                  </select>
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Progress current
+                  <input type="number" min="0" value={quickWinDraft.progressCurrent} onChange={(event) => setQuickWinDraft((current) => ({ ...current, progressCurrent: Number(event.target.value) || 0 }))} />
+                </label>
+                <label>Progress total
+                  <input type="number" min="1" value={quickWinDraft.progressTotal} onChange={(event) => setQuickWinDraft((current) => ({ ...current, progressTotal: Number(event.target.value) || 1 }))} />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Timer seconds
+                  <input type="number" min="0" max="3600" value={quickWinDraft.timerSeconds} onChange={(event) => setQuickWinDraft((current) => ({ ...current, timerSeconds: Number(event.target.value) || 0 }))} />
+                </label>
+                <label>CTA label
+                  <input value={quickWinDraft.CTAButtonLabel} onChange={(event) => setQuickWinDraft((current) => ({ ...current, CTAButtonLabel: event.target.value }))} />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Hover effect
+                  <select value={quickWinDraft.hoverEffect} onChange={(event) => setQuickWinDraft((current) => ({ ...current, hoverEffect: event.target.value as QuickWinItem['hoverEffect'] }))}>
+                    {quickWinHoverEffectOptions.map((effect) => <option key={effect} value={effect}>{effect}</option>)}
+                  </select>
+                </label>
+                <label>Cinematic style
+                  <select value={quickWinDraft.cinematicStyle} onChange={(event) => setQuickWinDraft((current) => ({ ...current, cinematicStyle: event.target.value as QuickWinItem['cinematicStyle'] }))}>
+                    {quickWinCinematicStyleOptions.map((style) => <option key={style} value={style}>{style}</option>)}
+                  </select>
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Motion preset
+                  <select value={quickWinDraft.motionPreset} onChange={(event) => setQuickWinDraft((current) => ({ ...current, motionPreset: event.target.value as QuickWinItem['motionPreset'] }))}>
+                    {quickWinMotionPresetOptions.map((preset) => <option key={preset} value={preset}>{preset}</option>)}
+                  </select>
+                </label>
+                <label>Ordem
+                  <input type="number" min="1" value={quickWinDraft.order} onChange={(event) => setQuickWinDraft((current) => ({ ...current, order: Number(event.target.value) || 1 }))} />
+                </label>
+              </div>
+              <label className="scene-asset-toggle">
+                <span>Ativo</span>
+                <input type="checkbox" checked={quickWinDraft.active} onChange={(event) => setQuickWinDraft((current) => ({ ...current, active: event.target.checked }))} />
+              </label>
+            </div>
+
+            <div className="cms-quickwins-preview-wrap">
+              <div className="media-slot-head">
+                <strong>Preview cinematográfico</strong>
+                <span>Glow, badge XP, timer e CTA são renderizados em tempo real usando o mesmo componente da home.</span>
+              </div>
+              <div className="cms-quickwins-preview">
+                <QuickWinCard item={{ ...quickWinDraft, id: quickWinDraft.id || quickWinIdPreview }} />
+              </div>
+            </div>
+          </div>
+
+          <div className="admin-drawer-footer">
+            <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
+            <button className="admin-primary" type="button" disabled={saving || !quickWinDraft.title || !quickWinDraft.subtitle} onClick={saveQuickWinItem}>
+              <Save size={16} />
+              {saving ? 'Salvando...' : 'Salvar quick win'}
             </button>
           </div>
         </>
@@ -2269,6 +2517,166 @@ export function AdminScreen({
                   )}
                 </article>
               </div>
+            </section>
+          </section>
+        )}
+
+        {activeSection === 'quick-wins' && (
+          <section className="cms-panel-stack">
+            <section className="cms-summary-grid">
+              <article className="cms-stat-card">
+                <span>Quick wins</span>
+                <strong>{quickWins.length}</strong>
+                <small>cards configurados no sistema próprio</small>
+              </article>
+              <article className="cms-stat-card">
+                <span>Ativos</span>
+                <strong>{quickWins.filter((item) => item.active).length}</strong>
+                <small>visíveis na home quando habilitados</small>
+              </article>
+              <article className="cms-stat-card">
+                <span>Timer mode</span>
+                <strong>{quickWins.filter((item) => item.progressMode === 'timer').length}</strong>
+                <small>desafios com countdown cinematográfico</small>
+              </article>
+              <article className="cms-stat-card">
+                <span>Progress mode</span>
+                <strong>{quickWins.filter((item) => item.progressMode === 'progress').length}</strong>
+                <small>desafios com barra de progresso</small>
+              </article>
+            </section>
+
+            <section className="cms-panel">
+              <div className="cms-panel-head">
+                <div>
+                  <h2>Header de Quick Wins</h2>
+                  <p className="admin-helper">Edite o título, subtítulo, ícone de abertura e o CTA da faixa exatamente como ela aparece na home.</p>
+                </div>
+                <button className="admin-primary" type="button" disabled={saving} onClick={saveQuickWinsSettings}>
+                  <Save size={16} />
+                  {saving ? 'Salvando...' : 'Salvar header'}
+                </button>
+              </div>
+
+              <div className="cms-quickwins-config-grid">
+                <div className="drawer-form">
+                  <label>Título
+                    <input value={quickWinsConfigDraft.title} onChange={(event) => setQuickWinsConfigDraft((current) => ({ ...current, title: event.target.value }))} />
+                  </label>
+                  <label>Subtítulo
+                    <textarea value={quickWinsConfigDraft.subtitle} onChange={(event) => setQuickWinsConfigDraft((current) => ({ ...current, subtitle: event.target.value }))} />
+                  </label>
+                  <div className="scene-asset-inline-grid">
+                    <label>Ícone do header
+                      <select value={quickWinsConfigDraft.headerIconType} onChange={(event) => setQuickWinsConfigDraft((current) => ({ ...current, headerIconType: event.target.value as QuickWinsConfig['headerIconType'] }))}>
+                        {quickWinHeaderIconOptions.map((icon) => <option key={icon} value={icon}>{icon}</option>)}
+                      </select>
+                    </label>
+                    <label>CTA "Ver todas"
+                      <input value={quickWinsConfigDraft.viewAllLabel} onChange={(event) => setQuickWinsConfigDraft((current) => ({ ...current, viewAllLabel: event.target.value }))} />
+                    </label>
+                  </div>
+                </div>
+
+                <div className="cms-quickwins-preview-wrap">
+                  <div className="media-slot-head">
+                    <strong>Preview da faixa</strong>
+                    <span>Visual da home com glow, spacing, badge de XP e CTA circular já aplicados.</span>
+                  </div>
+                  <QuickWinsSection
+                    config={quickWinsConfigDraft}
+                    items={filteredQuickWins.length ? filteredQuickWins.slice(0, 5) : defaultQuickWinsCatalog}
+                    cinematicStyle="violet"
+                    preview
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section className="cms-panel">
+              <div className="cms-panel-head">
+                <div>
+                  <h2>Quick Wins</h2>
+                  <p className="admin-helper">Gerencie um sistema próprio de micro desafios com ícones contextuais, timer, progresso e preview em tempo real.</p>
+                </div>
+                <div className="cms-content-actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      runAdminTask(
+                        'Criando Quick Wins base...',
+                        'Quick Wins base populados no Firestore.',
+                        async () => {
+                          await seedDefaultQuickWins()
+                          await refreshQuickWins()
+                        },
+                      )
+                    }
+                  >
+                    <Sparkles size={14} />
+                    Popular base ({defaultQuickWinsCatalog.length})
+                  </button>
+                  <button className="admin-primary" type="button" onClick={() => openQuickWinEditor()}>
+                    <Plus size={16} />
+                    Novo quick win
+                  </button>
+                </div>
+              </div>
+
+              <div className="cms-filter-row cms-filter-row-scene-assets">
+                <div className="cms-search">
+                  <Search size={16} />
+                  <input
+                    value={quickWinSearch}
+                    onChange={(event) => setQuickWinSearch(event.target.value)}
+                    placeholder="Buscar por título, subtítulo, categoria ou ID"
+                  />
+                </div>
+                <select value={quickWinCategoryFilter} onChange={(event) => setQuickWinCategoryFilter(event.target.value as QuickWinCategory | 'all')}>
+                  <option value="all">Todas categorias</option>
+                  {quickWinCategories.map((category) => <option key={category} value={category}>{category}</option>)}
+                </select>
+                <select value={quickWinStatus} onChange={(event) => setQuickWinStatus(event.target.value as QuickWinStatusFilter)}>
+                  <option value="all">Todos status</option>
+                  <option value="active">Ativos</option>
+                  <option value="inactive">Inativos</option>
+                </select>
+              </div>
+
+              {!filteredQuickWins.length && quickWinsLoaded ? (
+                <div className="cms-empty-panel cms-empty-panel-inline">
+                  <Zap size={24} />
+                  <h2>Nenhum quick win ainda</h2>
+                  <p>Popule a base do sistema ou crie manualmente cards com badge XP, timer e glow contextual.</p>
+                </div>
+              ) : (
+                <div className="cms-quickwins-grid">
+                  {filteredQuickWins.map((item) => (
+                    <article key={item.id} className="cms-quickwins-card">
+                      <div className="cms-quickwins-card-preview">
+                        <QuickWinCard item={item} />
+                      </div>
+                      <div className="cms-quickwins-card-copy">
+                        <div>
+                          <strong>{item.title}</strong>
+                          <span>{displayId(item.id, 'quick-win')} • {item.category} • ordem {item.order}</span>
+                        </div>
+                        <p>{item.subtitle}</p>
+                        <div className="scene-asset-card-meta">
+                          <span>{item.iconType}</span>
+                          <span>{item.progressMode}</span>
+                          <span>{item.cinematicStyle}</span>
+                          <span>{item.active ? 'ativo' : 'inativo'}</span>
+                        </div>
+                      </div>
+                      <div className="cms-content-actions">
+                        <button type="button" onClick={() => openQuickWinEditor(item)}><Pencil size={14} />Editar</button>
+                        <button type="button" className="danger" onClick={() => removeQuickWinItem(item)}><Trash2 size={14} />Excluir</button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
             </section>
           </section>
         )}

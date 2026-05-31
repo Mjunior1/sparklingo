@@ -1,0 +1,479 @@
+.spark-qw-section {
+  position: relative;
+  width: min(calc(100vw - 56px), 1520px);
+  max-width: 1520px;
+  margin: 28px auto 0;
+  padding: 24px 26px 28px;
+  border-radius: 32px;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(10, 13, 34, 0.98), rgba(8, 11, 28, 0.96)),
+    radial-gradient(circle at 12% 14%, rgba(127, 94, 255, 0.12), transparent 24%);
+  border: 1px solid rgba(124, 98, 232, 0.2);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 30px 72px rgba(7, 10, 26, 0.44);
+  isolation: isolate;
+}
+
+.spark-qw-section.is-preview {
+  width: 100%;
+  max-width: none;
+  margin: 0;
+}
+
+.spark-qw-section::before,
+.spark-qw-section::after,
+.spark-qw-ambient {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.spark-qw-ambient {
+  background:
+    radial-gradient(circle at 8% 12%, var(--qw-ambient, rgba(157, 112, 255, 0.18)), transparent 22%),
+    radial-gradient(circle at 88% 10%, var(--qw-secondary, rgba(255, 184, 90, 0.12)), transparent 20%);
+  animation: spark-qw-ambient-breathe 7.4s ease-in-out infinite;
+}
+
+.spark-qw-section::before {
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 34%);
+}
+
+.spark-qw-section::after {
+  background:
+    radial-gradient(circle at 100% 100%, rgba(255, 255, 255, 0.06), transparent 22%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 22%);
+  opacity: 0.8;
+}
+
+.spark-qw-section-violet {
+  --qw-ambient: rgba(151, 111, 255, 0.2);
+  --qw-secondary: rgba(255, 182, 104, 0.12);
+}
+
+.spark-qw-section-emerald {
+  --qw-ambient: rgba(62, 226, 146, 0.18);
+  --qw-secondary: rgba(105, 248, 195, 0.1);
+}
+
+.spark-qw-section-amber {
+  --qw-ambient: rgba(255, 183, 72, 0.18);
+  --qw-secondary: rgba(255, 113, 72, 0.1);
+}
+
+.spark-qw-section-azure {
+  --qw-ambient: rgba(86, 163, 255, 0.18);
+  --qw-secondary: rgba(112, 212, 255, 0.1);
+}
+
+.spark-qw-section-fuchsia {
+  --qw-ambient: rgba(255, 96, 170, 0.16);
+  --qw-secondary: rgba(255, 142, 199, 0.1);
+}
+
+.spark-qw-header,
+.spark-qw-track {
+  position: relative;
+  z-index: 1;
+}
+
+.spark-qw-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.spark-qw-copy {
+  display: grid;
+  gap: 8px;
+}
+
+.spark-qw-titleline {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.spark-qw-titleline h2 {
+  margin: 0;
+  color: #ffffff;
+  font-size: clamp(2rem, 3vw, 2.7rem);
+  line-height: 0.98;
+  letter-spacing: -0.03em;
+}
+
+.spark-qw-titleline-icon {
+  color: #ffd04f;
+  filter: drop-shadow(0 0 16px rgba(255, 210, 88, 0.34));
+}
+
+.spark-qw-copy p {
+  margin: 0;
+  color: rgba(231, 236, 255, 0.78);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.spark-qw-viewall {
+  border: 1px solid rgba(158, 143, 231, 0.2);
+  background: rgba(16, 18, 42, 0.68);
+  color: #f4f3ff;
+  border-radius: 22px;
+  padding: 14px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 240ms ease, border-color 240ms ease;
+}
+
+.spark-qw-viewall:hover,
+.spark-qw-viewall:focus-visible {
+  transform: translateY(-2px);
+  border-color: rgba(188, 168, 255, 0.32);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 32px rgba(39, 28, 92, 0.22);
+}
+
+.spark-qw-track {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(238px, 1fr);
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 2px;
+  scroll-snap-type: x proximity;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.spark-qw-track::-webkit-scrollbar {
+  display: none;
+}
+
+.spark-qw-card {
+  position: relative;
+  min-height: 276px;
+  border-radius: 30px;
+  overflow: hidden;
+  padding: 18px;
+  display: grid;
+  grid-template-rows: auto 1fr auto auto;
+  gap: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background:
+    linear-gradient(180deg, rgba(20, 24, 56, 0.94), rgba(11, 13, 34, 0.98)),
+    radial-gradient(circle at 14% 14%, rgba(255, 255, 255, 0.08), transparent 24%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 20px 44px rgba(8, 10, 24, 0.34);
+  scroll-snap-align: start;
+  isolation: isolate;
+  outline: none;
+  transition:
+    transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 360ms cubic-bezier(0.22, 1, 0.36, 1),
+    border-color 260ms ease,
+    filter 260ms ease;
+}
+
+.spark-qw-card::before,
+.spark-qw-card::after,
+.spark-qw-card-bloom,
+.spark-qw-card-sheen {
+  position: absolute;
+  pointer-events: none;
+  content: '';
+}
+
+.spark-qw-card::before {
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 30%, transparent), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 36%);
+  opacity: 0.88;
+  z-index: 0;
+}
+
+.spark-qw-card::after {
+  inset: 0;
+  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--qw-card-overlay, rgba(46, 28, 91, 0.6)) 72%, transparent) 100%);
+  opacity: 0.54;
+  z-index: 0;
+}
+
+.spark-qw-card-bloom {
+  inset: auto -26px -28px auto;
+  width: 126px;
+  height: 126px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 58%, transparent), transparent 70%);
+  opacity: 0.7;
+  filter: blur(10px);
+  z-index: 0;
+  animation: spark-qw-card-breathe 4.8s ease-in-out infinite;
+}
+
+.spark-qw-card-sheen {
+  inset: -20% auto auto -16%;
+  width: 58px;
+  height: 160%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.24), rgba(255, 255, 255, 0));
+  transform: rotate(18deg) translateX(-120%);
+  z-index: 0;
+  opacity: 0.34;
+}
+
+.spark-qw-card:hover,
+.spark-qw-card:focus-visible {
+  transform: translateY(-6px);
+  border-color: color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 52%, rgba(255, 255, 255, 0.24));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 28px 56px rgba(8, 10, 24, 0.42),
+    0 0 0 1px color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 28%, transparent);
+  filter: saturate(1.08) brightness(1.05);
+}
+
+.spark-qw-card:hover .spark-qw-card-bloom,
+.spark-qw-card:focus-visible .spark-qw-card-bloom {
+  opacity: 0.96;
+  transform: scale(1.08);
+}
+
+.spark-qw-card:hover .spark-qw-card-sheen,
+.spark-qw-card:focus-visible .spark-qw-card-sheen {
+  animation: spark-qw-sheen 1.4s ease forwards;
+}
+
+.spark-qw-card-top,
+.spark-qw-card-meta,
+.spark-qw-card-footer {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.spark-qw-card-icon {
+  position: relative;
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background:
+    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.4), transparent 32%),
+    radial-gradient(circle, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 84%, white 6%), color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 46%, rgba(10, 13, 36, 0.16)));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    0 0 0 1px rgba(255, 255, 255, 0.08),
+    0 22px 34px color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 28%, transparent);
+}
+
+.spark-qw-card-icon::before {
+  content: '';
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--qw-card-glow, #a06bff) 42%, transparent), transparent 70%);
+  opacity: 0.8;
+  filter: blur(8px);
+  animation: spark-qw-orb-breathe 4.4s ease-in-out infinite;
+}
+
+.spark-qw-card-icon svg,
+.spark-qw-card-icon img {
+  position: relative;
+  z-index: 1;
+}
+
+.spark-qw-card-icon img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.spark-qw-card-badge {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  color: #fff4d8;
+  background:
+    linear-gradient(180deg, rgba(32, 22, 68, 0.94), rgba(23, 16, 52, 0.94)),
+    radial-gradient(circle at 22% 28%, rgba(255, 201, 92, 0.18), transparent 30%);
+  border: 1px solid rgba(255, 223, 157, 0.14);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 16px 30px rgba(11, 8, 32, 0.28);
+  font-size: 0.92rem;
+  font-weight: 900;
+}
+
+.spark-qw-card-badge svg {
+  color: #ffc95b;
+  filter: drop-shadow(0 0 10px rgba(255, 201, 91, 0.42));
+}
+
+.spark-qw-card-copy,
+.spark-qw-card-progress {
+  position: relative;
+  z-index: 1;
+}
+
+.spark-qw-card-copy {
+  display: grid;
+  gap: 9px;
+}
+
+.spark-qw-card-copy strong {
+  color: #ffffff;
+  font-size: 1.52rem;
+  line-height: 1.02;
+  letter-spacing: -0.02em;
+}
+
+.spark-qw-card-copy p {
+  margin: 0;
+  color: rgba(231, 236, 255, 0.82);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.spark-qw-card-meta small {
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 0.96rem;
+  font-weight: 700;
+}
+
+.spark-qw-card-timer {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.spark-qw-card-progress {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.34);
+}
+
+.spark-qw-card-progress span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 88%, white 2%), #ffc76d);
+  box-shadow: 0 0 16px color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 42%, transparent);
+  transition: width 420ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.spark-qw-card-footer {
+  align-items: center;
+}
+
+.spark-qw-card-cta-circle {
+  margin-left: auto;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  color: #ffffff;
+  background: linear-gradient(180deg, #8f60ff, #6d43ee);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 16px 28px rgba(102, 68, 235, 0.28);
+  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 240ms ease;
+}
+
+.spark-qw-card:hover .spark-qw-card-cta-circle,
+.spark-qw-card:focus-visible .spark-qw-card-cta-circle {
+  transform: translateY(-1px) scale(1.04);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.16),
+    0 18px 32px rgba(102, 68, 235, 0.34);
+}
+
+.spark-qw-card-progresslabel {
+  color: rgba(237, 239, 255, 0.76);
+  font-size: 0.94rem;
+  font-weight: 700;
+}
+
+@keyframes spark-qw-card-breathe {
+  0%, 100% { transform: scale(0.98); opacity: 0.68; }
+  50% { transform: scale(1.06); opacity: 0.9; }
+}
+
+@keyframes spark-qw-orb-breathe {
+  0%, 100% { opacity: 0.64; transform: scale(0.96); }
+  50% { opacity: 0.92; transform: scale(1.06); }
+}
+
+@keyframes spark-qw-sheen {
+  0% { transform: rotate(18deg) translateX(-120%); opacity: 0; }
+  20% { opacity: 0.38; }
+  100% { transform: rotate(18deg) translateX(460%); opacity: 0; }
+}
+
+@keyframes spark-qw-ambient-breathe {
+  0%, 100% { opacity: 0.84; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.02); }
+}
+
+@media (max-width: 860px) {
+  .spark-qw-section {
+    width: 100%;
+    max-width: none;
+    padding: 20px 18px 22px;
+    border-radius: 28px;
+    margin-top: 22px;
+  }
+
+  .spark-qw-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .spark-qw-viewall {
+    align-self: flex-start;
+  }
+
+  .spark-qw-track {
+    grid-auto-columns: minmax(280px, 84vw);
+    gap: 14px;
+    padding-right: 8px;
+  }
+
+  .spark-qw-card {
+    min-height: 248px;
+    padding: 16px;
+  }
+
+  .spark-qw-card-icon {
+    width: 74px;
+    height: 74px;
+  }
+
+  .spark-qw-card-copy strong {
+    font-size: 1.36rem;
+  }
+}

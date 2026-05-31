@@ -431,6 +431,59 @@
   gap: 16px;
 }
 
+.cms-quickwins-config-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.08fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.cms-quickwins-preview-wrap,
+.cms-quickwins-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 24px;
+  border: 1px solid rgba(145, 115, 255, 0.12);
+  background: rgba(255, 255, 255, 0.82);
+}
+
+.cms-quickwins-preview {
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.cms-quickwins-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.cms-quickwins-card-preview {
+  border-radius: 24px;
+  overflow: hidden;
+}
+
+.cms-quickwins-card-copy {
+  display: grid;
+  gap: 10px;
+}
+
+.cms-quickwins-card-copy strong {
+  color: #2b2168;
+  font-size: 1rem;
+}
+
+.cms-quickwins-card-copy span,
+.cms-quickwins-card-copy p {
+  color: #6e6595;
+}
+
+.cms-quickwins-card-copy p {
+  margin: 0;
+  line-height: 1.55;
+}
+
 .scene-asset-card {
   display: grid;
   gap: 14px;
@@ -1653,6 +1706,8 @@
   }
 
   .cms-template-grid,
+  .cms-quickwins-config-grid,
+  .cms-quickwins-grid,
   .cms-composer-mix,
   .cms-mini-grid,
   .cms-ai-observability,
