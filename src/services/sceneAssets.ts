@@ -101,6 +101,9 @@ const focalPointToXY = (focalPoint: SceneAssetFocalPoint) => {
   return { x: 50, y: 50 }
 }
 
+const pickEnum = <T extends string>(value: unknown, allowed: T[], fallback: T): T =>
+  typeof value === 'string' && allowed.includes(value as T) ? (value as T) : fallback
+
 export const defaultSceneAssetDraft: SceneAssetRecord = {
   id: '',
   title: '',
@@ -239,9 +242,7 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
 ]
 
 const sanitizeSceneAsset = (asset: SceneAssetRecord | (Partial<SceneAssetRecord> & Record<string, unknown>)): SceneAssetRecord => {
-  const focalPoint = validFocalPoints.includes((asset.focalPoint as SceneAssetFocalPoint) ?? 'center')
-    ? (asset.focalPoint as SceneAssetFocalPoint)
-    : 'center'
+  const focalPoint = pickEnum(asset.focalPoint, validFocalPoints, 'center')
   const fallbackXY = focalPointToXY(focalPoint)
   const heroBackgroundImageUrl = normalizeSceneAssetPath(
     cleanString(asset.heroBackgroundImageUrl) ||
@@ -256,20 +257,18 @@ const sanitizeSceneAsset = (asset: SceneAssetRecord | (Partial<SceneAssetRecord>
       imageUrl ||
       heroBackgroundImageUrl,
   )
-  const cinematicStyle = validOverlayStyles.includes((asset.cinematicStyle as SceneAssetOverlayStyle) ?? 'cinematic-violet')
-    ? (asset.cinematicStyle as SceneAssetOverlayStyle)
-    : validOverlayStyles.includes((asset.uiOverlayStyle as SceneAssetOverlayStyle) ?? 'cinematic-violet')
-      ? (asset.uiOverlayStyle as SceneAssetOverlayStyle)
-      : 'cinematic-violet'
+  const cinematicStyle = pickEnum(
+    asset.cinematicStyle ?? asset.uiOverlayStyle,
+    validOverlayStyles,
+    'cinematic-violet',
+  )
   const overlayOpacity = clamp(cleanNumber(asset.overlayOpacity ?? asset.overlayIntensity, 55), 0, 100)
 
   return {
     id: cleanString(asset.id),
     title: cleanString(asset.title),
     slug: cleanString(asset.slug),
-    category: validCategories.includes((asset.category as SceneAssetCategory) ?? 'General')
-      ? (asset.category as SceneAssetCategory)
-      : 'General',
+    category: pickEnum(asset.category, validCategories, 'General'),
     chapter: cleanString(asset.chapter),
     mission: cleanString(asset.mission),
     emotionalTone: cleanString(asset.emotionalTone),
@@ -368,7 +367,7 @@ export const upsertSceneAsset = async (asset: SceneAssetRecord) => {
   await setDoc(
     doc(db, assetCollection, sanitized.id),
     {
-      ...sanitized,
+      ...JSON.parse(JSON.stringify(sanitized)),
       updatedAt: serverTimestamp(),
     },
     { merge: true },

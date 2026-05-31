@@ -19,7 +19,7 @@ import {
 import { getLessonProgressMap } from './services/lessonProgress'
 import { defaultPlatformConfig } from './services/platform'
 import { getUserProgress, type UserProgress } from './services/progress'
-import { defaultSceneAssetsCatalog, getSceneAssets, type SceneAssetRecord } from './services/sceneAssets'
+import { getSceneAssets, type SceneAssetRecord } from './services/sceneAssets'
 
 const clampPercent = (value: number) => Math.min(100, Math.max(0, Math.round(value)))
 
@@ -62,93 +62,6 @@ const resolveLessonForAsset = (asset: SceneAssetRecord | null, lessons: LessonCa
     lessons[0] ??
     null
   )
-}
-
-const resolveSceneAssetForLesson = (lesson: LessonCatalogItem, sceneAssets: SceneAssetRecord[]) => {
-  const lessonMission = normalizeText(lesson.missionTitle || lesson.title)
-  const lessonTitle = normalizeText(lesson.title)
-
-  return (
-    sceneAssets.find((asset) => {
-      const assetMission = normalizeText(asset.mission)
-      const assetTitle = normalizeText(asset.title)
-
-      return (
-        (lessonMission && assetMission && (lessonMission.includes(assetMission) || assetMission.includes(lessonMission))) ||
-        (lessonMission && assetTitle && (lessonMission.includes(assetTitle) || assetTitle.includes(lessonMission))) ||
-        (lessonTitle && assetMission && (lessonTitle.includes(assetMission) || assetMission.includes(lessonTitle))) ||
-        (lessonTitle && assetTitle && (lessonTitle.includes(assetTitle) || assetTitle.includes(lessonTitle)))
-      )
-    }) ?? null
-  )
-}
-
-const toneToOverlayStyle = (tone: LessonCatalogItem['tone']): SceneAssetRecord['cinematicStyle'] => {
-  if (tone === 'mint') return 'aurora-soft'
-  if (tone === 'sky') return 'cinematic-violet'
-  return 'ember-glow'
-}
-
-const lessonCategoryToSceneCategory = (lesson: LessonCatalogItem): SceneAssetRecord['category'] => {
-  const lessonTitle = normalizeText(lesson.title)
-  const missionTitle = normalizeText(lesson.missionTitle)
-
-  if (lessonTitle.includes('airport') || missionTitle.includes('airport')) return 'Airport'
-  if (lessonTitle.includes('coffee') || missionTitle.includes('coffee')) return 'CoffeeShop'
-  if (lessonTitle.includes('park') || missionTitle.includes('park')) return 'Park'
-  return 'General'
-}
-
-const buildFallbackSceneAssetForLesson = (lesson: LessonCatalogItem, progressionOrder: number): SceneAssetRecord => {
-  const heroDesktop =
-    lesson.mediaSlots?.heroImageDesktop?.path ||
-    lesson.mediaSlots?.emotionalBackground?.path ||
-    lesson.mediaSlots?.thumbnail?.path ||
-    lesson.image
-  const heroMobile =
-    lesson.mediaSlots?.heroImageMobile?.path ||
-    lesson.mediaSlots?.heroImageDesktop?.path ||
-    lesson.mediaSlots?.emotionalBackground?.path ||
-    lesson.image
-  const poster =
-    lesson.mediaSlots?.thumbnail?.path ||
-    lesson.mediaSlots?.heroImageDesktop?.path ||
-    lesson.mediaSlots?.heroImageMobile?.path ||
-    lesson.image
-
-  return {
-    ...defaultSceneAssetsCatalog[0],
-    id: `lesson-${lesson.id}`,
-    title: lesson.missionTitle || lesson.title,
-    slug: normalizeText(lesson.missionTitle || lesson.title).replace(/\s+/g, '-'),
-    category: lessonCategoryToSceneCategory(lesson),
-    chapter: `Chapter ${progressionOrder + 1}`,
-    mission: lesson.missionTitle || lesson.title,
-    emotionalTone: lesson.emotionalGoal || lesson.emotionalContext || lesson.blurb,
-    missionCardDescription: lesson.practicalGoal || lesson.blurb,
-    heroBackgroundImageUrl: heroDesktop,
-    backgroundImageUrl: heroDesktop,
-    imageUrl: poster,
-    mobileImageUrl: heroMobile,
-    imageUrlDesktop: poster,
-    imageUrlMobile: heroMobile,
-    focalPoint: 'center',
-    focalPointX: 50,
-    focalPointY: 50,
-    overlayOpacity: 54,
-    overlayColor: '#090d24',
-    overlayIntensity: 54,
-    brightness: 100,
-    blurIntensity: 8,
-    textSafeArea: defaultSceneAssetsCatalog[0].textSafeArea,
-    characterSafeArea: defaultSceneAssetsCatalog[0].characterSafeArea,
-    cinematicStyle: toneToOverlayStyle(lesson.tone),
-    uiOverlayStyle: toneToOverlayStyle(lesson.tone),
-    progressionOrder: progressionOrder + 1,
-    featuredHero: false,
-    showInHero: true,
-    active: true,
-  }
 }
 
 const getAssetImage = (
@@ -208,10 +121,10 @@ const buildMissionVisual = (
   const progressPercent = clampPercent(lesson?.progress ?? 0)
 
   return {
-    id: lesson?.id || asset.id,
+    id: asset.id,
     asset,
     lesson,
-    title: lesson?.missionTitle || lesson?.title || asset.mission || asset.title,
+    title: asset.mission || asset.title || lesson?.missionTitle || lesson?.title || 'Untitled mission',
     description:
       asset.missionCardDescription ||
       lesson?.practicalGoal ||
@@ -320,19 +233,6 @@ function App() {
   )
 
   const missionVisuals = useMemo(() => {
-    if (lessonsCatalog.length) {
-      const lessonsFromBackend = lessonsCatalog
-        .map((lesson, index) => {
-          const matchingAsset = resolveSceneAssetForLesson(lesson, activeSceneAssets)
-          const asset = matchingAsset ?? buildFallbackSceneAssetForLesson(lesson, index)
-          const shouldShow = matchingAsset ? matchingAsset.showInHero : true
-          return shouldShow ? buildMissionVisual(lesson, quizCatalog, asset, index) : null
-        })
-        .filter((mission): mission is MissionVisual => mission !== null)
-
-      if (lessonsFromBackend.length) return lessonsFromBackend
-    }
-
     const visibleAssets = activeSceneAssets.filter((asset) => asset.showInHero)
     return visibleAssets.map((asset, index) =>
       buildMissionVisual(resolveLessonForAsset(asset, lessonsCatalog), quizCatalog, asset, index),
@@ -343,10 +243,7 @@ function App() {
     const featuredAsset = activeSceneAssets.find((asset) => asset.featuredHero) ?? null
     if (featuredAsset) {
       const matchingMission =
-        missionVisuals.find((mission) => mission.asset.id === featuredAsset.id) ||
-        missionVisuals.find(
-          (mission) => mission.lesson && resolveSceneAssetForLesson(mission.lesson, activeSceneAssets)?.id === featuredAsset.id,
-        )
+        missionVisuals.find((mission) => mission.asset.id === featuredAsset.id)
 
       if (matchingMission) return matchingMission
     }
@@ -394,7 +291,7 @@ function App() {
     missionCardRefs.current[activeMission.id]?.scrollIntoView({
       behavior: 'smooth',
       block: 'nearest',
-      inline: 'center',
+      inline: 'nearest',
     })
   }, [activeMission?.id])
 
