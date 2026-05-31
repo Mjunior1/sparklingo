@@ -171,14 +171,17 @@
   gap: 14px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background:
-    linear-gradient(180deg, rgba(20, 24, 56, 0.94), rgba(11, 13, 34, 0.98)),
-    radial-gradient(circle at 14% 14%, rgba(255, 255, 255, 0.08), transparent 24%);
+    linear-gradient(180deg, rgba(20, 24, 56, 0.9), rgba(11, 13, 34, 0.96)),
+    linear-gradient(125deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.015) 34%, rgba(255, 255, 255, 0.01) 56%, rgba(8, 10, 24, 0.08) 100%),
+    radial-gradient(circle at 14% 14%, rgba(255, 255, 255, 0.1), transparent 24%);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -18px 26px rgba(2, 4, 14, 0.18),
     0 20px 44px rgba(8, 10, 24, 0.34);
   scroll-snap-align: start;
   isolation: isolate;
   outline: none;
+  backdrop-filter: blur(18px) saturate(1.04);
   transition:
     transform 360ms cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 360ms cubic-bezier(0.22, 1, 0.36, 1),
@@ -198,27 +201,35 @@
 .spark-qw-card::before {
   inset: 0;
   background:
-    radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 30%, transparent), transparent 26%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.04), transparent 36%);
+    radial-gradient(circle at 18% 14%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 34%, transparent), transparent 26%),
+    radial-gradient(circle at 76% 18%, rgba(255, 255, 255, 0.08) 0 1px, transparent 1.8px),
+    radial-gradient(circle at 68% 30%, rgba(255, 255, 255, 0.05) 0 1px, transparent 1.8px),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.055), transparent 36%);
   opacity: 0.88;
   z-index: 0;
 }
 
 .spark-qw-card::after {
   inset: 0;
-  background: linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--qw-card-overlay, rgba(46, 28, 91, 0.6)) 72%, transparent) 100%);
+  background:
+    radial-gradient(ellipse at 28% 20%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 18%, transparent), transparent 36%),
+    radial-gradient(ellipse at 38% 78%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 12%, transparent), transparent 44%),
+    linear-gradient(180deg, transparent 0%, color-mix(in srgb, var(--qw-card-overlay, rgba(46, 28, 91, 0.6)) 78%, transparent) 100%);
   opacity: 0.54;
   z-index: 0;
 }
 
 .spark-qw-card-bloom {
-  inset: auto -26px -28px auto;
-  width: 126px;
-  height: 126px;
-  border-radius: 50%;
-  background: radial-gradient(circle, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 58%, transparent), transparent 70%);
-  opacity: 0.7;
-  filter: blur(10px);
+  inset: auto -30px -34px auto;
+  width: 152px;
+  height: 134px;
+  border-radius: 46% 54% 58% 42% / 46% 44% 56% 54%;
+  background:
+    radial-gradient(circle at 40% 42%, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 62%, transparent), transparent 32%),
+    radial-gradient(ellipse at 62% 72%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 22%, transparent), transparent 62%);
+  opacity: 0.74;
+  filter: blur(14px);
+  mix-blend-mode: screen;
   z-index: 0;
   animation: spark-qw-card-breathe 4.8s ease-in-out infinite;
 }
@@ -239,6 +250,7 @@
   border-color: color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 52%, rgba(255, 255, 255, 0.24));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 -20px 30px rgba(3, 6, 17, 0.22),
     0 28px 56px rgba(8, 10, 24, 0.42),
     0 0 0 1px color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 28%, transparent);
   filter: saturate(1.08) brightness(1.05);
@@ -247,7 +259,7 @@
 .spark-qw-card:hover .spark-qw-card-bloom,
 .spark-qw-card:focus-visible .spark-qw-card-bloom {
   opacity: 0.96;
-  transform: scale(1.08);
+  transform: translate3d(4px, 6px, 0) scale(1.1);
 }
 
 .spark-qw-card:hover .spark-qw-card-sheen,
@@ -275,12 +287,15 @@
   place-items: center;
   color: #ffffff;
   background:
-    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.4), transparent 32%),
-    radial-gradient(circle, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 84%, white 6%), color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 46%, rgba(10, 13, 36, 0.16)));
+    radial-gradient(circle at 36% 30%, rgba(255, 255, 255, 0.52), transparent 28%),
+    radial-gradient(circle at 50% 52%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 34%, rgba(255, 255, 255, 0.08)), transparent 56%),
+    radial-gradient(circle, color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 88%, white 7%), color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 42%, rgba(10, 13, 36, 0.14)));
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.24),
+    inset 0 -10px 16px rgba(5, 8, 24, 0.18),
     0 0 0 1px rgba(255, 255, 255, 0.08),
-    0 22px 34px color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 28%, transparent);
+    0 22px 34px color-mix(in srgb, var(--qw-card-accent, #8b5cf6) 32%, transparent),
+    0 0 32px color-mix(in srgb, var(--qw-card-glow, #a06bff) 12%, transparent);
   isolation: isolate;
   overflow: visible;
 }
@@ -448,14 +463,43 @@
   border: 1px solid rgba(255, 223, 157, 0.14);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    inset 0 -10px 16px rgba(10, 7, 24, 0.2),
+    0 0 0 1px rgba(255, 215, 143, 0.05),
     0 16px 30px rgba(11, 8, 32, 0.28);
   font-size: 0.92rem;
   font-weight: 900;
+  overflow: hidden;
+}
+
+.spark-qw-card-badge::before,
+.spark-qw-card-badge::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.spark-qw-card-badge::before {
+  background:
+    radial-gradient(circle at 22% 34%, rgba(255, 228, 146, 0.34), transparent 26%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 46%);
+}
+
+.spark-qw-card-badge::after {
+  inset: -22% auto auto -12%;
+  width: 28px;
+  height: 170%;
+  background: linear-gradient(180deg, rgba(255, 244, 196, 0.2), rgba(255, 244, 196, 0));
+  transform: rotate(18deg);
+  opacity: 0.34;
+  animation: spark-qw-badge-glint 5.8s ease-in-out infinite;
 }
 
 .spark-qw-card-badge svg {
   color: #ffc95b;
-  filter: drop-shadow(0 0 10px rgba(255, 201, 91, 0.42));
+  filter:
+    drop-shadow(0 0 10px rgba(255, 201, 91, 0.42))
+    drop-shadow(0 0 18px rgba(255, 219, 124, 0.18));
 }
 
 .spark-qw-card-copy,
@@ -518,6 +562,7 @@
 }
 
 .spark-qw-card-cta-circle {
+  position: relative;
   margin-left: auto;
   width: 44px;
   height: 44px;
@@ -528,8 +573,37 @@
   background: linear-gradient(180deg, #8f60ff, #6d43ee);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 16px 28px rgba(102, 68, 235, 0.28);
-  transition: transform 240ms cubic-bezier(0.22, 1, 0.36, 1), box-shadow 240ms ease;
+    inset 0 -10px 14px rgba(42, 18, 110, 0.28),
+    0 16px 28px rgba(102, 68, 235, 0.28),
+    0 0 20px color-mix(in srgb, var(--qw-card-glow, #a06bff) 16%, transparent);
+  transition:
+    transform 240ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 240ms ease,
+    filter 240ms ease;
+  overflow: hidden;
+  animation: spark-qw-cta-pulse 4.8s ease-in-out infinite;
+}
+
+.spark-qw-card-cta-circle::before,
+.spark-qw-card-cta-circle::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.spark-qw-card-cta-circle::before {
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255, 255, 255, 0.28), transparent 28%),
+    radial-gradient(circle at 50% 50%, color-mix(in srgb, var(--qw-card-glow, #a06bff) 20%, transparent), transparent 66%);
+}
+
+.spark-qw-card-cta-circle::after {
+  inset: -32%;
+  border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--qw-card-glow, #a06bff) 18%, transparent), transparent 72%);
+  filter: blur(10px);
+  opacity: 0.64;
 }
 
 .spark-qw-card:hover .spark-qw-card-cta-circle,
@@ -537,7 +611,10 @@
   transform: translateY(-1px) scale(1.04);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.16),
-    0 18px 32px rgba(102, 68, 235, 0.34);
+    inset 0 -10px 14px rgba(42, 18, 110, 0.3),
+    0 18px 32px rgba(102, 68, 235, 0.34),
+    0 0 28px color-mix(in srgb, var(--qw-card-glow, #a06bff) 24%, transparent);
+  filter: brightness(1.06);
 }
 
 .spark-qw-card-progresslabel {
@@ -587,6 +664,30 @@
   0% { transform: rotate(18deg) translateX(-120%); opacity: 0; }
   20% { opacity: 0.38; }
   100% { transform: rotate(18deg) translateX(460%); opacity: 0; }
+}
+
+@keyframes spark-qw-badge-glint {
+  0%, 100% { transform: rotate(18deg) translateX(-110%); opacity: 0.18; }
+  48% { opacity: 0.18; }
+  60% { opacity: 0.34; }
+  100% { transform: rotate(18deg) translateX(360%); opacity: 0.06; }
+}
+
+@keyframes spark-qw-cta-pulse {
+  0%, 100% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.16),
+      inset 0 -10px 14px rgba(42, 18, 110, 0.28),
+      0 16px 28px rgba(102, 68, 235, 0.28),
+      0 0 20px color-mix(in srgb, var(--qw-card-glow, #a06bff) 16%, transparent);
+  }
+  50% {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.16),
+      inset 0 -10px 14px rgba(42, 18, 110, 0.28),
+      0 18px 30px rgba(102, 68, 235, 0.32),
+      0 0 28px color-mix(in srgb, var(--qw-card-glow, #a06bff) 22%, transparent);
+  }
 }
 
 @keyframes spark-qw-ambient-breathe {
