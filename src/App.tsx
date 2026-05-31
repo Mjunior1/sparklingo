@@ -1,6 +1,20 @@
 import './App.css'
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
-import { ArrowRight, ChevronLeft, ChevronRight, Flame, Medal, Shield, UserRound, Zap } from 'lucide-react'
+import {
+  ArrowRight,
+  Brain,
+  ChevronLeft,
+  ChevronRight,
+  Clock3,
+  Flame,
+  Medal,
+  Mic,
+  Shield,
+  Sparkles,
+  UserRound,
+  Volume2,
+  Zap,
+} from 'lucide-react'
 import { AdminScreen } from './admin/AdminScreen'
 import { AuthEntry } from './auth/AuthEntry'
 import { useAuth } from './auth/AuthProvider'
@@ -108,6 +122,94 @@ type MissionVisual = {
   posterImage: string
   backgroundDesktop: string
   backgroundMobile: string
+}
+
+type QuickWinVisual = {
+  id: string
+  kind: QuizQuestionItem['kind']
+  title: string
+  description: string
+  reward: number
+  progressPercent: number
+  progressLabel: string
+  timerLabel: string | null
+  ctaLabel: string
+  toneClass: string
+}
+
+const shortenText = (value: string, maxLength: number) => {
+  if (value.length <= maxLength) return value
+  return `${value.slice(0, maxLength - 3).trimEnd()}...`
+}
+
+const quickWinToneByKind: Record<QuizQuestionItem['kind'], string> = {
+  'multiple-choice': 'violet',
+  'drag-fill': 'emerald',
+  ordering: 'amber',
+  listening: 'azure',
+  speaking: 'fuchsia',
+}
+
+const quickWinIconByKind = {
+  'multiple-choice': Brain,
+  'drag-fill': Sparkles,
+  ordering: Clock3,
+  listening: Volume2,
+  speaking: Mic,
+} satisfies Record<QuizQuestionItem['kind'], typeof Brain>
+
+const getQuickWinTimerLabel = (kind: QuizQuestionItem['kind']) => {
+  if (kind === 'drag-fill') return '00:08'
+  if (kind === 'ordering') return '00:10'
+  if (kind === 'speaking') return '00:15'
+  return null
+}
+
+const getQuickWinProgress = (question: QuizQuestionItem, progress: UserProgress | null) => {
+  if (!progress) {
+    return { progressPercent: 0, progressLabel: '0/1' }
+  }
+
+  const completed = progress.completedExerciseIds.includes(question.id)
+  if (completed) {
+    return { progressPercent: 100, progressLabel: '1/1' }
+  }
+
+  const touched =
+    Boolean(progress.choiceAnswers[question.id]) ||
+    Boolean(progress.dragFillAnswers[question.id]) ||
+    Boolean(progress.speakingCompletions[question.id]) ||
+    Boolean(progress.orderWordMap[question.id]?.length)
+
+  return {
+    progressPercent: touched ? 52 : 0,
+    progressLabel: touched ? 'Em andamento' : '0/1',
+  }
+}
+
+const buildQuickWinVisual = (
+  question: QuizQuestionItem,
+  quiz: QuizCatalogItem | undefined,
+  lesson: LessonCatalogItem | undefined,
+  progress: UserProgress | null,
+): QuickWinVisual => {
+  const { progressPercent, progressLabel } = getQuickWinProgress(question, progress)
+
+  return {
+    id: question.id,
+    kind: question.kind,
+    title: question.title || quiz?.title || 'Micro desafio',
+    description: shortenText(
+      question.prompt || question.contextCue || quiz?.objective || lesson?.practicalGoal || question.explanation,
+      62,
+    ),
+    reward: question.reward || quiz?.reward || 10,
+    progressPercent,
+    progressLabel,
+    timerLabel: getQuickWinTimerLabel(question.kind),
+    ctaLabel: progressPercent >= 100 ? 'Replay' : 'Entrar',
+    toneClass: quickWinToneByKind[question.kind],
+  }
 }
 
 const buildMissionVisual = (
@@ -376,6 +478,53 @@ function App() {
     ],
   )
 
+  const quickWins = useMemo(() => {
+    const activeQuizzes = quizCatalog
+      .filter((quiz) => quiz.active)
+      .sort((a, b) => a.order - b.order || a.title.localeCompare(b.title))
+    const quizById = new Map(activeQuizzes.map((quiz) => [quiz.id, quiz]))
+    const lessonById = new Map(lessonsCatalog.map((lesson) => [lesson.id, lesson]))
+    const orderedQuestions = quizQuestionCatalog
+      .filter((question) => question.active && quizById.has(question.quizId))
+      .sort((a, b) => {
+        const quizOrderDiff = (quizById.get(a.quizId)?.order ?? 999) - (quizById.get(b.quizId)?.order ?? 999)
+        if (quizOrderDiff !== 0) return quizOrderDiff
+        return a.title.localeCompare(b.title)
+      })
+
+    const activeLessonId = activeMission?.lesson?.id ?? null
+    const primaryQuestions = activeLessonId
+      ? orderedQuestions.filter((question) => question.lessonId === activeLessonId)
+      : orderedQuestions
+    const secondaryQuestions = activeLessonId
+      ? orderedQuestions.filter((question) => question.lessonId !== activeLessonId)
+      : []
+
+    const selection: QuizQuestionItem[] = []
+    const usedIds = new Set<string>()
+    const usedKinds = new Set<QuizQuestionItem['kind']>()
+
+    const pushQuestions = (bucket: QuizQuestionItem[], uniqueKindsOnly: boolean) => {
+      for (const question of bucket) {
+        if (selection.length >= 5 || usedIds.has(question.id)) continue
+        if (uniqueKindsOnly && usedKinds.has(question.kind)) continue
+
+        selection.push(question)
+        usedIds.add(question.id)
+        usedKinds.add(question.kind)
+      }
+    }
+
+    pushQuestions(primaryQuestions, true)
+    pushQuestions(secondaryQuestions, true)
+    pushQuestions(primaryQuestions, false)
+    pushQuestions(secondaryQuestions, false)
+
+    return selection.slice(0, 5).map((question) =>
+      buildQuickWinVisual(question, quizById.get(question.quizId), lessonById.get(question.lessonId), progressSnapshot),
+    )
+  }, [activeMission?.lesson?.id, lessonsCatalog, progressSnapshot, quizCatalog, quizQuestionCatalog])
+
   const changeMission = useCallback((id: string) => {
     setActiveMissionId(id)
   }, [])
@@ -633,6 +782,76 @@ function App() {
           </button>
         </section>
       </main>
+
+      {quickWins.length > 0 && (
+        <section
+          className={`quick-wins-engine quick-wins-engine-${activeMission.asset.cinematicStyle}`}
+          aria-labelledby="quick-wins-title"
+        >
+          <div className="quick-wins-background" aria-hidden="true" />
+
+          <header className="quick-wins-header">
+            <div className="quick-wins-copy">
+              <p className="quick-wins-kicker">
+                <Zap size={16} />
+                Momentum loop
+              </p>
+              <h2 id="quick-wins-title">Quick Wins</h2>
+              <p>Desafios rápidos para ganhar XP e manter o ritmo.</p>
+            </div>
+          </header>
+
+          <div className="quick-wins-track" role="list" aria-label="Quick wins">
+            {quickWins.map((quickWin, index) => {
+              const Icon = quickWinIconByKind[quickWin.kind]
+
+              return (
+                <article
+                  key={quickWin.id}
+                  role="listitem"
+                  tabIndex={0}
+                  className={`quick-wins-card quick-wins-card-${quickWin.toneClass}`}
+                  style={{ '--quick-win-delay': `${index * 140}ms` } as CSSProperties}
+                >
+                  <div className="quick-wins-card-bloom" aria-hidden="true" />
+
+                  <div className="quick-wins-card-top">
+                    <span className="quick-wins-card-icon" aria-hidden="true">
+                      <Icon size={24} />
+                    </span>
+                    <span className="quick-wins-card-reward">+{quickWin.reward} XP</span>
+                  </div>
+
+                  <div className="quick-wins-card-copy">
+                    <strong>{quickWin.title}</strong>
+                    <p>{quickWin.description}</p>
+                  </div>
+
+                  <div className="quick-wins-card-meta">
+                    <small>{quickWin.progressLabel}</small>
+                    {quickWin.timerLabel ? (
+                      <small className="quick-wins-card-timer">
+                        <Clock3 size={12} />
+                        {quickWin.timerLabel}
+                      </small>
+                    ) : (
+                      <small>{quickWin.ctaLabel}</small>
+                    )}
+                  </div>
+
+                  <div className="quick-wins-card-progress" aria-hidden="true">
+                    <span style={{ width: `${quickWin.progressPercent}%` }} />
+                  </div>
+
+                  <span className="quick-wins-card-cta" aria-hidden="true">
+                    <ArrowRight size={16} />
+                  </span>
+                </article>
+              )
+            })}
+          </div>
+        </section>
+      )}
     </div>
   )
 }
