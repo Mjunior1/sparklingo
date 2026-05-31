@@ -148,6 +148,7 @@
   grid-auto-columns: minmax(238px, 1fr);
   gap: 16px;
   overflow-x: auto;
+  padding-top: 8px;
   padding-bottom: 2px;
   scroll-snap-type: x proximity;
   scrollbar-width: none;
