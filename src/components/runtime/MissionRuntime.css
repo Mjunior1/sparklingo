@@ -21,8 +21,16 @@
 }
 
 .mission-runtime-stage {
-  min-height: 860px;
-  padding: 24px 28px 24px;
+  min-height: 872px;
+  padding: 24px 28px 26px;
+}
+
+.mission-runtime-background-layer {
+  --runtime-bg-scale: 1.04;
+  --runtime-bg-offset-x: 0%;
+  --runtime-bg-offset-y: 0%;
+  --runtime-bg-focal-x: 50%;
+  --runtime-bg-focal-y: 50%;
 }
 
 .mission-runtime-background,
@@ -46,6 +54,8 @@
 
 .mission-runtime-background-layer .scene-image {
   object-fit: cover;
+  object-position: var(--runtime-bg-focal-x) var(--runtime-bg-focal-y);
+  transform: translate3d(var(--runtime-bg-offset-x), var(--runtime-bg-offset-y), 0) scale(var(--runtime-bg-scale));
 }
 
 .mission-runtime-background-layer {
@@ -56,20 +66,20 @@
 }
 
 .mission-runtime-background-layer-ambient {
-  opacity: 0.34;
-  filter: blur(26px) saturate(0.92);
-  transform: scale(1.08);
+  opacity: 0.28;
+  filter: blur(30px) saturate(0.9);
+  transform: scale(1.1);
 }
 
 .mission-runtime-background-layer-current {
   opacity: 1;
-  filter: blur(0) saturate(1.02);
+  filter: blur(0) saturate(1.01);
   animation: runtimeStageDrift 16s ease-in-out infinite alternate;
 }
 
 .mission-runtime-background-layer-previous {
-  opacity: 0.3;
-  filter: blur(18px) saturate(0.85);
+  opacity: 0.24;
+  filter: blur(20px) saturate(0.82);
 }
 
 .mission-runtime-global-overlay,
@@ -82,9 +92,11 @@
 
 .mission-runtime-global-overlay {
   background:
-    linear-gradient(180deg, rgba(5, 7, 18, 0.78) 0%, rgba(9, 10, 24, 0.3) 28%, rgba(7, 8, 20, 0.74) 100%),
-    radial-gradient(circle at 18% 28%, rgba(30, 18, 54, 0.46), transparent 34%),
-    radial-gradient(circle at 80% 30%, rgba(140, 80, 255, 0.18), transparent 26%);
+    linear-gradient(180deg, rgba(5, 7, 18, 0.7) 0%, rgba(9, 10, 24, 0.12) 26%, rgba(7, 8, 20, 0.66) 100%),
+    radial-gradient(circle at 15% 24%, rgba(46, 24, 78, 0.34), transparent 32%),
+    radial-gradient(circle at 78% 22%, rgba(245, 174, 108, 0.13), transparent 28%),
+    radial-gradient(circle at 74% 78%, rgba(139, 91, 255, 0.08), transparent 24%),
+    linear-gradient(90deg, rgba(5, 8, 19, 0.5) 0%, rgba(5, 8, 19, 0.06) 20%, rgba(5, 8, 19, 0.06) 80%, rgba(5, 8, 19, 0.38) 100%);
 }
 
 .mission-runtime-stage .scene-overlay {
@@ -93,17 +105,18 @@
 
 .mission-runtime-atmosphere {
   background:
-    radial-gradient(circle at 18% 22%, rgba(169, 104, 255, 0.12), transparent 24%),
-    radial-gradient(circle at 82% 74%, rgba(255, 188, 124, 0.12), transparent 22%);
+    radial-gradient(circle at 18% 22%, rgba(169, 104, 255, 0.12), transparent 28%),
+    radial-gradient(circle at 80% 74%, rgba(255, 188, 124, 0.12), transparent 26%),
+    radial-gradient(circle at 52% 100%, rgba(14, 48, 72, 0.12), transparent 36%);
   mix-blend-mode: screen;
-  opacity: 0.95;
+  opacity: 0.88;
   animation: runtimeAtmospherePulse 8.5s ease-in-out infinite;
 }
 
 .mission-runtime-vignette {
   background:
-    linear-gradient(90deg, rgba(6, 8, 18, 0.78) 0%, rgba(6, 8, 18, 0.04) 24%, rgba(6, 8, 18, 0.04) 76%, rgba(6, 8, 18, 0.7) 100%),
-    linear-gradient(180deg, rgba(6, 8, 18, 0.58) 0%, rgba(6, 8, 18, 0.06) 20%, rgba(6, 8, 18, 0.06) 82%, rgba(6, 8, 18, 0.64) 100%);
+    linear-gradient(90deg, rgba(6, 8, 18, 0.68) 0%, rgba(6, 8, 18, 0.04) 24%, rgba(6, 8, 18, 0.04) 78%, rgba(6, 8, 18, 0.6) 100%),
+    linear-gradient(180deg, rgba(6, 8, 18, 0.46) 0%, rgba(6, 8, 18, 0.03) 22%, rgba(6, 8, 18, 0.03) 84%, rgba(6, 8, 18, 0.6) 100%);
 }
 
 .mission-runtime-topbar,
@@ -118,6 +131,7 @@
   grid-template-columns: auto auto 1fr auto auto;
   align-items: center;
   gap: 14px;
+  padding-inline: 2px;
 }
 
 .mission-runtime-topbar-button,
@@ -125,8 +139,8 @@
 .mission-runtime-status-pill,
 .mission-runtime-avatar {
   border: 1px solid rgba(179, 151, 255, 0.18);
-  border-radius: 20px;
-  background: rgba(15, 15, 34, 0.74);
+  border-radius: 18px;
+  background: rgba(15, 15, 34, 0.72);
   box-shadow:
     0 18px 34px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
@@ -137,14 +151,14 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  padding: 16px 18px;
+  padding: 14px 18px;
   color: #f6f1ff;
   font-size: 1rem;
   font-weight: 700;
 }
 
 .mission-runtime-topbar-pill {
-  padding: 16px 18px;
+  padding: 14px 18px;
   color: rgba(243, 235, 255, 0.9);
   font-size: 0.95rem;
   font-weight: 600;
@@ -155,6 +169,10 @@
   align-items: center;
   gap: 8px;
   color: #ffd987;
+  border-color: rgba(242, 204, 115, 0.18);
+  background:
+    linear-gradient(180deg, rgba(34, 25, 17, 0.82), rgba(18, 15, 32, 0.8)),
+    radial-gradient(circle at 18% 50%, rgba(255, 209, 115, 0.12), transparent 28%);
 }
 
 .mission-runtime-progress-head {
@@ -162,10 +180,12 @@
   grid-template-columns: auto 1fr auto;
   align-items: center;
   gap: 12px;
-  padding: 12px 16px;
+  padding: 12px 18px;
   border: 1px solid rgba(181, 154, 255, 0.16);
-  border-radius: 20px;
-  background: rgba(13, 14, 30, 0.68);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, rgba(13, 14, 30, 0.74), rgba(10, 12, 28, 0.68)),
+    radial-gradient(circle at 18% 50%, rgba(169, 104, 255, 0.08), transparent 22%);
   backdrop-filter: blur(18px);
 }
 
@@ -249,10 +269,10 @@
 
 .mission-runtime-main {
   display: grid;
-  grid-template-columns: minmax(0, 560px) 1fr;
-  align-items: end;
-  gap: 26px;
-  min-height: 560px;
+  grid-template-columns: minmax(0, 510px) minmax(0, 1fr);
+  align-items: stretch;
+  gap: 38px;
+  min-height: 600px;
   padding-top: 58px;
 }
 
@@ -260,6 +280,7 @@
   display: grid;
   align-content: start;
   gap: 18px;
+  padding-top: 30px;
 }
 
 .mission-runtime-prompt-card,
@@ -279,8 +300,17 @@
 }
 
 .mission-runtime-prompt-card {
-  padding: 28px;
-  border-radius: 28px;
+  width: min(100%, 480px);
+  min-height: 284px;
+  padding: 30px;
+  border-radius: 32px;
+  background:
+    linear-gradient(180deg, rgba(20, 18, 39, 0.88), rgba(16, 14, 34, 0.78)),
+    radial-gradient(circle at top right, rgba(157, 110, 255, 0.14), transparent 28%),
+    radial-gradient(circle at 72% 20%, rgba(255, 184, 122, 0.1), transparent 26%);
+  box-shadow:
+    0 28px 42px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .mission-runtime-prompt-head {
@@ -309,13 +339,17 @@
 .mission-runtime-mini-audio {
   width: 44px;
   height: 44px;
-  border-radius: 16px;
+  border-radius: 15px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #f6edff;
-  background: rgba(149, 103, 255, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(201, 176, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(149, 103, 255, 0.22), rgba(90, 53, 170, 0.18)),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.12), transparent 24%);
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 176, 255, 0.18),
+    0 10px 24px rgba(88, 61, 161, 0.18);
 }
 
 .mission-runtime-prompt-card h1 {
@@ -353,6 +387,7 @@
 .mission-runtime-answers {
   display: grid;
   gap: 14px;
+  width: min(100%, 482px);
 }
 
 .mission-runtime-answer {
@@ -379,11 +414,13 @@
   box-shadow:
     0 24px 42px rgba(0, 0, 0, 0.24),
     0 0 0 1px rgba(188, 146, 255, 0.22),
-    0 0 24px rgba(171, 109, 255, 0.22);
+    0 0 26px rgba(171, 109, 255, 0.2);
 }
 
 .mission-runtime-answer.is-selected {
-  background: linear-gradient(180deg, rgba(81, 42, 151, 0.52), rgba(29, 20, 53, 0.88));
+  background:
+    linear-gradient(180deg, rgba(88, 49, 164, 0.66), rgba(31, 21, 55, 0.96)),
+    radial-gradient(circle at 85% 50%, rgba(199, 141, 255, 0.14), transparent 24%);
 }
 
 .mission-runtime-answer-audio,
@@ -422,29 +459,51 @@
   display: grid;
   justify-items: end;
   align-self: stretch;
-  gap: 18px;
+  align-content: space-between;
+  gap: 22px;
+  padding-top: 46px;
 }
 
 .mission-runtime-character {
   align-self: end;
-  width: min(360px, 100%);
+  width: min(312px, 100%);
+  position: relative;
   filter:
     drop-shadow(0 28px 46px rgba(0, 0, 0, 0.36))
-    drop-shadow(0 0 36px rgba(255, 182, 122, 0.18));
+    drop-shadow(0 0 36px rgba(255, 182, 122, calc(var(--runtime-companion-glow-strength, 0.56) * 0.26)));
+}
+
+.mission-runtime-character::before {
+  content: '';
+  position: absolute;
+  inset: 12% 18% 6%;
+  z-index: -1;
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 50% 40%, rgba(255, 184, 122, calc(var(--runtime-companion-glow-strength, 0.56) * 0.42)), transparent 38%),
+    radial-gradient(circle at 60% 60%, rgba(184, 111, 255, calc(var(--runtime-companion-glow-strength, 0.56) * 0.24)), transparent 48%);
+  filter: blur(30px);
+  opacity: 0.9;
 }
 
 .mission-runtime-character img {
   width: 100%;
   display: block;
   object-fit: contain;
+  transform: translate3d(var(--runtime-companion-offset-x, 0%), var(--runtime-companion-offset-y, 0%), 0) scale(var(--runtime-companion-scale, 1));
+  transform-origin: bottom center;
 }
 
 .mission-runtime-feedback-card {
-  width: min(360px, 100%);
-  padding: 28px 24px;
-  border-radius: 28px;
+  width: min(342px, 100%);
+  padding: 28px 24px 26px;
+  border-radius: 30px;
   display: grid;
   gap: 12px;
+  justify-self: end;
+  background:
+    linear-gradient(180deg, rgba(19, 17, 40, 0.82), rgba(14, 14, 31, 0.76)),
+    radial-gradient(circle at top right, rgba(239, 204, 108, 0.12), transparent 28%);
 }
 
 .mission-runtime-feedback-card.is-pulsing {
@@ -477,16 +536,17 @@
 
 .mission-runtime-footer {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: 168px minmax(420px, 1fr) 180px;
   align-items: center;
-  gap: 20px;
-  padding-top: 22px;
+  gap: 22px;
+  padding-top: 26px;
 }
 
 .mission-runtime-secondary,
 .mission-runtime-primary,
 .mission-runtime-story-voice {
-  border-radius: 22px;
+  min-height: 64px;
+  border-radius: 20px;
   padding: 18px 22px;
   font-size: 1rem;
   font-weight: 700;
@@ -516,14 +576,22 @@
 
 .mission-runtime-reward-rail {
   display: grid;
-  grid-template-columns: auto 1fr auto;
+  grid-template-columns: minmax(180px, auto) 1fr auto;
   align-items: center;
-  gap: 18px;
-  padding: 18px 20px;
-  border-radius: 24px;
-  border: 1px solid rgba(188, 161, 255, 0.18);
-  background: rgba(12, 12, 28, 0.78);
+  gap: 22px;
+  width: min(100%, 860px);
+  justify-self: center;
+  padding: 20px 26px;
+  border-radius: 26px;
+  border: 1px solid rgba(232, 198, 116, 0.16);
+  background:
+    linear-gradient(180deg, rgba(14, 13, 31, 0.8), rgba(9, 10, 24, 0.88)),
+    radial-gradient(circle at 16% 50%, rgba(255, 202, 111, 0.14), transparent 24%),
+    radial-gradient(circle at 88% 50%, rgba(144, 89, 255, 0.08), transparent 24%);
   backdrop-filter: blur(18px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 20px 36px rgba(0, 0, 0, 0.22);
 }
 
 .mission-runtime-reward-core {
@@ -548,6 +616,11 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
 
+.mission-runtime-reward-badge {
+  width: 48px;
+  height: 48px;
+}
+
 .mission-runtime-reward-core small {
   display: block;
   color: rgba(239, 230, 250, 0.7);
@@ -555,6 +628,7 @@
 
 .mission-runtime-reward-core strong {
   font-size: 1.42rem;
+  color: #fff8ee;
 }
 
 .mission-runtime-reward-dots {
@@ -562,6 +636,7 @@
   align-items: center;
   justify-content: center;
   gap: 10px;
+  min-height: 46px;
 }
 
 .mission-runtime-reward-dots span {
@@ -574,6 +649,14 @@
 .mission-runtime-reward-dots span.is-filled {
   background: linear-gradient(180deg, #ffdd87, #d578ff);
   box-shadow: 0 0 14px rgba(243, 198, 117, 0.42);
+}
+
+.mission-runtime-reward-chest {
+  width: 48px;
+  height: 48px;
+  box-shadow:
+    0 0 26px rgba(249, 207, 110, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
 }
 
 .mission-runtime-section-head {
@@ -610,6 +693,9 @@
   border-radius: 28px;
   border: 1px solid rgba(187, 162, 255, 0.14);
   background: rgba(10, 11, 26, 0.84);
+  box-shadow:
+    0 20px 36px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .mission-runtime-story-label {
@@ -621,22 +707,49 @@
 
 .runtime-scene-preview {
   position: relative;
-  min-height: 300px;
+  min-height: 308px;
   padding: 18px;
   overflow: hidden;
   border-radius: 24px;
-  background:
-    linear-gradient(180deg, rgba(11, 10, 26, 0.12), rgba(11, 10, 26, 0.8)),
-    var(--runtime-preview-image) center / cover no-repeat;
   border: 1px solid rgba(180, 160, 255, 0.14);
+}
+
+.runtime-scene-preview-image,
+.runtime-scene-preview-companion {
+  position: absolute;
+}
+
+.runtime-scene-preview-image {
+  inset: 0;
+  background: var(--runtime-preview-image) center / cover no-repeat;
+  background-position: var(--runtime-preview-focal-x, 50%) var(--runtime-preview-focal-y, 50%);
+  transform: translate3d(var(--runtime-preview-offset-x, 0%), var(--runtime-preview-offset-y, 0%), 0) scale(var(--runtime-preview-scale, 1.04));
 }
 
 .runtime-scene-preview-overlay {
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(8, 8, 22, 0.12) 0%, rgba(8, 8, 22, 0.68) 100%),
+    linear-gradient(180deg, rgba(8, 8, 22, 0.08) 0%, rgba(8, 8, 22, 0.68) 100%),
     radial-gradient(circle at 82% 20%, rgba(167, 105, 255, 0.14), transparent 22%);
+}
+
+.runtime-scene-preview-companion {
+  right: 8px;
+  bottom: 0;
+  width: 28%;
+  min-width: 84px;
+  max-width: 120px;
+  z-index: 1;
+  filter: drop-shadow(0 12px 20px rgba(0, 0, 0, 0.24));
+  transform: translate3d(var(--runtime-preview-companion-offset-x, 0%), var(--runtime-preview-companion-offset-y, 0%), 0) scale(var(--runtime-preview-companion-scale, 1));
+  transform-origin: bottom right;
+}
+
+.runtime-scene-preview-companion img {
+  width: 100%;
+  display: block;
+  object-fit: contain;
 }
 
 .runtime-scene-preview-copy,
@@ -703,7 +816,9 @@
   display: grid;
   align-content: start;
   gap: 10px;
-  background: linear-gradient(180deg, rgba(14, 54, 49, 0.82), rgba(8, 25, 34, 0.78));
+  background:
+    linear-gradient(180deg, rgba(14, 54, 49, 0.82), rgba(8, 25, 34, 0.82)),
+    radial-gradient(circle at 88% 18%, rgba(112, 255, 211, 0.08), transparent 22%);
 }
 
 .mission-runtime-story-response-card small {
@@ -783,7 +898,9 @@
   padding: 22px;
   min-height: 100%;
   border-radius: 24px;
-  background: linear-gradient(180deg, rgba(12, 48, 42, 0.88), rgba(6, 24, 28, 0.94));
+  background:
+    linear-gradient(180deg, rgba(11, 47, 42, 0.84), rgba(6, 24, 28, 0.92)),
+    radial-gradient(circle at top right, rgba(131, 255, 223, 0.06), transparent 24%);
 }
 
 .mission-runtime-story-feedback-card strong {
@@ -806,10 +923,25 @@
 }
 
 .mission-runtime-story-feedback-card img {
-  width: 210px;
+  width: 172px;
   max-width: 100%;
   align-self: end;
   filter: drop-shadow(0 22px 32px rgba(0, 0, 0, 0.28));
+}
+
+.mission-runtime-icon-image {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 0 12px rgba(255, 216, 136, 0.12));
+}
+
+.mission-runtime-reward-badge .mission-runtime-icon-image,
+.mission-runtime-reward-chest .mission-runtime-icon-image {
+  width: 22px;
+  height: 22px;
+  filter: drop-shadow(0 0 14px rgba(255, 216, 136, 0.18));
 }
 
 .mission-runtime-system-cards {

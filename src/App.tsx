@@ -125,8 +125,10 @@ type MissionVisual = {
   progressLabel: string
   statusLabel: string
   posterImage: string
-  backgroundDesktop: string
-  backgroundMobile: string
+  heroBackgroundDesktop: string
+  heroBackgroundMobile: string
+  runtimeBackgroundDesktop: string
+  runtimeBackgroundMobile: string
 }
 
 const buildMissionVisual = (
@@ -156,8 +158,20 @@ const buildMissionVisual = (
     progressLabel: `${progressPercent}% completed`,
     statusLabel: progressPercent >= 100 ? 'Completed' : progressPercent > 0 ? 'In progress' : 'Ready',
     posterImage: getAssetImage(asset, 'poster'),
-    backgroundDesktop: getAssetImage(asset, 'background-desktop'),
-    backgroundMobile: getAssetImage(asset, 'background-mobile'),
+    heroBackgroundDesktop: getAssetImage(asset, 'background-desktop'),
+    heroBackgroundMobile: getAssetImage(asset, 'background-mobile'),
+    runtimeBackgroundDesktop:
+      asset.imageUrlDesktop ||
+      asset.imageUrl ||
+      asset.backgroundImageUrl ||
+      asset.heroBackgroundImageUrl,
+    runtimeBackgroundMobile:
+      asset.imageUrlMobile ||
+      asset.imageUrlDesktop ||
+      asset.imageUrl ||
+      asset.mobileImageUrl ||
+      asset.backgroundImageUrl ||
+      asset.heroBackgroundImageUrl,
   }
 }
 
@@ -505,8 +519,8 @@ function App() {
       chapterLabel: runtimeMission.chapterLabel,
       sceneCount: runtimeMission.sceneCount,
       posterImage: runtimeMission.posterImage,
-      backgroundDesktop: runtimeMission.backgroundDesktop,
-      backgroundMobile: runtimeMission.backgroundMobile,
+      backgroundDesktop: runtimeMission.runtimeBackgroundDesktop,
+      backgroundMobile: runtimeMission.runtimeBackgroundMobile,
       asset: runtimeMission.asset,
     }
 
@@ -545,19 +559,19 @@ function App() {
 
   const backgroundAsset: SceneAssetRecord = {
     ...activeMission.asset,
-    imageUrl: activeMission.asset.heroBackgroundImageUrl || activeMission.backgroundDesktop,
-    imageUrlDesktop: activeMission.asset.heroBackgroundImageUrl || activeMission.backgroundDesktop,
-    mobileImageUrl: activeMission.backgroundMobile,
-    imageUrlMobile: activeMission.backgroundMobile,
+    imageUrl: activeMission.asset.heroBackgroundImageUrl || activeMission.heroBackgroundDesktop,
+    imageUrlDesktop: activeMission.asset.heroBackgroundImageUrl || activeMission.heroBackgroundDesktop,
+    mobileImageUrl: activeMission.heroBackgroundMobile,
+    imageUrlMobile: activeMission.heroBackgroundMobile,
   }
 
   const previousBackgroundAsset = previousMission
     ? {
         ...previousMission.asset,
-        imageUrl: previousMission.asset.heroBackgroundImageUrl || previousMission.backgroundDesktop,
-        imageUrlDesktop: previousMission.asset.heroBackgroundImageUrl || previousMission.backgroundDesktop,
-        mobileImageUrl: previousMission.backgroundMobile,
-        imageUrlMobile: previousMission.backgroundMobile,
+        imageUrl: previousMission.asset.heroBackgroundImageUrl || previousMission.heroBackgroundDesktop,
+        imageUrlDesktop: previousMission.asset.heroBackgroundImageUrl || previousMission.heroBackgroundDesktop,
+        mobileImageUrl: previousMission.heroBackgroundMobile,
+        imageUrlMobile: previousMission.heroBackgroundMobile,
       }
     : null
 

@@ -38,8 +38,23 @@ export type MissionRuntimeSceneRecord = {
   question: string
   questionTranslation: string
   backgroundImageUrl: string
+  backgroundImageUrlMobile: string
+  backgroundFocalX: number
+  backgroundFocalY: number
+  backgroundOffsetX: number
+  backgroundOffsetY: number
+  backgroundScale: number
   companionImageUrl: string
+  companionScale: number
+  companionOffsetX: number
+  companionOffsetY: number
+  companionGlowStrength: number
   audioUrl: string
+  promptAudioIconUrl: string
+  answerAudioIconUrl: string
+  feedbackIconUrl: string
+  rewardIconUrl: string
+  rewardChestIconUrl: string
   xpReward: number
   emotionalFeedbackTitle: string
   emotionalFeedbackBody: string
@@ -95,8 +110,23 @@ export const createEmptyMissionRuntimeScene = (): MissionRuntimeSceneRecord => (
   question: '',
   questionTranslation: '',
   backgroundImageUrl: '',
-  companionImageUrl: '/Images/Mascote/Sparklingo.png',
+  backgroundImageUrlMobile: '',
+  backgroundFocalX: 50,
+  backgroundFocalY: 50,
+  backgroundOffsetX: 0,
+  backgroundOffsetY: 0,
+  backgroundScale: 104,
+  companionImageUrl: '',
+  companionScale: 100,
+  companionOffsetX: 0,
+  companionOffsetY: 0,
+  companionGlowStrength: 56,
   audioUrl: '',
+  promptAudioIconUrl: '',
+  answerAudioIconUrl: '',
+  feedbackIconUrl: '',
+  rewardIconUrl: '',
+  rewardChestIconUrl: '',
   xpReward: 25,
   emotionalFeedbackTitle: 'Boa tentativa!',
   emotionalFeedbackBody: 'Continue. Você está entrando no ritmo da missão.',
@@ -153,8 +183,24 @@ const sanitizeMissionRuntimeScene = (
     question: safeQuestion,
     questionTranslation: cleanString(scene.questionTranslation),
     backgroundImageUrl: cleanString(scene.backgroundImageUrl),
-    companionImageUrl: cleanString(scene.companionImageUrl) || '/Images/Mascote/Sparklingo.png',
+    backgroundImageUrlMobile:
+      cleanString(scene.backgroundImageUrlMobile) || cleanString(scene.backgroundImageUrl),
+    backgroundFocalX: clamp(cleanNumber(scene.backgroundFocalX, 50), 0, 100),
+    backgroundFocalY: clamp(cleanNumber(scene.backgroundFocalY, 50), 0, 100),
+    backgroundOffsetX: clamp(cleanNumber(scene.backgroundOffsetX, 0), -60, 60),
+    backgroundOffsetY: clamp(cleanNumber(scene.backgroundOffsetY, 0), -60, 60),
+    backgroundScale: clamp(cleanNumber(scene.backgroundScale, 104), 70, 160),
+    companionImageUrl: cleanString(scene.companionImageUrl),
+    companionScale: clamp(cleanNumber(scene.companionScale, 100), 50, 180),
+    companionOffsetX: clamp(cleanNumber(scene.companionOffsetX, 0), -60, 60),
+    companionOffsetY: clamp(cleanNumber(scene.companionOffsetY, 0), -60, 60),
+    companionGlowStrength: clamp(cleanNumber(scene.companionGlowStrength, 56), 0, 100),
     audioUrl: cleanString(scene.audioUrl),
+    promptAudioIconUrl: cleanString(scene.promptAudioIconUrl),
+    answerAudioIconUrl: cleanString(scene.answerAudioIconUrl),
+    feedbackIconUrl: cleanString(scene.feedbackIconUrl),
+    rewardIconUrl: cleanString(scene.rewardIconUrl),
+    rewardChestIconUrl: cleanString(scene.rewardChestIconUrl),
     xpReward: clamp(cleanNumber(scene.xpReward, 25), 0, 500),
     emotionalFeedbackTitle: cleanString(scene.emotionalFeedbackTitle) || 'Boa tentativa!',
     emotionalFeedbackBody:
@@ -187,6 +233,17 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     question: "What's the purpose of your trip?",
     questionTranslation: 'Qual é o propósito da sua viagem?',
     backgroundImageUrl: '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png',
+    backgroundImageUrlMobile: '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png',
+    backgroundFocalX: 72,
+    backgroundFocalY: 48,
+    backgroundOffsetX: 12,
+    backgroundOffsetY: -2,
+    backgroundScale: 122,
+    companionImageUrl: '/Images/Mascote/Sparklingo.png',
+    companionScale: 96,
+    companionOffsetX: 9,
+    companionOffsetY: 6,
+    companionGlowStrength: 54,
     xpReward: 25,
     emotionalFeedbackTitle: 'Boa tentativa!',
     emotionalFeedbackBody: 'Tente usar uma frase mais completa. Você conseguiu!',
@@ -241,6 +298,17 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     question: 'Where are you flying from?',
     questionTranslation: 'De onde você está vindo?',
     backgroundImageUrl: '/Images/Airport/departures.png',
+    backgroundImageUrlMobile: '/Images/Airport/departures.png',
+    backgroundFocalX: 74,
+    backgroundFocalY: 46,
+    backgroundOffsetX: 14,
+    backgroundOffsetY: -4,
+    backgroundScale: 124,
+    companionImageUrl: '/Images/Mascote/Sparklingo.png',
+    companionScale: 96,
+    companionOffsetX: 9,
+    companionOffsetY: 6,
+    companionGlowStrength: 54,
     xpReward: 25,
     emotionalFeedbackTitle: 'Ótimo!',
     emotionalFeedbackBody: 'Resposta natural e confiante. Continue assim.',
@@ -295,6 +363,17 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     question: 'Ready for the next checkpoint?',
     questionTranslation: 'Pronto para o próximo checkpoint?',
     backgroundImageUrl: '/Images/Airport/checkin.png',
+    backgroundImageUrlMobile: '/Images/Airport/checkin.png',
+    backgroundFocalX: 76,
+    backgroundFocalY: 48,
+    backgroundOffsetX: 12,
+    backgroundOffsetY: -3,
+    backgroundScale: 122,
+    companionImageUrl: '/Images/Mascote/Sparklingo.png',
+    companionScale: 98,
+    companionOffsetX: 8,
+    companionOffsetY: 4,
+    companionGlowStrength: 56,
     xpReward: 30,
     emotionalFeedbackTitle: 'Nice recovery.',
     emotionalFeedbackBody: 'Você está encontrando o ritmo da missão.',
@@ -339,6 +418,17 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     question: 'What can I get for you today?',
     questionTranslation: 'O que posso pegar para você hoje?',
     backgroundImageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
+    backgroundImageUrlMobile: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
+    backgroundFocalX: 72,
+    backgroundFocalY: 48,
+    backgroundOffsetX: 10,
+    backgroundOffsetY: -4,
+    backgroundScale: 120,
+    companionImageUrl: '/Images/Mascote/Sparklingo.png',
+    companionScale: 94,
+    companionOffsetX: 8,
+    companionOffsetY: 6,
+    companionGlowStrength: 42,
     xpReward: 20,
     emotionalFeedbackTitle: 'Boa tentativa!',
     emotionalFeedbackBody: 'Pequenas escolhas rápidas também constroem confiança.',
@@ -383,6 +473,17 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     question: 'Which flavor would you like?',
     questionTranslation: 'Qual sabor você gostaria?',
     backgroundImageUrl: '/Images/Park/sparklingo_scene_park_icecream_mobile_v1.png',
+    backgroundImageUrlMobile: '/Images/Park/sparklingo_scene_park_icecream_mobile_v1.png',
+    backgroundFocalX: 68,
+    backgroundFocalY: 48,
+    backgroundOffsetX: 8,
+    backgroundOffsetY: -3,
+    backgroundScale: 116,
+    companionImageUrl: '/Images/Mascote/Sparklingo.png',
+    companionScale: 94,
+    companionOffsetX: 7,
+    companionOffsetY: 6,
+    companionGlowStrength: 38,
     xpReward: 20,
     emotionalFeedbackTitle: 'Excelente resposta.',
     emotionalFeedbackBody: 'Leve, natural e perfeita para a cena.',

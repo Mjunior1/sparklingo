@@ -1,13 +1,13 @@
 import './MissionRuntime.css'
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
   AudioLines,
   Check,
   ChevronRight,
-  Crown,
   Flame,
+  Gift,
   Medal,
   Mic,
   Play,
@@ -46,12 +46,78 @@ const waveformBars = Array.from({ length: 24 }, (_, index) => 20 + ((index * 17)
 
 const buildRuntimeAsset = (mission: MissionRuntimeMission, scene: MissionRuntimeSceneRecord): SceneAssetRecord => ({
   ...mission.asset,
-  imageUrl: scene.backgroundImageUrl || mission.backgroundDesktop,
-  imageUrlDesktop: scene.backgroundImageUrl || mission.backgroundDesktop,
-  mobileImageUrl: scene.backgroundImageUrl || mission.backgroundMobile,
-  imageUrlMobile: scene.backgroundImageUrl || mission.backgroundMobile,
-  heroBackgroundImageUrl: scene.backgroundImageUrl || mission.backgroundDesktop,
+  title: scene.title || mission.title,
+  imageUrl:
+    scene.backgroundImageUrl ||
+    mission.backgroundDesktop ||
+    mission.asset.imageUrlDesktop ||
+    mission.asset.imageUrl ||
+    mission.asset.heroBackgroundImageUrl,
+  imageUrlDesktop:
+    scene.backgroundImageUrl ||
+    mission.backgroundDesktop ||
+    mission.asset.imageUrlDesktop ||
+    mission.asset.imageUrl ||
+    mission.asset.heroBackgroundImageUrl,
+  mobileImageUrl:
+    scene.backgroundImageUrlMobile ||
+    scene.backgroundImageUrl ||
+    mission.backgroundMobile ||
+    mission.backgroundDesktop ||
+    mission.asset.imageUrlMobile ||
+    mission.asset.mobileImageUrl ||
+    mission.asset.imageUrlDesktop ||
+    mission.asset.imageUrl ||
+    mission.asset.heroBackgroundImageUrl,
+  imageUrlMobile:
+    scene.backgroundImageUrlMobile ||
+    scene.backgroundImageUrl ||
+    mission.backgroundMobile ||
+    mission.backgroundDesktop ||
+    mission.asset.imageUrlMobile ||
+    mission.asset.mobileImageUrl ||
+    mission.asset.imageUrlDesktop ||
+    mission.asset.imageUrl ||
+    mission.asset.heroBackgroundImageUrl,
+  heroBackgroundImageUrl:
+    scene.backgroundImageUrl ||
+    mission.backgroundDesktop ||
+    mission.asset.imageUrlDesktop ||
+    mission.asset.imageUrl ||
+    mission.asset.heroBackgroundImageUrl,
+  focalPointX: scene.backgroundFocalX,
+  focalPointY: scene.backgroundFocalY,
 })
+
+const buildRuntimeLayerStyle = (scene: MissionRuntimeSceneRecord | null): CSSProperties | undefined => {
+  if (!scene) return undefined
+
+  return {
+    '--runtime-bg-scale': `${scene.backgroundScale / 100}`,
+    '--runtime-bg-offset-x': `${scene.backgroundOffsetX}%`,
+    '--runtime-bg-offset-y': `${scene.backgroundOffsetY}%`,
+    '--runtime-bg-focal-x': `${scene.backgroundFocalX}%`,
+    '--runtime-bg-focal-y': `${scene.backgroundFocalY}%`,
+  } as CSSProperties
+}
+
+function RuntimeIcon({
+  iconUrl,
+  alt,
+  className = '',
+  children,
+}: {
+  iconUrl?: string
+  alt: string
+  className?: string
+  children: ReactNode
+}) {
+  if (iconUrl) {
+    return <img className={`mission-runtime-icon-image${className ? ` ${className}` : ''}`} src={iconUrl} alt={alt} />
+  }
+
+  return <>{children}</>
+}
 
 const playSpeech = (text: string, audioUrl?: string) => {
   if (audioUrl) {
@@ -84,12 +150,30 @@ export function MissionRuntimeScenePreviewCard({
   scene: MissionRuntimeSceneRecord
   missionTitle?: string
 }) {
+  const previewStyle = {
+    '--runtime-preview-image': `url(${scene.backgroundImageUrl || scene.backgroundImageUrlMobile})`,
+    '--runtime-preview-focal-x': `${scene.backgroundFocalX}%`,
+    '--runtime-preview-focal-y': `${scene.backgroundFocalY}%`,
+    '--runtime-preview-offset-x': `${scene.backgroundOffsetX}%`,
+    '--runtime-preview-offset-y': `${scene.backgroundOffsetY}%`,
+    '--runtime-preview-scale': `${scene.backgroundScale / 100}`,
+    '--runtime-preview-companion-scale': `${scene.companionScale / 100}`,
+    '--runtime-preview-companion-offset-x': `${scene.companionOffsetX}%`,
+    '--runtime-preview-companion-offset-y': `${scene.companionOffsetY}%`,
+  } as CSSProperties
+
   return (
     <article
       className={`runtime-scene-preview runtime-scene-preview-${scene.emotionalFeedbackTone}`}
-      style={{ '--runtime-preview-image': `url(${scene.backgroundImageUrl})` } as CSSProperties}
+      style={previewStyle}
     >
+      <div className="runtime-scene-preview-image" />
       <div className="runtime-scene-preview-overlay" />
+      {scene.companionImageUrl && (
+        <div className="runtime-scene-preview-companion">
+          <img src={scene.companionImageUrl} alt="Spark companion preview" />
+        </div>
+      )}
       <div className="runtime-scene-preview-copy">
         <span>{missionTitle || scene.missionTitle || 'Mission Runtime'}</span>
         <strong>{scene.character}</strong>
@@ -164,6 +248,10 @@ export function MissionRuntime({
 
   const currentAsset = currentScene ? buildRuntimeAsset(mission, currentScene) : mission.asset
   const previousAsset = previousScene ? buildRuntimeAsset(mission, previousScene) : null
+  const currentLayerStyle = buildRuntimeLayerStyle(currentScene)
+  const previousLayerStyle = buildRuntimeLayerStyle(previousScene)
+  const rewardBadgeIconUrl = currentScene?.rewardIconUrl
+  const rewardChestIconUrl = currentScene?.rewardChestIconUrl || currentScene?.rewardIconUrl
   const progressPercent = currentScene
     ? Math.min(100, Math.max(0, (currentScene.sceneNumber / Math.max(1, currentScene.sceneTotal)) * 100))
     : 0
@@ -171,6 +259,14 @@ export function MissionRuntime({
   const totalXpLabel = totalXp + earnedXp
   const canAdvance = currentScene ? currentScene.answers.length === 0 || Boolean(selectedAnswer) : false
   const rewardDots = currentScene ? Array.from({ length: currentScene.sceneTotal }) : []
+  const companionStyle = currentScene
+    ? ({
+        '--runtime-companion-scale': `${currentScene.companionScale / 100}`,
+        '--runtime-companion-offset-x': `${currentScene.companionOffsetX}%`,
+        '--runtime-companion-offset-y': `${currentScene.companionOffsetY}%`,
+        '--runtime-companion-glow-strength': `${currentScene.companionGlowStrength / 100}`,
+      } as CSSProperties)
+    : undefined
 
   const handleSelectAnswer = (answer: MissionRuntimeAnswerRecord) => {
     if (!currentScene) return
@@ -242,15 +338,15 @@ export function MissionRuntime({
     <div className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone}`}>
       <div className="mission-runtime-stage">
         <div className="mission-runtime-background" aria-hidden="true">
-          <div className="mission-runtime-background-layer mission-runtime-background-layer-ambient">
-            <CinematicImage asset={mission.asset} mode="auto" />
+          <div className="mission-runtime-background-layer mission-runtime-background-layer-ambient" style={currentLayerStyle}>
+            <CinematicImage asset={currentAsset} mode="auto" />
           </div>
           {previousAsset && (
-            <div className="mission-runtime-background-layer mission-runtime-background-layer-previous">
+            <div className="mission-runtime-background-layer mission-runtime-background-layer-previous" style={previousLayerStyle}>
               <CinematicImage asset={previousAsset} mode="auto" />
             </div>
           )}
-          <div className="mission-runtime-background-layer mission-runtime-background-layer-current">
+          <div className="mission-runtime-background-layer mission-runtime-background-layer-current" style={currentLayerStyle}>
             <CinematicImage asset={currentAsset} mode="auto" />
           </div>
           <div className="mission-runtime-global-overlay" />
@@ -277,7 +373,9 @@ export function MissionRuntime({
             </strong>
           </div>
           <div className="mission-runtime-topbar-pill mission-runtime-topbar-pill-xp">
-            <Star size={15} />
+            <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="XP reward icon">
+              <Star size={15} />
+            </RuntimeIcon>
             +{feedback?.xp ?? currentScene.xpReward} XP
           </div>
           <div className="mission-runtime-topbar-status">
@@ -307,7 +405,9 @@ export function MissionRuntime({
               <div className="mission-runtime-prompt-head">
                 <span>{currentScene.character}</span>
                 <button type="button" onClick={() => playSpeech(currentScene.question, currentScene.audioUrl)} aria-label="Play prompt audio">
-                  <Volume2 size={18} />
+                  <RuntimeIcon iconUrl={currentScene.promptAudioIconUrl} alt="Prompt audio icon">
+                    <Volume2 size={18} />
+                  </RuntimeIcon>
                 </button>
               </div>
               <h1>{currentScene.question}</h1>
@@ -329,7 +429,9 @@ export function MissionRuntime({
                   onClick={() => handleSelectAnswer(answer)}
                 >
                   <span className="mission-runtime-answer-audio">
-                    <AudioLines size={18} />
+                    <RuntimeIcon iconUrl={currentScene.answerAudioIconUrl} alt="Answer audio icon">
+                      <AudioLines size={18} />
+                    </RuntimeIcon>
                   </span>
                   <span className="mission-runtime-answer-copy">
                     <strong>{answer.text}</strong>
@@ -346,12 +448,16 @@ export function MissionRuntime({
           </section>
 
           <aside className="mission-runtime-companion-column">
-            <div className="mission-runtime-character">
-              <img src={currentScene.companionImageUrl} alt="Spark companion" />
-            </div>
+            {currentScene.companionImageUrl && (
+              <div className="mission-runtime-character" style={companionStyle}>
+                <img src={currentScene.companionImageUrl} alt="Spark companion" />
+              </div>
+            )}
             <article className={`mission-runtime-feedback-card${feedbackPulse ? ' is-pulsing' : ''}`}>
               <span className="mission-runtime-feedback-star">
-                <Sparkles size={16} />
+                <RuntimeIcon iconUrl={currentScene.feedbackIconUrl} alt="Feedback icon">
+                  <Sparkles size={16} />
+                </RuntimeIcon>
               </span>
               <strong>{feedback?.title || currentScene.emotionalFeedbackTitle}</strong>
               <p>{feedback?.body || currentScene.emotionalFeedbackBody}</p>
@@ -368,7 +474,9 @@ export function MissionRuntime({
           <div className="mission-runtime-reward-rail">
             <div className="mission-runtime-reward-core">
               <span className="mission-runtime-reward-badge">
-                <Star size={16} />
+                <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="Reward badge icon">
+                  <Star size={16} />
+                </RuntimeIcon>
               </span>
               <div>
                 <small>{selectedAnswer?.isCorrect ? 'Excelente!' : 'Checkpoint'}</small>
@@ -381,7 +489,9 @@ export function MissionRuntime({
               ))}
             </div>
             <div className="mission-runtime-reward-chest">
-              <Crown size={18} />
+              <RuntimeIcon iconUrl={rewardChestIconUrl} alt="Reward chest icon">
+                <Gift size={18} />
+              </RuntimeIcon>
             </div>
           </div>
 
@@ -405,7 +515,9 @@ export function MissionRuntime({
               type="button"
               onClick={() => playSpeech(currentScene.question, currentScene.audioUrl)}
             >
-              <Mic size={16} />
+              <RuntimeIcon iconUrl={currentScene.promptAudioIconUrl} alt="Voice prompt icon">
+                <Mic size={16} />
+              </RuntimeIcon>
               Toque para falar
             </button>
           </article>
@@ -422,7 +534,9 @@ export function MissionRuntime({
                 onClick={() => selectedAnswer && playSpeech(selectedAnswer.text, selectedAnswer.audioUrl)}
                 disabled={!selectedAnswer}
               >
-                <Volume2 size={16} />
+                <RuntimeIcon iconUrl={currentScene.answerAudioIconUrl} alt="Selected answer audio icon">
+                  <Volume2 size={16} />
+                </RuntimeIcon>
               </button>
             </div>
             <div className="mission-runtime-waveform-card">
@@ -448,7 +562,9 @@ export function MissionRuntime({
                 <p>{feedback?.body || currentScene.emotionalFeedbackBody}</p>
                 <span>+{feedback?.xp ?? currentScene.xpReward} XP</span>
               </div>
-              <img src={currentScene.companionImageUrl} alt="Spark companion celebrating" />
+              {currentScene.companionImageUrl && (
+                <img src={currentScene.companionImageUrl} alt="Spark companion celebrating" />
+              )}
             </div>
           </article>
         </div>

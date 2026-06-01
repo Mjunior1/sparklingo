@@ -200,6 +200,13 @@ type MediaSlotGuide = {
   safeArea: string
 }
 
+type RuntimeMediaGuide = {
+  label: string
+  resolution: string
+  ratio: string
+  safeArea: string
+}
+
 type SceneAssetStatusFilter = 'all' | 'active' | 'inactive'
 
 const tagOptions: Exclude<FilterKey, 'Todos'>[] = ['Gramática', 'Vocabulário', 'Listening', 'Reading', 'Speaking']
@@ -258,6 +265,33 @@ const questionMediaGuides: MediaSlotGuide[] = [
   { key: 'scenarioThumbnail', label: 'Cenário da questão', resolution: '900x1200', ratio: '3:4', safeArea: 'Contexto visível sem poluição lateral.' },
   { key: 'emotionalThumbnail', label: 'Thumbnail emocional', resolution: '900x1200', ratio: '3:4', safeArea: 'Realce tensão, urgência ou recompensa.' },
   { key: 'challengeIcon', label: 'Ícone da ação', resolution: '512x512', ratio: '1:1', safeArea: 'Funciona bem em chips e cards compactos.' },
+]
+
+const runtimeMediaGuides: RuntimeMediaGuide[] = [
+  {
+    label: 'Runtime background desktop',
+    resolution: '1920x1080',
+    ratio: '16:9',
+    safeArea: 'Use a cena limpa do palco. Preserve personagem e tensão longe do prompt, respostas e feedback lateral.',
+  },
+  {
+    label: 'Runtime background mobile',
+    resolution: '1440x2560',
+    ratio: '9:16',
+    safeArea: 'Proteja rosto, mãos e tensão narrativa no centro da tela para não perder no crop vertical.',
+  },
+  {
+    label: 'Companion / mascote',
+    resolution: '1400x1800',
+    ratio: '3:4',
+    safeArea: 'PNG/WebP com transparência. O frontend faz rim light, blend e corte; use a raposa fora do background da cena.',
+  },
+  {
+    label: 'Ícones do runtime / reward',
+    resolution: '256x256',
+    ratio: '1:1',
+    safeArea: 'Use PNG ou SVG limpo. O frontend aplica o tamanho, a iluminação e o encaixe nos badges.',
+  },
 ]
 
 const sceneAssetCategoryOptions: SceneAssetCategory[] = ['Airport', 'CoffeeShop', 'Park', 'General']
@@ -2087,10 +2121,20 @@ export function AdminScreen({
         id: missionRuntimeDraft.id || missionRuntimeIdPreview,
         backgroundImageUrl:
           missionRuntimeDraft.backgroundImageUrl ||
+          currentMissionRuntimeAsset?.imageUrlDesktop ||
+          currentMissionRuntimeAsset?.imageUrl ||
           currentMissionRuntimeAsset?.heroBackgroundImageUrl ||
           currentMissionRuntimeAsset?.backgroundImageUrl ||
-          currentMissionRuntimeAsset?.imageUrl ||
+          '',
+        backgroundImageUrlMobile:
+          missionRuntimeDraft.backgroundImageUrlMobile ||
+          missionRuntimeDraft.backgroundImageUrl ||
+          currentMissionRuntimeAsset?.imageUrlMobile ||
           currentMissionRuntimeAsset?.imageUrlDesktop ||
+          currentMissionRuntimeAsset?.imageUrl ||
+          currentMissionRuntimeAsset?.mobileImageUrl ||
+          currentMissionRuntimeAsset?.heroBackgroundImageUrl ||
+          currentMissionRuntimeAsset?.backgroundImageUrl ||
           '',
         missionTitle:
           missionRuntimeDraft.missionTitle ||
@@ -2137,11 +2181,20 @@ export function AdminScreen({
                           sceneAssetId: event.target.value,
                           missionTitle: current.missionTitle || nextAsset?.mission || '',
                           backgroundImageUrl:
-                            current.backgroundImageUrl ||
                             nextAsset?.heroBackgroundImageUrl ||
                             nextAsset?.backgroundImageUrl ||
                             nextAsset?.imageUrl ||
+                            current.backgroundImageUrl ||
                             '',
+                          backgroundImageUrlMobile:
+                            nextAsset?.mobileImageUrl ||
+                            nextAsset?.imageUrlMobile ||
+                            nextAsset?.heroBackgroundImageUrl ||
+                            nextAsset?.backgroundImageUrl ||
+                            current.backgroundImageUrlMobile ||
+                            '',
+                          backgroundFocalX: nextAsset?.focalPointX ?? current.backgroundFocalX,
+                          backgroundFocalY: nextAsset?.focalPointY ?? current.backgroundFocalY,
                         }
                       })
                     }
@@ -2230,14 +2283,40 @@ export function AdminScreen({
                   onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, questionTranslation: event.target.value }))}
                 />
               </label>
+              <div className="scene-asset-preview-card">
+                <div className="media-slot-head">
+                  <strong>Guidelines de mídia do runtime</strong>
+                  <span>As imagens entram por URL e o frontend faz crop responsivo, blend cinematográfico e ajuste fino de posição.</span>
+                </div>
+                <div className="media-slot-grid media-slot-grid-guide">
+                  {runtimeMediaGuides.map((guide) => (
+                    <article key={guide.label} className="media-slot-card">
+                      <div className="media-slot-meta">
+                        <strong>{guide.label}</strong>
+                        <span>{guide.resolution} • {guide.ratio}</span>
+                        <small>{guide.safeArea}</small>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              </div>
               <div className="scene-asset-inline-grid">
-                <label>Background URL
+                <label>Background URL desktop
                   <input
                     value={missionRuntimeDraft.backgroundImageUrl}
                     onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, backgroundImageUrl: event.target.value }))}
-                    placeholder="/Images/Airport/..."
+                    placeholder="/Images/Airport/runtime-airport-desktop.png"
                   />
                 </label>
+                <label>Background URL mobile
+                  <input
+                    value={missionRuntimeDraft.backgroundImageUrlMobile}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, backgroundImageUrlMobile: event.target.value }))}
+                    placeholder="/Images/Airport/runtime-airport-mobile.png"
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
                 <label>Companion URL
                   <input
                     value={missionRuntimeDraft.companionImageUrl}
@@ -2245,13 +2324,102 @@ export function AdminScreen({
                     placeholder="/Images/Mascote/Sparklingo.png"
                   />
                 </label>
-              </div>
-              <div className="scene-asset-inline-grid">
                 <label>Audio URL
                   <input
                     value={missionRuntimeDraft.audioUrl}
                     onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, audioUrl: event.target.value }))}
                     placeholder="https://..."
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Foco horizontal do background ({missionRuntimeDraft.backgroundFocalX}%)
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={missionRuntimeDraft.backgroundFocalX}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, backgroundFocalX: Number(event.target.value) || 0 }))}
+                  />
+                </label>
+                <label>Foco vertical do background ({missionRuntimeDraft.backgroundFocalY}%)
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={missionRuntimeDraft.backgroundFocalY}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, backgroundFocalY: Number(event.target.value) || 0 }))}
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Ajuste horizontal ({missionRuntimeDraft.backgroundOffsetX}%)
+                  <input
+                    type="range"
+                    min="-60"
+                    max="60"
+                    value={missionRuntimeDraft.backgroundOffsetX}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, backgroundOffsetX: Number(event.target.value) || 0 }))}
+                  />
+                </label>
+                <label>Ajuste vertical ({missionRuntimeDraft.backgroundOffsetY}%)
+                  <input
+                    type="range"
+                    min="-60"
+                    max="60"
+                    value={missionRuntimeDraft.backgroundOffsetY}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, backgroundOffsetY: Number(event.target.value) || 0 }))}
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Escala do background ({missionRuntimeDraft.backgroundScale}%)
+                  <input
+                    type="range"
+                    min="70"
+                    max="160"
+                    value={missionRuntimeDraft.backgroundScale}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, backgroundScale: Number(event.target.value) || 80 }))}
+                  />
+                </label>
+                <label>Escala do companion ({missionRuntimeDraft.companionScale}%)
+                  <input
+                    type="range"
+                    min="50"
+                    max="180"
+                    value={missionRuntimeDraft.companionScale}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, companionScale: Number(event.target.value) || 60 }))}
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Companion horizontal ({missionRuntimeDraft.companionOffsetX}%)
+                  <input
+                    type="range"
+                    min="-60"
+                    max="60"
+                    value={missionRuntimeDraft.companionOffsetX}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, companionOffsetX: Number(event.target.value) || 0 }))}
+                  />
+                </label>
+                <label>Companion vertical ({missionRuntimeDraft.companionOffsetY}%)
+                  <input
+                    type="range"
+                    min="-60"
+                    max="60"
+                    value={missionRuntimeDraft.companionOffsetY}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, companionOffsetY: Number(event.target.value) || 0 }))}
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Brilho do companion ({missionRuntimeDraft.companionGlowStrength}%)
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={missionRuntimeDraft.companionGlowStrength}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, companionGlowStrength: Number(event.target.value) || 0 }))}
                   />
                 </label>
                 <label>XP reward
@@ -2277,6 +2445,63 @@ export function AdminScreen({
                   >
                     {missionRuntimeFeedbackToneOptions.map((tone) => <option key={tone} value={tone}>{tone}</option>)}
                   </select>
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>XP badge icon URL
+                  <input
+                    value={missionRuntimeDraft.rewardIconUrl}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, rewardIconUrl: event.target.value }))}
+                    placeholder="https://.../xp-badge-icon.png"
+                  />
+                </label>
+                <label>Reward chest icon URL
+                  <input
+                    value={missionRuntimeDraft.rewardChestIconUrl}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, rewardChestIconUrl: event.target.value }))}
+                    placeholder="https://.../reward-chest-icon.png"
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Feedback icon URL
+                  <input
+                    value={missionRuntimeDraft.feedbackIconUrl}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, feedbackIconUrl: event.target.value }))}
+                    placeholder="https://.../feedback-icon.png"
+                  />
+                </label>
+              </div>
+              <div className="runtime-icon-preview-strip">
+                {[
+                  { label: 'XP badge', url: missionRuntimeDraft.rewardIconUrl },
+                  { label: 'Reward chest', url: missionRuntimeDraft.rewardChestIconUrl || missionRuntimeDraft.rewardIconUrl },
+                  { label: 'Feedback', url: missionRuntimeDraft.feedbackIconUrl },
+                  { label: 'Prompt audio', url: missionRuntimeDraft.promptAudioIconUrl },
+                  { label: 'Answer audio', url: missionRuntimeDraft.answerAudioIconUrl },
+                ].map((item) => (
+                  <div key={item.label} className="runtime-icon-preview">
+                    <span>{item.label}</span>
+                    <div className="runtime-icon-preview-orb">
+                      {item.url ? <img src={item.url} alt={item.label} /> : <Sparkles size={16} />}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Prompt audio icon URL
+                  <input
+                    value={missionRuntimeDraft.promptAudioIconUrl}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, promptAudioIconUrl: event.target.value }))}
+                    placeholder="https://.../prompt-icon.png"
+                  />
+                </label>
+                <label>Answer audio icon URL
+                  <input
+                    value={missionRuntimeDraft.answerAudioIconUrl}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, answerAudioIconUrl: event.target.value }))}
+                    placeholder="https://.../answer-icon.png"
+                  />
                 </label>
               </div>
               <label>Feedback body
@@ -3381,10 +3606,30 @@ export function AdminScreen({
                 </div>
               ) : (
                 <div className="scene-asset-grid">
-                  {filteredMissionRuntimeScenes.map((scene) => (
+                  {filteredMissionRuntimeScenes.map((scene) => {
+                    const previewAsset = sceneAssets.find((asset) => asset.id === scene.sceneAssetId)
+                    const previewScene = {
+                      ...scene,
+                      backgroundImageUrl:
+                        scene.backgroundImageUrl ||
+                        previewAsset?.imageUrlDesktop ||
+                        previewAsset?.imageUrl ||
+                        previewAsset?.heroBackgroundImageUrl ||
+                        '',
+                      backgroundImageUrlMobile:
+                        scene.backgroundImageUrlMobile ||
+                        scene.backgroundImageUrl ||
+                        previewAsset?.imageUrlMobile ||
+                        previewAsset?.imageUrlDesktop ||
+                        previewAsset?.imageUrl ||
+                        previewAsset?.heroBackgroundImageUrl ||
+                        '',
+                    }
+
+                    return (
                     <article key={scene.id} className="scene-asset-card">
                       <div className="cms-quickwins-card-preview">
-                        <MissionRuntimeScenePreviewCard scene={scene} missionTitle={scene.missionTitle} />
+                        <MissionRuntimeScenePreviewCard scene={previewScene} missionTitle={scene.missionTitle} />
                       </div>
                       <div className="scene-asset-card-copy">
                         <div>
@@ -3404,7 +3649,7 @@ export function AdminScreen({
                         <button type="button" className="danger" onClick={() => removeMissionRuntimeItem(scene)}><Trash2 size={14} />Excluir</button>
                       </div>
                     </article>
-                  ))}
+                    )})}
                 </div>
               )}
             </section>
