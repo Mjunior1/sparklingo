@@ -83,6 +83,11 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    match /missionRuntimeScenes/{sceneId} {
+      allow read: if signedIn();
+      allow write: if isAdmin();
+    }
+
     match /quickWins/{quickWinId} {
       allow read: if signedIn();
       allow write: if isAdmin();

@@ -15,6 +15,7 @@ import { AuthEntry } from './auth/AuthEntry'
 import { useAuth } from './auth/AuthProvider'
 import { OnboardingScreen } from './auth/OnboardingScreen'
 import { QuickWinsSection } from './components/quickwins/QuickWinsSection'
+import { MissionRuntime, type MissionRuntimeMission } from './components/runtime/MissionRuntime'
 import { CinematicImage, NarrativeOverlay, SafeAreaContainer } from './components/scene/SceneRenderer'
 import {
   getAchievementCatalogRaw,
@@ -37,6 +38,7 @@ import {
   type QuickWinsConfig,
 } from './services/quickWins'
 import { getSceneAssets, type SceneAssetRecord } from './services/sceneAssets'
+import { getMissionRuntimeScenes, type MissionRuntimeSceneRecord } from './services/missionRuntime'
 
 const clampPercent = (value: number) => Math.min(100, Math.max(0, Math.round(value)))
 
@@ -161,7 +163,7 @@ const buildMissionVisual = (
 
 function App() {
   const { status, user, profile, signOut, platformConfig, patchProfile } = useAuth()
-  const [view, setView] = useState<'home' | 'admin'>('home')
+  const [view, setView] = useState<'home' | 'admin' | 'runtime'>('home')
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [progressSnapshot, setProgressSnapshot] = useState<UserProgress | null>(null)
   const [lessonsCatalog, setLessonsCatalog] = useState<LessonCatalogItem[]>([])
@@ -169,9 +171,11 @@ function App() {
   const [achievementCatalog, setAchievementCatalog] = useState<AchievementCatalogItem[]>([])
   const [quizQuestionCatalog, setQuizQuestionCatalog] = useState<QuizQuestionItem[]>([])
   const [sceneAssetsCatalog, setSceneAssetsCatalog] = useState<SceneAssetRecord[]>([])
+  const [missionRuntimeCatalog, setMissionRuntimeCatalog] = useState<MissionRuntimeSceneRecord[]>([])
   const [quickWinsCatalog, setQuickWinsCatalog] = useState<QuickWinItem[]>([])
   const [quickWinsConfig, setQuickWinsConfig] = useState<QuickWinsConfig>(defaultQuickWinsConfig)
   const [activeMissionId, setActiveMissionId] = useState<string | null>(null)
+  const [runtimeMissionId, setRuntimeMissionId] = useState<string | null>(null)
   const [previousMissionId, setPreviousMissionId] = useState<string | null>(null)
   const [pauseCarousel, setPauseCarousel] = useState(false)
 
@@ -195,6 +199,7 @@ function App() {
       nextAchievementCatalog,
       nextQuizQuestions,
       nextSceneAssets,
+      nextMissionRuntimeScenes,
       nextQuickWinsCatalog,
       nextQuickWinsConfig,
     ] = await Promise.all([
@@ -204,6 +209,7 @@ function App() {
       getAchievementCatalogRaw(),
       getQuizQuestionsRaw(),
       getSceneAssets(),
+      getMissionRuntimeScenes(),
       getQuickWins(),
       getQuickWinsConfig(),
     ])
@@ -218,6 +224,7 @@ function App() {
     setAchievementCatalog(nextAchievementCatalog)
     setQuizQuestionCatalog(nextQuizQuestions)
     setSceneAssetsCatalog(nextSceneAssets)
+    setMissionRuntimeCatalog(nextMissionRuntimeScenes)
     setQuickWinsCatalog(nextQuickWinsCatalog)
     setQuickWinsConfig(nextQuickWinsConfig)
 
@@ -228,6 +235,7 @@ function App() {
       nextAchievementCatalog,
       nextQuizQuestions,
       nextSceneAssets,
+      nextMissionRuntimeScenes,
       nextQuickWinsCatalog,
       nextQuickWinsConfig,
     }
@@ -415,6 +423,12 @@ function App() {
     setActiveMissionId(id)
   }, [])
 
+  const openMissionRuntime = useCallback((missionId: string) => {
+    setActiveMissionId(missionId)
+    setRuntimeMissionId(missionId)
+    setView('runtime')
+  }, [])
+
   const goToAdjacentMission = useCallback(
     (direction: -1 | 1) => {
       if (!missionVisuals.length || !activeMission) return
@@ -427,6 +441,16 @@ function App() {
     },
     [activeMission, missionVisuals],
   )
+
+  const runtimeMission =
+    missionVisuals.find((mission) => mission.id === runtimeMissionId) ??
+    activeMission ??
+    null
+
+  const runtimeScenes = useMemo(() => {
+    if (!runtimeMission) return [] as MissionRuntimeSceneRecord[]
+    return missionRuntimeCatalog.filter((scene) => scene.sceneAssetId === runtimeMission.asset.id)
+  }, [missionRuntimeCatalog, runtimeMission])
 
   if (status === 'loading' || (user && catalogLoading && !activeSceneAssets.length)) {
     return (
@@ -471,6 +495,31 @@ function App() {
           />
         </main>
       </div>
+    )
+  }
+
+  if (view === 'runtime' && runtimeMission) {
+    const runtimeMissionCard: MissionRuntimeMission = {
+      id: runtimeMission.id,
+      title: runtimeMission.title,
+      chapterLabel: runtimeMission.chapterLabel,
+      sceneCount: runtimeMission.sceneCount,
+      posterImage: runtimeMission.posterImage,
+      backgroundDesktop: runtimeMission.backgroundDesktop,
+      backgroundMobile: runtimeMission.backgroundMobile,
+      asset: runtimeMission.asset,
+    }
+
+    return (
+      <MissionRuntime
+        mission={runtimeMissionCard}
+        scenes={runtimeScenes}
+        streakDays={streakDays}
+        totalXp={totalXp}
+        avatarUrl={profile?.avatarUrl}
+        onBack={() => setView('home')}
+        onOpenAdmin={isAdmin ? () => setView('admin') : undefined}
+      />
     )
   }
 
@@ -630,7 +679,7 @@ function App() {
                   changeMission(mission.id)
                 }}
                 onBlur={() => setPauseCarousel(false)}
-                onClick={() => changeMission(mission.id)}
+                onClick={() => openMissionRuntime(mission.id)}
               >
                 <div className="global-hero-mission-art">
                   <img src={mission.posterImage} alt={mission.title} />

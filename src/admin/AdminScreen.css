@@ -534,6 +534,34 @@
   font-weight: 700;
 }
 
+.mission-runtime-answer-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.mission-runtime-answer-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(145, 115, 255, 0.12);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.mission-runtime-answer-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.mission-runtime-answer-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
 .cms-empty-panel {
   min-height: 340px;
   place-items: center;
@@ -1713,6 +1741,7 @@
   .cms-ai-observability,
   .cms-draft-meta-grid,
   .scene-asset-grid,
+  .mission-runtime-answer-grid,
   .scene-asset-inline-grid,
   .scene-asset-safearea-grid {
     grid-template-columns: 1fr;

@@ -9,6 +9,7 @@ import {
   BrainCircuit,
   CheckCircle2,
   ChevronRight,
+  Clapperboard,
   Clock3,
   Copy,
   Eye,
@@ -37,6 +38,7 @@ import {
   X,
 } from 'lucide-react'
 import { QuickWinCard, QuickWinsSection } from '../components/quickwins/QuickWinsSection'
+import { MissionRuntimeScenePreviewCard } from '../components/runtime/MissionRuntime'
 import {
   defaultAchievementCatalog,
   deleteAchievement,
@@ -136,6 +138,18 @@ import {
   type SceneAssetRecord,
   type SceneAssetSafeArea,
 } from '../services/sceneAssets'
+import {
+  createEmptyMissionRuntimeScene,
+  defaultMissionRuntimeScenes,
+  deleteMissionRuntimeScene,
+  getMissionRuntimeScenes,
+  missionRuntimeFeedbackToneOptions,
+  seedDefaultMissionRuntimeScenes,
+  upsertMissionRuntimeScene,
+  type MissionRuntimeAnswerRecord,
+  type MissionRuntimeFeedbackTone,
+  type MissionRuntimeSceneRecord,
+} from '../services/missionRuntime'
 
 type AdminScreenProps = {
   lessons: LessonCatalogItem[]
@@ -152,6 +166,7 @@ type SectionKey =
   | 'ai-control'
   | 'quick-wins'
   | 'scene-assets'
+  | 'mission-runtime'
   | 'lessons'
   | 'quizzes'
   | 'questions'
@@ -162,7 +177,7 @@ type SectionKey =
   | 'settings'
 
 type DrawerMode = 'create' | 'edit'
-type DrawerKind = 'lesson' | 'quiz' | 'question' | 'achievement' | 'scene-asset' | 'quick-win'
+type DrawerKind = 'lesson' | 'quiz' | 'question' | 'achievement' | 'scene-asset' | 'quick-win' | 'runtime-scene'
 
 type DrawerState =
   | { open: false }
@@ -203,6 +218,7 @@ const navItems: Array<{ key: SectionKey; label: string; icon: typeof LayoutDashb
   { key: 'ai-control', label: 'AI Control Center', icon: BrainCircuit },
   { key: 'quick-wins', label: 'Quick Wins', icon: Zap },
   { key: 'scene-assets', label: 'Scene Assets', icon: Image },
+  { key: 'mission-runtime', label: 'Mission Runtime', icon: Clapperboard },
   { key: 'lessons', label: 'Lições', icon: BookOpen },
   { key: 'quizzes', label: 'Quizzes', icon: Gamepad2 },
   { key: 'questions', label: 'Questões', icon: WandSparkles },
@@ -365,6 +381,7 @@ const sectionTitle: Record<SectionKey, string> = {
   'ai-control': 'AI Control Center',
   'quick-wins': 'Quick Wins',
   'scene-assets': 'Scene Assets',
+  'mission-runtime': 'Mission Runtime',
   lessons: 'Lições',
   quizzes: 'Quizzes',
   questions: 'Questões',
@@ -380,6 +397,7 @@ const sectionCopy: Record<SectionKey, string> = {
   'quick-wins': 'Configure o momentum system da home com cards premium, timers, badges de XP e previews cinematográficos em tempo real.',
   'ai-control': 'Configure providers, guardrails, drafts e geração contextual sem quebrar a hierarquia atual de lições, quizzes e questões.',
   'scene-assets': 'Cadastre, organize e ajuste os assets narrativos cinematográficos que alimentam hero, missões e cenas do SparkLingo.',
+  'mission-runtime': 'Modele as cenas cinematográficas, diálogos, respostas, feedback e progressão que entram quando o usuário abre uma missão.',
   lessons: 'Crie e organize as trilhas principais. Cada lição agrupa quizzes e define o tom visual da jornada.',
   quizzes: 'Estruture os blocos jogáveis dentro das lições e mantenha a progressão clara.',
   questions: 'Encontre, filtre e edite qualquer desafio em segundos com uma grade compacta e um drawer lateral.',
@@ -448,6 +466,9 @@ export function AdminScreen({
   const [sceneAssetSearch, setSceneAssetSearch] = useState('')
   const [sceneAssetCategoryFilter, setSceneAssetCategoryFilter] = useState<SceneAssetCategory | 'all'>('all')
   const [sceneAssetStatus, setSceneAssetStatus] = useState<SceneAssetStatusFilter>('all')
+  const [missionRuntimeSearch, setMissionRuntimeSearch] = useState('')
+  const [missionRuntimeAssetFilter, setMissionRuntimeAssetFilter] = useState<string>('all')
+  const [missionRuntimeStatus, setMissionRuntimeStatus] = useState<StatusFilter>('all')
   const [lessonDraft, setLessonDraft] = useState<LessonCatalogItem>(emptyLesson)
   const [quizDraft, setQuizDraft] = useState<QuizCatalogItem>(emptyQuiz)
   const [questionDraft, setQuestionDraft] = useState<QuizQuestionItem>(emptyQuestion)
@@ -459,6 +480,9 @@ export function AdminScreen({
   const [sceneAssetDraft, setSceneAssetDraft] = useState<SceneAssetRecord>(createEmptySceneAsset)
   const [sceneAssets, setSceneAssets] = useState<SceneAssetRecord[]>([])
   const [sceneAssetsLoaded, setSceneAssetsLoaded] = useState(false)
+  const [missionRuntimeDraft, setMissionRuntimeDraft] = useState<MissionRuntimeSceneRecord>(createEmptyMissionRuntimeScene())
+  const [missionRuntimeScenes, setMissionRuntimeScenes] = useState<MissionRuntimeSceneRecord[]>([])
+  const [missionRuntimeLoaded, setMissionRuntimeLoaded] = useState(false)
   const [platformDraft, setPlatformDraft] = useState<PlatformConfig>(platformConfig ?? defaultPlatformConfig)
   const [mediaAiOpen, setMediaAiOpen] = useState(false)
   const [mediaAiTarget, setMediaAiTarget] = useState<MediaAiScope>('lesson')
@@ -486,6 +510,7 @@ export function AdminScreen({
   const debouncedAchievementSearch = useDebouncedValue(achievementSearch)
   const debouncedQuickWinSearch = useDebouncedValue(quickWinSearch)
   const debouncedSceneAssetSearch = useDebouncedValue(sceneAssetSearch)
+  const debouncedMissionRuntimeSearch = useDebouncedValue(missionRuntimeSearch)
 
   useEffect(() => {
     setPlatformDraft(platformConfig ?? defaultPlatformConfig)
@@ -508,6 +533,15 @@ export function AdminScreen({
         setQuickWinsConfigDraft(config)
       })
       .catch(() => setQuickWinsLoaded(true))
+  }, [])
+
+  useEffect(() => {
+    getMissionRuntimeScenes()
+      .then((items) => {
+        setMissionRuntimeScenes(items)
+        setMissionRuntimeLoaded(true)
+      })
+      .catch(() => setMissionRuntimeLoaded(true))
   }, [])
 
   useEffect(() => {
@@ -560,14 +594,20 @@ export function AdminScreen({
     [sceneAssetDraft.id, sceneAssets],
   )
 
+  const missionRuntimeIdPreview = useMemo(
+    () => missionRuntimeDraft.id || nextNumericId(missionRuntimeScenes.map((item) => item.id), 'RT'),
+    [missionRuntimeDraft.id, missionRuntimeScenes],
+  )
+
   const lessonDisplayIds = useMemo(() => buildDisplayIdMap(lessons.map((item) => item.id), 'LS'), [lessons])
   const quizDisplayIds = useMemo(() => buildDisplayIdMap(quizzes.map((item) => item.id), 'QZ'), [quizzes])
   const questionDisplayIds = useMemo(() => buildDisplayIdMap(questions.map((item) => item.id), 'QT'), [questions])
   const achievementDisplayIds = useMemo(() => buildDisplayIdMap(achievements.map((item) => item.id), 'AC'), [achievements])
   const quickWinDisplayIds = useMemo(() => buildDisplayIdMap(quickWins.map((item) => item.id), 'QW'), [quickWins])
   const sceneAssetDisplayIds = useMemo(() => buildDisplayIdMap(sceneAssets.map((item) => item.id), 'SA'), [sceneAssets])
+  const missionRuntimeDisplayIds = useMemo(() => buildDisplayIdMap(missionRuntimeScenes.map((item) => item.id), 'RT'), [missionRuntimeScenes])
 
-  const displayId = (id: string, kind: 'lesson' | 'quiz' | 'question' | 'achievement' | 'quick-win' | 'scene-asset') => {
+  const displayId = (id: string, kind: 'lesson' | 'quiz' | 'question' | 'achievement' | 'quick-win' | 'scene-asset' | 'runtime-scene') => {
     if (!id) return ''
     const map =
       kind === 'lesson'
@@ -577,10 +617,12 @@ export function AdminScreen({
           : kind === 'question'
             ? questionDisplayIds
             : kind === 'achievement'
-              ? achievementDisplayIds
-              : kind === 'quick-win'
-                ? quickWinDisplayIds
-              : sceneAssetDisplayIds
+            ? achievementDisplayIds
+            : kind === 'quick-win'
+              ? quickWinDisplayIds
+              : kind === 'scene-asset'
+                ? sceneAssetDisplayIds
+                : missionRuntimeDisplayIds
 
     return map.get(id) ?? id.toUpperCase()
   }
@@ -656,6 +698,25 @@ export function AdminScreen({
       .sort((a, b) => a.progressionOrder - b.progressionOrder || a.title.localeCompare(b.title))
   }, [debouncedSceneAssetSearch, sceneAssetCategoryFilter, sceneAssetStatus, sceneAssets])
 
+  const filteredMissionRuntimeScenes = useMemo(() => {
+    return missionRuntimeScenes
+      .filter((scene) => missionRuntimeAssetFilter === 'all' || scene.sceneAssetId === missionRuntimeAssetFilter)
+      .filter((scene) => missionRuntimeStatus === 'all' || (missionRuntimeStatus === 'active' ? scene.active : !scene.active))
+      .filter((scene) => {
+        if (!debouncedMissionRuntimeSearch.trim()) return true
+        const linkedAsset = sceneAssets.find((asset) => asset.id === scene.sceneAssetId)
+        const haystack = `${scene.id} ${scene.missionTitle} ${scene.title} ${scene.character} ${scene.question} ${linkedAsset?.title ?? ''}`.toLowerCase()
+        return haystack.includes(debouncedMissionRuntimeSearch.toLowerCase())
+      })
+      .sort((a, b) => a.order - b.order || a.sceneNumber - b.sceneNumber || a.id.localeCompare(b.id))
+  }, [
+    debouncedMissionRuntimeSearch,
+    missionRuntimeAssetFilter,
+    missionRuntimeScenes,
+    missionRuntimeStatus,
+    sceneAssets,
+  ])
+
   const dashboardStats = [
     { label: 'Lições', value: lessons.length, helper: 'trilhas vivas' },
     { label: 'Quizzes', value: quizzes.length, helper: 'blocos jogáveis' },
@@ -665,6 +726,14 @@ export function AdminScreen({
 
   const sceneAssetCategories = useMemo(
     () => Array.from(new Set([...sceneAssetCategoryOptions, ...sceneAssets.map((asset) => asset.category)])).sort(),
+    [sceneAssets],
+  )
+
+  const missionRuntimeAssetOptions = useMemo(
+    () =>
+      sceneAssets
+        .slice()
+        .sort((a, b) => a.progressionOrder - b.progressionOrder || a.title.localeCompare(b.title)),
     [sceneAssets],
   )
 
@@ -684,6 +753,7 @@ export function AdminScreen({
       ? sortedQuizzes.map((quiz) => ({ id: quiz.id, label: quiz.title }))
       : questions.map((question) => ({ id: question.id, label: question.title }))
   const selectedMediaTarget = mediaTargetOptions.find((item) => item.id === mediaAiTargetId)
+  const currentMissionRuntimeAsset = sceneAssets.find((asset) => asset.id === missionRuntimeDraft.sceneAssetId) ?? null
 
   const questionPreview = useMemo(() => {
     if (questionDraft.kind === 'drag-fill') {
@@ -813,6 +883,13 @@ export function AdminScreen({
     setQuickWinsLoaded(true)
     setQuickWinsConfigDraft(config)
     return { items, config }
+  }
+
+  const refreshMissionRuntime = async () => {
+    const items = await getMissionRuntimeScenes()
+    setMissionRuntimeScenes(items)
+    setMissionRuntimeLoaded(true)
+    return items
   }
 
   const openDrawer = (kind: DrawerKind, mode: DrawerMode) => setDrawer({ open: true, kind, mode })
@@ -1016,6 +1093,20 @@ export function AdminScreen({
     },
   )
 
+  const saveMissionRuntimeItem = () => runAdminTask(
+    'Salvando cena runtime...',
+    `Cena "${missionRuntimeDraft.title}" salva com sucesso.`,
+    async () => {
+      await upsertMissionRuntimeScene({
+        ...missionRuntimeDraft,
+        id: missionRuntimeDraft.id || missionRuntimeIdPreview,
+      })
+      await refreshMissionRuntime()
+      setMissionRuntimeDraft(createEmptyMissionRuntimeScene())
+      closeDrawer()
+    },
+  )
+
   const removeCatalogItem = async (label: string, task: () => Promise<void>) => {
     if (!window.confirm(`Excluir "${label}" do catálogo?`)) return
 
@@ -1048,6 +1139,19 @@ export function AdminScreen({
       async () => {
         await deleteQuickWin(item.id)
         await refreshQuickWins()
+      },
+    )
+  }
+
+  const removeMissionRuntimeItem = async (scene: MissionRuntimeSceneRecord) => {
+    if (!window.confirm(`Excluir "${scene.title}" do Mission Runtime?`)) return
+
+    await runAdminTask(
+      `Excluindo "${scene.title}"...`,
+      `"${scene.title}" removida do Mission Runtime.`,
+      async () => {
+        await deleteMissionRuntimeScene(scene.id)
+        await refreshMissionRuntime()
       },
     )
   }
@@ -1111,6 +1215,18 @@ export function AdminScreen({
     openDrawer('scene-asset', asset ? 'edit' : 'create')
   }
 
+  const openMissionRuntimeEditor = (scene?: MissionRuntimeSceneRecord) => {
+    setMissionRuntimeDraft(
+      scene
+        ? {
+            ...scene,
+            answers: scene.answers.map((answer) => ({ ...answer })),
+          }
+        : createEmptyMissionRuntimeScene(),
+    )
+    openDrawer('runtime-scene', scene ? 'edit' : 'create')
+  }
+
   const updateSceneAssetSafeArea = (key: 'textSafeArea' | 'characterSafeArea', field: keyof SceneAssetSafeArea, value: string) => {
     setSceneAssetDraft((current) => ({
       ...current,
@@ -1119,6 +1235,48 @@ export function AdminScreen({
         [field]: Number(value) || 0,
       },
     }))
+  }
+
+  const updateMissionRuntimeAnswer = (
+    index: number,
+    field: keyof MissionRuntimeAnswerRecord,
+    value: string | number | boolean,
+  ) => {
+    setMissionRuntimeDraft((current) => ({
+      ...current,
+      answers: current.answers.map((answer, answerIndex) =>
+        answerIndex === index ? { ...answer, [field]: value } : answer,
+      ),
+    }))
+  }
+
+  const addMissionRuntimeAnswer = () => {
+    setMissionRuntimeDraft((current) => ({
+      ...current,
+      answers: [
+        ...current.answers,
+        {
+          id: `answer-${current.answers.length + 1}`,
+          text: '',
+          translation: '',
+          audioUrl: '',
+          isCorrect: false,
+          feedbackTitle: '',
+          feedbackBody: '',
+          xpReward: current.xpReward || 25,
+        },
+      ],
+    }))
+  }
+
+  const removeMissionRuntimeAnswer = (index: number) => {
+    setMissionRuntimeDraft((current) => {
+      if (current.answers.length <= 1) return current
+      return {
+        ...current,
+        answers: current.answers.filter((_, answerIndex) => answerIndex !== index),
+      }
+    })
   }
 
   const saveQuickWinsSettings = () =>
@@ -1917,6 +2075,344 @@ export function AdminScreen({
             <button className="admin-primary" type="button" disabled={saving || !sceneAssetDraft.title || !(sceneAssetDraft.imageUrl || sceneAssetDraft.mobileImageUrl || sceneAssetDraft.heroBackgroundImageUrl)} onClick={saveSceneAssetItem}>
               <Save size={16} />
               {saving ? 'Salvando...' : 'Salvar scene asset'}
+            </button>
+          </div>
+        </>
+      )
+    }
+
+    if (drawer.kind === 'runtime-scene') {
+      const runtimePreviewScene = {
+        ...missionRuntimeDraft,
+        id: missionRuntimeDraft.id || missionRuntimeIdPreview,
+        backgroundImageUrl:
+          missionRuntimeDraft.backgroundImageUrl ||
+          currentMissionRuntimeAsset?.heroBackgroundImageUrl ||
+          currentMissionRuntimeAsset?.backgroundImageUrl ||
+          currentMissionRuntimeAsset?.imageUrl ||
+          currentMissionRuntimeAsset?.imageUrlDesktop ||
+          '',
+        missionTitle:
+          missionRuntimeDraft.missionTitle ||
+          currentMissionRuntimeAsset?.mission ||
+          lessons.find((lesson) => lesson.id === missionRuntimeDraft.lessonId)?.missionTitle ||
+          lessons.find((lesson) => lesson.id === missionRuntimeDraft.lessonId)?.title ||
+          'Mission Runtime',
+      }
+
+      return (
+        <>
+          <div className="admin-drawer-head">
+            <div>
+              <span className="admin-drawer-kicker">{drawer.mode === 'create' ? 'Nova cena runtime' : 'Editar cena runtime'}</span>
+              <h3>{missionRuntimeDraft.title || 'Modele a cena cinematográfica'}</h3>
+              <p>ID automático: <strong>{displayId(missionRuntimeDraft.id || missionRuntimeIdPreview, 'runtime-scene')}</strong></p>
+            </div>
+            <button type="button" className="drawer-close" onClick={closeDrawer}><X size={18} /></button>
+          </div>
+
+          <div className="admin-drawer-body">
+            <div className="drawer-form">
+              <label>Título da cena
+                <input
+                  value={missionRuntimeDraft.title}
+                  onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, title: event.target.value }))}
+                />
+              </label>
+              <label>Subtítulo
+                <textarea
+                  value={missionRuntimeDraft.subtitle}
+                  onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, subtitle: event.target.value }))}
+                />
+              </label>
+              <div className="scene-asset-inline-grid">
+                <label>Scene Asset
+                  <select
+                    value={missionRuntimeDraft.sceneAssetId}
+                    onChange={(event) =>
+                      setMissionRuntimeDraft((current) => {
+                        const nextAsset = sceneAssets.find((asset) => asset.id === event.target.value)
+                        return {
+                          ...current,
+                          sceneAssetId: event.target.value,
+                          missionTitle: current.missionTitle || nextAsset?.mission || '',
+                          backgroundImageUrl:
+                            current.backgroundImageUrl ||
+                            nextAsset?.heroBackgroundImageUrl ||
+                            nextAsset?.backgroundImageUrl ||
+                            nextAsset?.imageUrl ||
+                            '',
+                        }
+                      })
+                    }
+                  >
+                    <option value="">Selecione um scene asset</option>
+                    {missionRuntimeAssetOptions.map((asset) => (
+                      <option key={asset.id} value={asset.id}>{asset.title} • {asset.mission}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>Lição vinculada
+                  <select
+                    value={missionRuntimeDraft.lessonId}
+                    onChange={(event) =>
+                      setMissionRuntimeDraft((current) => {
+                        const nextLesson = lessons.find((lesson) => lesson.id === event.target.value)
+                        return {
+                          ...current,
+                          lessonId: event.target.value,
+                          missionTitle: current.missionTitle || nextLesson?.missionTitle || nextLesson?.title || '',
+                        }
+                      })
+                    }
+                  >
+                    <option value="">Selecione uma lição</option>
+                    {sortedLessons.map((lesson) => (
+                      <option key={lesson.id} value={lesson.id}>{lesson.title}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Missão
+                  <input
+                    value={missionRuntimeDraft.missionTitle}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, missionTitle: event.target.value }))}
+                  />
+                </label>
+                <label>Capítulo
+                  <input
+                    value={missionRuntimeDraft.chapter}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, chapter: event.target.value }))}
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Scene number
+                  <input
+                    type="number"
+                    min="1"
+                    value={missionRuntimeDraft.sceneNumber}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, sceneNumber: Number(event.target.value) || 1 }))}
+                  />
+                </label>
+                <label>Scene total
+                  <input
+                    type="number"
+                    min="1"
+                    value={missionRuntimeDraft.sceneTotal}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, sceneTotal: Number(event.target.value) || 1 }))}
+                  />
+                </label>
+              </div>
+              <label>Character
+                <input
+                  value={missionRuntimeDraft.character}
+                  onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, character: event.target.value }))}
+                />
+              </label>
+              <label>Dialogue label
+                <input
+                  value={missionRuntimeDraft.dialogue}
+                  onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, dialogue: event.target.value }))}
+                  placeholder="Immigration Officer"
+                />
+              </label>
+              <label>Pergunta
+                <textarea
+                  value={missionRuntimeDraft.question}
+                  onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, question: event.target.value }))}
+                />
+              </label>
+              <label>Tradução da pergunta
+                <textarea
+                  value={missionRuntimeDraft.questionTranslation}
+                  onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, questionTranslation: event.target.value }))}
+                />
+              </label>
+              <div className="scene-asset-inline-grid">
+                <label>Background URL
+                  <input
+                    value={missionRuntimeDraft.backgroundImageUrl}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, backgroundImageUrl: event.target.value }))}
+                    placeholder="/Images/Airport/..."
+                  />
+                </label>
+                <label>Companion URL
+                  <input
+                    value={missionRuntimeDraft.companionImageUrl}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, companionImageUrl: event.target.value }))}
+                    placeholder="/Images/Mascote/Sparklingo.png"
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Audio URL
+                  <input
+                    value={missionRuntimeDraft.audioUrl}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, audioUrl: event.target.value }))}
+                    placeholder="https://..."
+                  />
+                </label>
+                <label>XP reward
+                  <input
+                    type="number"
+                    min="0"
+                    value={missionRuntimeDraft.xpReward}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, xpReward: Number(event.target.value) || 0 }))}
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Feedback title
+                  <input
+                    value={missionRuntimeDraft.emotionalFeedbackTitle}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, emotionalFeedbackTitle: event.target.value }))}
+                  />
+                </label>
+                <label>Feedback tone
+                  <select
+                    value={missionRuntimeDraft.emotionalFeedbackTone}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, emotionalFeedbackTone: event.target.value as MissionRuntimeFeedbackTone }))}
+                  >
+                    {missionRuntimeFeedbackToneOptions.map((tone) => <option key={tone} value={tone}>{tone}</option>)}
+                  </select>
+                </label>
+              </div>
+              <label>Feedback body
+                <textarea
+                  value={missionRuntimeDraft.emotionalFeedbackBody}
+                  onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, emotionalFeedbackBody: event.target.value }))}
+                />
+              </label>
+              <div className="scene-asset-inline-grid">
+                <label>Next scene ID
+                  <input
+                    value={missionRuntimeDraft.nextSceneId}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, nextSceneId: event.target.value }))}
+                    placeholder="RT-00002"
+                  />
+                </label>
+                <label>Order
+                  <input
+                    type="number"
+                    min="1"
+                    value={missionRuntimeDraft.order}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, order: Number(event.target.value) || 1 }))}
+                  />
+                </label>
+              </div>
+              <label className="scene-asset-toggle">
+                <span>Ativo</span>
+                <input
+                  type="checkbox"
+                  checked={missionRuntimeDraft.active}
+                  onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, active: event.target.checked }))}
+                />
+              </label>
+            </div>
+
+            <div className="scene-asset-safearea-panel">
+              <div className="media-slot-head">
+                <strong>Answers & narrative decisions</strong>
+                <span>Monte as escolhas do usuário com feedback, áudio e recompensa de XP, mantendo a lógica de diálogo narrativo.</span>
+              </div>
+              <div className="mission-runtime-answer-stack">
+                {missionRuntimeDraft.answers.map((answer, index) => (
+                  <article key={answer.id || `answer-${index + 1}`} className="mission-runtime-answer-card">
+                    <div className="mission-runtime-answer-grid">
+                      <label>Resposta
+                        <input
+                          value={answer.text}
+                          onChange={(event) => updateMissionRuntimeAnswer(index, 'text', event.target.value)}
+                        />
+                      </label>
+                      <label>Tradução
+                        <input
+                          value={answer.translation}
+                          onChange={(event) => updateMissionRuntimeAnswer(index, 'translation', event.target.value)}
+                        />
+                      </label>
+                    </div>
+                    <div className="mission-runtime-answer-grid">
+                      <label>Audio URL
+                        <input
+                          value={answer.audioUrl}
+                          onChange={(event) => updateMissionRuntimeAnswer(index, 'audioUrl', event.target.value)}
+                        />
+                      </label>
+                      <label>XP reward
+                        <input
+                          type="number"
+                          min="0"
+                          value={answer.xpReward}
+                          onChange={(event) => updateMissionRuntimeAnswer(index, 'xpReward', Number(event.target.value) || 0)}
+                        />
+                      </label>
+                    </div>
+                    <div className="mission-runtime-answer-grid">
+                      <label>Feedback title
+                        <input
+                          value={answer.feedbackTitle}
+                          onChange={(event) => updateMissionRuntimeAnswer(index, 'feedbackTitle', event.target.value)}
+                        />
+                      </label>
+                      <label>Feedback body
+                        <input
+                          value={answer.feedbackBody}
+                          onChange={(event) => updateMissionRuntimeAnswer(index, 'feedbackBody', event.target.value)}
+                        />
+                      </label>
+                    </div>
+                    <div className="mission-runtime-answer-actions">
+                      <label className="scene-asset-toggle">
+                        <span>Resposta correta</span>
+                        <input
+                          type="checkbox"
+                          checked={answer.isCorrect}
+                          onChange={(event) => updateMissionRuntimeAnswer(index, 'isCorrect', event.target.checked)}
+                        />
+                      </label>
+                      <button
+                        className="admin-secondary"
+                        type="button"
+                        onClick={() => removeMissionRuntimeAnswer(index)}
+                        disabled={missionRuntimeDraft.answers.length <= 1}
+                      >
+                        <Trash2 size={14} />
+                        Remover resposta
+                      </button>
+                    </div>
+                  </article>
+                ))}
+                <button className="admin-secondary" type="button" onClick={addMissionRuntimeAnswer}>
+                  <Plus size={14} />
+                  Adicionar resposta
+                </button>
+              </div>
+            </div>
+
+            <div className="scene-asset-preview-card">
+              <div className="media-slot-head">
+                <strong>Preview da cena runtime</strong>
+                <span>O card abaixo mostra a leitura cinematográfica da cena que entrará no Mission Runtime ao clicar na missão.</span>
+              </div>
+              <div className="cms-quickwins-preview">
+                <MissionRuntimeScenePreviewCard scene={runtimePreviewScene} missionTitle={runtimePreviewScene.missionTitle} />
+              </div>
+            </div>
+          </div>
+
+          <div className="admin-drawer-footer">
+            <button className="admin-secondary" type="button" onClick={closeDrawer}>Cancelar</button>
+            <button
+              className="admin-primary"
+              type="button"
+              disabled={saving || !missionRuntimeDraft.title || !missionRuntimeDraft.sceneAssetId || !missionRuntimeDraft.question}
+              onClick={saveMissionRuntimeItem}
+            >
+              <Save size={16} />
+              {saving ? 'Salvando...' : 'Salvar cena runtime'}
             </button>
           </div>
         </>
@@ -2791,6 +3287,121 @@ export function AdminScreen({
                       <div className="cms-content-actions">
                         <button type="button" onClick={() => openSceneAssetEditor(asset)}><Pencil size={14} />Editar</button>
                         <button type="button" className="danger" onClick={() => removeSceneAssetItem(asset)}><Trash2 size={14} />Excluir</button>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+            </section>
+          </section>
+        )}
+
+        {activeSection === 'mission-runtime' && (
+          <section className="cms-panel-stack">
+            <section className="cms-summary-grid">
+              <article className="cms-stat-card">
+                <span>Cenas runtime</span>
+                <strong>{missionRuntimeScenes.length}</strong>
+                <small>cenas cinematográficas cadastradas</small>
+              </article>
+              <article className="cms-stat-card">
+                <span>Cenas ativas</span>
+                <strong>{missionRuntimeScenes.filter((scene) => scene.active).length}</strong>
+                <small>visíveis ao abrir uma missão</small>
+              </article>
+              <article className="cms-stat-card">
+                <span>Missões ligadas</span>
+                <strong>{new Set(missionRuntimeScenes.map((scene) => scene.sceneAssetId).filter(Boolean)).size}</strong>
+                <small>scene assets com runtime conectado</small>
+              </article>
+              <article className="cms-stat-card">
+                <span>Respostas</span>
+                <strong>{missionRuntimeScenes.reduce((total, scene) => total + scene.answers.length, 0)}</strong>
+                <small>decisões narrativas configuradas</small>
+              </article>
+            </section>
+
+            <section className="cms-panel">
+              <div className="cms-panel-head">
+                <div>
+                  <h2>Mission Runtime</h2>
+                  <p className="admin-helper">Cadastre cenas, diálogos, perguntas, respostas, feedback emocional e progressão que entram quando o usuário abre uma missão.</p>
+                </div>
+                <div className="cms-content-actions">
+                  <button
+                    type="button"
+                    onClick={() =>
+                      runAdminTask(
+                        'Criando cenas runtime base...',
+                        'Cenas base do Mission Runtime populadas no Firestore.',
+                        async () => {
+                          await seedDefaultMissionRuntimeScenes()
+                          await refreshMissionRuntime()
+                        },
+                      )
+                    }
+                  >
+                    <Sparkles size={14} />
+                    Popular base ({defaultMissionRuntimeScenes.length})
+                  </button>
+                  <button className="admin-primary" type="button" onClick={() => openMissionRuntimeEditor()}>
+                    <Plus size={16} />
+                    Nova cena runtime
+                  </button>
+                </div>
+              </div>
+
+              <div className="cms-filter-row cms-filter-row-scene-assets">
+                <div className="cms-search">
+                  <Search size={16} />
+                  <input
+                    value={missionRuntimeSearch}
+                    onChange={(event) => setMissionRuntimeSearch(event.target.value)}
+                    placeholder="Buscar por título, personagem, missão ou ID"
+                  />
+                </div>
+                <select value={missionRuntimeAssetFilter} onChange={(event) => setMissionRuntimeAssetFilter(event.target.value)}>
+                  <option value="all">Todos os scene assets</option>
+                  {missionRuntimeAssetOptions.map((asset) => (
+                    <option key={asset.id} value={asset.id}>{asset.title}</option>
+                  ))}
+                </select>
+                <select value={missionRuntimeStatus} onChange={(event) => setMissionRuntimeStatus(event.target.value as StatusFilter)}>
+                  <option value="all">Todos status</option>
+                  <option value="active">Ativas</option>
+                  <option value="inactive">Inativas</option>
+                </select>
+              </div>
+
+              {!filteredMissionRuntimeScenes.length && missionRuntimeLoaded ? (
+                <div className="cms-empty-panel cms-empty-panel-inline">
+                  <Clapperboard size={24} />
+                  <h2>Nenhuma cena runtime ainda</h2>
+                  <p>Popule a base do Mission Runtime ou crie manualmente a primeira cena cinematográfica com diálogos, respostas e recompensa.</p>
+                </div>
+              ) : (
+                <div className="scene-asset-grid">
+                  {filteredMissionRuntimeScenes.map((scene) => (
+                    <article key={scene.id} className="scene-asset-card">
+                      <div className="cms-quickwins-card-preview">
+                        <MissionRuntimeScenePreviewCard scene={scene} missionTitle={scene.missionTitle} />
+                      </div>
+                      <div className="scene-asset-card-copy">
+                        <div>
+                          <strong>{scene.title}</strong>
+                          <span>{displayId(scene.id, 'runtime-scene')} • {scene.chapter} • ordem {scene.order}</span>
+                        </div>
+                        <p>{scene.question}</p>
+                        <div className="scene-asset-card-meta">
+                          <span>{scene.character}</span>
+                          <span>{scene.sceneNumber}/{scene.sceneTotal}</span>
+                          <span>{scene.answers.length} respostas</span>
+                          <span>{scene.active ? 'ativo' : 'inativo'}</span>
+                        </div>
+                      </div>
+                      <div className="cms-content-actions">
+                        <button type="button" onClick={() => openMissionRuntimeEditor(scene)}><Pencil size={14} />Editar</button>
+                        <button type="button" className="danger" onClick={() => removeMissionRuntimeItem(scene)}><Trash2 size={14} />Excluir</button>
                       </div>
                     </article>
                   ))}
