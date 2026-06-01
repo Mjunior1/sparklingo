@@ -17,7 +17,7 @@ import {
   UserRound,
   Volume2,
 } from 'lucide-react'
-import { CinematicImage, NarrativeOverlay } from '../scene/SceneRenderer'
+import { NarrativeOverlay } from '../scene/SceneRenderer'
 import type { SceneAssetRecord } from '../../services/sceneAssets'
 import type { MissionRuntimeAnswerRecord, MissionRuntimeSceneRecord } from '../../services/missionRuntime'
 
@@ -98,10 +98,36 @@ const buildRuntimeAsset = (mission: MissionRuntimeMission, scene: MissionRuntime
   focalPointY: scene.backgroundFocalY,
 })
 
-const buildRuntimeLayerStyle = (scene: MissionRuntimeSceneRecord | null): CSSProperties | undefined => {
+const buildRuntimeLayerStyle = (
+  scene: MissionRuntimeSceneRecord | null,
+  mission: MissionRuntimeMission,
+): CSSProperties | undefined => {
   if (!scene) return undefined
 
+  const desktopSource =
+    scene.backgroundImageUrl ||
+    scene.backgroundImageUrlMobile ||
+    mission.backgroundDesktop ||
+    mission.backgroundMobile ||
+    mission.asset.imageUrlDesktop ||
+    mission.asset.imageUrlMobile ||
+    mission.asset.imageUrl ||
+    mission.asset.heroBackgroundImageUrl
+
+  const mobileSource =
+    scene.backgroundImageUrlMobile ||
+    scene.backgroundImageUrl ||
+    mission.backgroundMobile ||
+    mission.backgroundDesktop ||
+    mission.asset.imageUrlMobile ||
+    mission.asset.mobileImageUrl ||
+    mission.asset.imageUrlDesktop ||
+    mission.asset.imageUrl ||
+    mission.asset.heroBackgroundImageUrl
+
   return {
+    '--runtime-stage-image-desktop': `url("${desktopSource}")`,
+    '--runtime-stage-image-mobile': `url("${mobileSource}")`,
     '--runtime-bg-scale': `${scene.backgroundScale / 100}`,
     '--runtime-bg-offset-x': `${scene.backgroundOffsetX}%`,
     '--runtime-bg-offset-y': `${scene.backgroundOffsetY}%`,
@@ -178,11 +204,6 @@ export function MissionRuntimeScenePreviewCard({
     >
       <div className="runtime-scene-preview-image" />
       <div className="runtime-scene-preview-overlay" />
-      {scene.companionImageUrl && (
-        <div className="runtime-scene-preview-companion">
-          <img src={scene.companionImageUrl} alt="Spark companion preview" />
-        </div>
-      )}
       <div className="runtime-scene-preview-copy">
         <span>{missionTitle || scene.missionTitle || 'Mission Runtime'}</span>
         <strong>{scene.character}</strong>
@@ -254,6 +275,10 @@ export function MissionRuntime({
   const selectedAnswer =
     currentScene?.answers.find((answer) => answer.id === selectedAnswerId) ?? null
   const feedback = currentScene ? buildFeedback(currentScene, selectedAnswer) : null
+  const feedbackTitle = selectedAnswer ? feedback?.title || currentScene?.emotionalFeedbackTitle || '' : 'Aguardando resposta'
+  const feedbackBody = selectedAnswer
+    ? feedback?.body || currentScene?.emotionalFeedbackBody || ''
+    : 'Escolha uma resposta para receber o feedback emocional desta cena.'
   const feedbackXpValue = selectedAnswer ? feedback?.xp ?? currentScene?.xpReward ?? 0 : 0
   const feedbackCompanionImage =
     currentScene && selectedAnswer
@@ -264,8 +289,8 @@ export function MissionRuntime({
 
   const currentAsset = currentScene ? buildRuntimeAsset(mission, currentScene) : mission.asset
   const previousAsset = previousScene ? buildRuntimeAsset(mission, previousScene) : null
-  const currentLayerStyle = buildRuntimeLayerStyle(currentScene)
-  const previousLayerStyle = buildRuntimeLayerStyle(previousScene)
+  const currentLayerStyle = buildRuntimeLayerStyle(currentScene, mission)
+  const previousLayerStyle = buildRuntimeLayerStyle(previousScene, mission)
   const rewardBadgeIconUrl = currentScene?.rewardIconUrl
   const rewardChestIconUrl = currentScene?.rewardChestIconUrl || currentScene?.rewardIconUrl
   const progressPercent = currentScene
@@ -365,15 +390,15 @@ export function MissionRuntime({
       <div className="mission-runtime-stage">
         <div className="mission-runtime-background" aria-hidden="true">
           <div className="mission-runtime-background-layer mission-runtime-background-layer-ambient" style={currentLayerStyle}>
-            <CinematicImage asset={currentAsset} mode="auto" />
+            <div className="mission-runtime-background-image" />
           </div>
           {previousAsset && (
             <div className="mission-runtime-background-layer mission-runtime-background-layer-previous" style={previousLayerStyle}>
-              <CinematicImage asset={previousAsset} mode="auto" />
+              <div className="mission-runtime-background-image" />
             </div>
           )}
           <div className="mission-runtime-background-layer mission-runtime-background-layer-current" style={currentLayerStyle}>
-            <CinematicImage asset={currentAsset} mode="auto" />
+            <div className="mission-runtime-background-image" />
           </div>
           <div className="mission-runtime-global-overlay" />
           <NarrativeOverlay asset={currentAsset} />
@@ -485,8 +510,8 @@ export function MissionRuntime({
                   <Sparkles size={16} />
                 </RuntimeIcon>
               </span>
-              <strong>{feedback?.title || currentScene.emotionalFeedbackTitle}</strong>
-              <p>{feedback?.body || currentScene.emotionalFeedbackBody}</p>
+              <strong>{feedbackTitle}</strong>
+              <p>{feedbackBody}</p>
             </article>
           </aside>
         </div>
@@ -506,7 +531,7 @@ export function MissionRuntime({
               </span>
               <div>
                 <small>{selectedAnswer?.isCorrect ? 'Excelente!' : 'Checkpoint'}</small>
-                <strong>+{feedback?.xp ?? currentScene.xpReward} XP</strong>
+                <strong>+{selectedAnswer ? feedbackXpValue : currentScene.xpReward} XP</strong>
               </div>
             </div>
             <div className="mission-runtime-reward-dots">
@@ -615,8 +640,8 @@ export function MissionRuntime({
                 </RuntimeIcon>
               </span>
               <div className="mission-runtime-story-feedback-copy">
-                <strong>{feedback?.title || currentScene.emotionalFeedbackTitle}</strong>
-                <p>{feedback?.body || currentScene.emotionalFeedbackBody}</p>
+                <strong>{feedbackTitle}</strong>
+                <p>{feedbackBody}</p>
                 {selectedAnswer && (
                   <span className="mission-runtime-story-feedback-xp">
                     <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="XP reward icon">
