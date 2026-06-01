@@ -696,6 +696,7 @@
   box-shadow:
     0 20px 36px rgba(0, 0, 0, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
 }
 
 .mission-runtime-story-label {
@@ -703,6 +704,116 @@
   color: rgba(232, 222, 249, 0.72);
   font-size: 0.92rem;
   margin-bottom: 14px;
+}
+
+.mission-runtime-context-scene {
+  --runtime-story-scale: 1.08;
+  --runtime-story-offset-x: 0%;
+  --runtime-story-offset-y: 0%;
+  --runtime-story-focal-x: 50%;
+  --runtime-story-focal-y: 50%;
+  position: relative;
+  min-height: 396px;
+  display: grid;
+  align-content: space-between;
+  gap: 18px;
+  padding: 22px;
+  overflow: hidden;
+  border-radius: 26px;
+  border: 1px solid rgba(191, 167, 255, 0.16);
+  background: linear-gradient(180deg, rgba(15, 14, 32, 0.86), rgba(9, 10, 24, 0.92));
+  box-shadow:
+    0 24px 42px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.mission-runtime-context-image,
+.mission-runtime-context-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.mission-runtime-context-image {
+  background-image: var(--runtime-story-image);
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: var(--runtime-story-focal-x) var(--runtime-story-focal-y);
+  transform: translate3d(var(--runtime-story-offset-x), var(--runtime-story-offset-y), 0) scale(var(--runtime-story-scale));
+}
+
+.mission-runtime-context-overlay {
+  background:
+    linear-gradient(180deg, rgba(12, 10, 27, 0.1) 0%, rgba(10, 8, 25, 0.76) 100%),
+    radial-gradient(circle at 18% 14%, rgba(167, 108, 255, 0.16), transparent 28%),
+    linear-gradient(145deg, rgba(9, 10, 24, 0.14), rgba(5, 6, 16, 0.28));
+}
+
+.mission-runtime-context-prompt,
+.mission-runtime-story-voice {
+  position: relative;
+  z-index: 1;
+}
+
+.mission-runtime-context-prompt {
+  width: min(100%, 312px);
+  padding: 22px 22px 20px;
+  border-radius: 24px;
+  border: 1px solid rgba(190, 164, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(18, 16, 36, 0.86), rgba(14, 13, 31, 0.82)),
+    radial-gradient(circle at 88% 14%, rgba(157, 111, 255, 0.12), transparent 24%);
+  backdrop-filter: blur(22px);
+  box-shadow:
+    0 20px 34px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.mission-runtime-context-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+
+.mission-runtime-context-head span {
+  color: #b98fff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mission-runtime-context-head button {
+  width: 38px;
+  height: 38px;
+  border: none;
+  border-radius: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #faf6ff;
+  background:
+    linear-gradient(180deg, rgba(149, 103, 255, 0.22), rgba(90, 53, 170, 0.16)),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.12), transparent 24%);
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 176, 255, 0.16),
+    0 8px 20px rgba(88, 61, 161, 0.16);
+  cursor: pointer;
+}
+
+.mission-runtime-context-prompt strong {
+  display: block;
+  color: #fff8ff;
+  font-size: clamp(2rem, 1.35vw + 1.2rem, 3.05rem);
+  line-height: 1.02;
+}
+
+.mission-runtime-context-prompt p {
+  margin: 12px 0 0;
+  color: rgba(238, 229, 247, 0.82);
+  font-size: 1.02rem;
 }
 
 .runtime-scene-preview {
@@ -804,8 +915,61 @@
 .mission-runtime-story-voice {
   margin-top: 14px;
   width: 100%;
+  justify-content: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border: 1px solid rgba(192, 164, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(113, 71, 255, 0.28), rgba(66, 38, 138, 0.22)),
+    radial-gradient(circle at 15% 50%, rgba(171, 111, 255, 0.18), transparent 28%);
+}
+
+.mission-runtime-story-voice-wave {
+  width: min(100%, 348px);
+  border-radius: 999px;
+  box-shadow:
+    0 18px 32px rgba(91, 52, 184, 0.18),
+    inset 0 0 0 1px rgba(212, 191, 255, 0.12);
+}
+
+.mission-runtime-story-voice-orb {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
-  background: rgba(120, 76, 255, 0.18);
+  background:
+    linear-gradient(180deg, rgba(160, 105, 255, 0.42), rgba(109, 68, 214, 0.24)),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.16), transparent 24%);
+  color: #faf4ff;
+  box-shadow:
+    0 10px 24px rgba(108, 62, 214, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+.mission-runtime-story-voice-line {
+  flex: 1;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.mission-runtime-story-voice-line i {
+  flex: 1;
+  max-width: 8px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, rgba(178, 116, 255, 0.98), rgba(108, 58, 230, 0.2));
+  transform-origin: center;
+  animation: runtimeWavePulse 1.6s ease-in-out infinite;
+}
+
+.mission-runtime-story-voice-text {
+  min-width: fit-content;
+  color: rgba(247, 239, 255, 0.96);
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 
 .mission-runtime-story-response-card {
@@ -891,16 +1055,37 @@
 }
 
 .mission-runtime-story-feedback-card {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: end;
-  gap: 12px;
-  padding: 22px;
+  position: relative;
+  min-height: 100%;
+  padding: 26px 210px 24px 24px;
   min-height: 100%;
   border-radius: 24px;
+  overflow: visible;
   background:
     linear-gradient(180deg, rgba(11, 47, 42, 0.84), rgba(6, 24, 28, 0.92)),
     radial-gradient(circle at top right, rgba(131, 255, 223, 0.06), transparent 24%);
+}
+
+.mission-runtime-story-feedback-star {
+  position: absolute;
+  top: 20px;
+  right: 18px;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f4ffe8;
+  background: rgba(160, 255, 223, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(164, 255, 223, 0.12);
+}
+
+.mission-runtime-story-feedback-copy {
+  display: grid;
+  align-content: start;
+  gap: 0;
+  max-width: 360px;
 }
 
 .mission-runtime-story-feedback-card strong {
@@ -914,19 +1099,39 @@
   max-width: 320px;
 }
 
-.mission-runtime-story-feedback-card span {
+.mission-runtime-story-feedback-xp {
+  width: fit-content;
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  color: #ffea96;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  color: #ffe890;
   font-weight: 700;
+  background:
+    linear-gradient(180deg, rgba(30, 43, 39, 0.88), rgba(11, 19, 19, 0.96)),
+    radial-gradient(circle at 16% 50%, rgba(255, 202, 111, 0.16), transparent 24%);
+  box-shadow:
+    0 14px 30px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
-.mission-runtime-story-feedback-card img {
-  width: 172px;
+.mission-runtime-story-feedback-companion {
+  position: absolute;
+  right: 12px;
+  bottom: -18px;
+  width: 192px;
+  pointer-events: none;
+}
+
+.mission-runtime-story-feedback-companion img {
+  width: 100%;
   max-width: 100%;
-  align-self: end;
-  filter: drop-shadow(0 22px 32px rgba(0, 0, 0, 0.28));
+  display: block;
+  filter:
+    drop-shadow(0 28px 34px rgba(0, 0, 0, 0.28))
+    drop-shadow(0 0 24px rgba(255, 194, 125, 0.12));
 }
 
 .mission-runtime-icon-image {
@@ -1228,13 +1433,36 @@
     font-size: 1.5rem;
   }
 
-  .mission-runtime-story-feedback-card {
-    grid-template-columns: 1fr;
+  .mission-runtime-context-scene {
+    min-height: 332px;
+    padding: 16px;
   }
 
-  .mission-runtime-story-feedback-card img {
-    width: min(150px, 40vw);
-    justify-self: end;
+  .mission-runtime-context-prompt {
+    width: min(100%, 264px);
+    padding: 18px;
+  }
+
+  .mission-runtime-context-prompt strong {
+    font-size: clamp(1.6rem, 8vw, 2.4rem);
+  }
+
+  .mission-runtime-story-voice-wave {
+    width: 100%;
+  }
+
+  .mission-runtime-story-feedback-card {
+    padding: 22px 22px 150px;
+  }
+
+  .mission-runtime-story-feedback-copy {
+    max-width: none;
+  }
+
+  .mission-runtime-story-feedback-companion {
+    right: 6px;
+    bottom: -8px;
+    width: min(152px, 44vw);
   }
 
   .mission-runtime-system-card {

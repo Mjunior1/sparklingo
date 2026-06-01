@@ -49,14 +49,20 @@ const buildRuntimeAsset = (mission: MissionRuntimeMission, scene: MissionRuntime
   title: scene.title || mission.title,
   imageUrl:
     scene.backgroundImageUrl ||
+    scene.backgroundImageUrlMobile ||
     mission.backgroundDesktop ||
+    mission.backgroundMobile ||
     mission.asset.imageUrlDesktop ||
+    mission.asset.imageUrlMobile ||
     mission.asset.imageUrl ||
     mission.asset.heroBackgroundImageUrl,
   imageUrlDesktop:
     scene.backgroundImageUrl ||
+    scene.backgroundImageUrlMobile ||
     mission.backgroundDesktop ||
+    mission.backgroundMobile ||
     mission.asset.imageUrlDesktop ||
+    mission.asset.imageUrlMobile ||
     mission.asset.imageUrl ||
     mission.asset.heroBackgroundImageUrl,
   mobileImageUrl:
@@ -81,8 +87,11 @@ const buildRuntimeAsset = (mission: MissionRuntimeMission, scene: MissionRuntime
     mission.asset.heroBackgroundImageUrl,
   heroBackgroundImageUrl:
     scene.backgroundImageUrl ||
+    scene.backgroundImageUrlMobile ||
     mission.backgroundDesktop ||
+    mission.backgroundMobile ||
     mission.asset.imageUrlDesktop ||
+    mission.asset.imageUrlMobile ||
     mission.asset.imageUrl ||
     mission.asset.heroBackgroundImageUrl,
   focalPointX: scene.backgroundFocalX,
@@ -245,6 +254,13 @@ export function MissionRuntime({
   const selectedAnswer =
     currentScene?.answers.find((answer) => answer.id === selectedAnswerId) ?? null
   const feedback = currentScene ? buildFeedback(currentScene, selectedAnswer) : null
+  const feedbackXpValue = selectedAnswer ? feedback?.xp ?? currentScene?.xpReward ?? 0 : 0
+  const feedbackCompanionImage =
+    currentScene && selectedAnswer
+      ? selectedAnswer.isCorrect
+        ? currentScene.feedbackCompanionPositiveImageUrl || currentScene.companionImageUrl
+        : currentScene.feedbackCompanionRetryImageUrl || currentScene.companionImageUrl
+      : ''
 
   const currentAsset = currentScene ? buildRuntimeAsset(mission, currentScene) : mission.asset
   const previousAsset = previousScene ? buildRuntimeAsset(mission, previousScene) : null
@@ -265,6 +281,16 @@ export function MissionRuntime({
         '--runtime-companion-offset-x': `${currentScene.companionOffsetX}%`,
         '--runtime-companion-offset-y': `${currentScene.companionOffsetY}%`,
         '--runtime-companion-glow-strength': `${currentScene.companionGlowStrength / 100}`,
+      } as CSSProperties)
+    : undefined
+  const storyContextStyle = currentScene
+    ? ({
+        '--runtime-story-image': `url(${currentScene.backgroundImageUrl || currentScene.backgroundImageUrlMobile || mission.backgroundDesktop || mission.backgroundMobile || mission.posterImage})`,
+        '--runtime-story-focal-x': `${currentScene.backgroundFocalX}%`,
+        '--runtime-story-focal-y': `${currentScene.backgroundFocalY}%`,
+        '--runtime-story-offset-x': `${currentScene.backgroundOffsetX}%`,
+        '--runtime-story-offset-y': `${currentScene.backgroundOffsetY}%`,
+        '--runtime-story-scale': `${currentScene.backgroundScale / 100}`,
       } as CSSProperties)
     : undefined
 
@@ -509,17 +535,43 @@ export function MissionRuntime({
         <div className="mission-runtime-story-cards">
           <article className="mission-runtime-story-card">
             <span className="mission-runtime-story-label">Pergunta e contexto</span>
-            <MissionRuntimeScenePreviewCard scene={currentScene} missionTitle={mission.title} />
-            <button
-              className="mission-runtime-story-voice"
-              type="button"
-              onClick={() => playSpeech(currentScene.question, currentScene.audioUrl)}
-            >
-              <RuntimeIcon iconUrl={currentScene.promptAudioIconUrl} alt="Voice prompt icon">
-                <Mic size={16} />
-              </RuntimeIcon>
-              Toque para falar
-            </button>
+            <div className="mission-runtime-context-scene" style={storyContextStyle}>
+              <div className="mission-runtime-context-image" />
+              <div className="mission-runtime-context-overlay" />
+              <div className="mission-runtime-context-prompt">
+                <div className="mission-runtime-context-head">
+                  <span>{currentScene.character}</span>
+                  <button
+                    type="button"
+                    onClick={() => playSpeech(currentScene.question, currentScene.audioUrl)}
+                    aria-label="Play prompt audio"
+                  >
+                    <RuntimeIcon iconUrl={currentScene.promptAudioIconUrl} alt="Voice prompt icon">
+                      <Volume2 size={16} />
+                    </RuntimeIcon>
+                  </button>
+                </div>
+                <strong>{currentScene.question}</strong>
+                <p>{currentScene.questionTranslation}</p>
+              </div>
+              <button
+                className="mission-runtime-story-voice mission-runtime-story-voice-wave"
+                type="button"
+                onClick={() => playSpeech(currentScene.question, currentScene.audioUrl)}
+              >
+                <span className="mission-runtime-story-voice-orb">
+                  <RuntimeIcon iconUrl={currentScene.promptAudioIconUrl} alt="Voice prompt icon">
+                    <Mic size={16} />
+                  </RuntimeIcon>
+                </span>
+                <span className="mission-runtime-story-voice-line" aria-hidden="true">
+                  {waveformBars.slice(0, 18).map((height, index) => (
+                    <i key={`${currentScene.id}-prompt-wave-${index}`} style={{ height: `${Math.max(20, height - 6)}%`, animationDelay: `${index * 55}ms` }} />
+                  ))}
+                </span>
+                <span className="mission-runtime-story-voice-text">Toque para falar</span>
+              </button>
+            </div>
           </article>
 
           <article className="mission-runtime-story-card mission-runtime-story-card-response">
@@ -557,13 +609,27 @@ export function MissionRuntime({
           <article className="mission-runtime-story-card mission-runtime-story-card-feedback">
             <span className="mission-runtime-story-label">Feedback emocional</span>
             <div className="mission-runtime-story-feedback-card">
-              <div>
+              <span className="mission-runtime-story-feedback-star">
+                <RuntimeIcon iconUrl={currentScene.feedbackIconUrl} alt="Feedback sparkle icon">
+                  <Sparkles size={16} />
+                </RuntimeIcon>
+              </span>
+              <div className="mission-runtime-story-feedback-copy">
                 <strong>{feedback?.title || currentScene.emotionalFeedbackTitle}</strong>
                 <p>{feedback?.body || currentScene.emotionalFeedbackBody}</p>
-                <span>+{feedback?.xp ?? currentScene.xpReward} XP</span>
+                {selectedAnswer && (
+                  <span className="mission-runtime-story-feedback-xp">
+                    <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="XP reward icon">
+                      <Star size={16} />
+                    </RuntimeIcon>
+                    +{feedbackXpValue} XP
+                  </span>
+                )}
               </div>
-              {currentScene.companionImageUrl && (
-                <img src={currentScene.companionImageUrl} alt="Spark companion celebrating" />
+              {feedbackCompanionImage && (
+                <div className="mission-runtime-story-feedback-companion">
+                  <img src={feedbackCompanionImage} alt="Spark companion emotional feedback" />
+                </div>
               )}
             </div>
           </article>

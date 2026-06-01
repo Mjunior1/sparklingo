@@ -2333,6 +2333,22 @@ export function AdminScreen({
                 </label>
               </div>
               <div className="scene-asset-inline-grid">
+                <label>Feedback mascot (positive)
+                  <input
+                    value={missionRuntimeDraft.feedbackCompanionPositiveImageUrl}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, feedbackCompanionPositiveImageUrl: event.target.value }))}
+                    placeholder="/Images/Mascote/spark-happy.png"
+                  />
+                </label>
+                <label>Feedback mascot (retry)
+                  <input
+                    value={missionRuntimeDraft.feedbackCompanionRetryImageUrl}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, feedbackCompanionRetryImageUrl: event.target.value }))}
+                    placeholder="/Images/Mascote/spark-try-again.png"
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
                 <label>Foco horizontal do background ({missionRuntimeDraft.backgroundFocalX}%)
                   <input
                     type="range"
@@ -2473,12 +2489,14 @@ export function AdminScreen({
                 </label>
               </div>
               <div className="runtime-icon-preview-strip">
-                {[
+                {[ 
                   { label: 'XP badge', url: missionRuntimeDraft.rewardIconUrl },
                   { label: 'Reward chest', url: missionRuntimeDraft.rewardChestIconUrl || missionRuntimeDraft.rewardIconUrl },
                   { label: 'Feedback', url: missionRuntimeDraft.feedbackIconUrl },
                   { label: 'Prompt audio', url: missionRuntimeDraft.promptAudioIconUrl },
                   { label: 'Answer audio', url: missionRuntimeDraft.answerAudioIconUrl },
+                  { label: 'Mascot +', url: missionRuntimeDraft.feedbackCompanionPositiveImageUrl || missionRuntimeDraft.companionImageUrl },
+                  { label: 'Mascot retry', url: missionRuntimeDraft.feedbackCompanionRetryImageUrl || missionRuntimeDraft.companionImageUrl },
                 ].map((item) => (
                   <div key={item.label} className="runtime-icon-preview">
                     <span>{item.label}</span>

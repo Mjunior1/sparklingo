@@ -49,6 +49,8 @@ export type MissionRuntimeSceneRecord = {
   companionOffsetX: number
   companionOffsetY: number
   companionGlowStrength: number
+  feedbackCompanionPositiveImageUrl: string
+  feedbackCompanionRetryImageUrl: string
   audioUrl: string
   promptAudioIconUrl: string
   answerAudioIconUrl: string
@@ -121,6 +123,8 @@ export const createEmptyMissionRuntimeScene = (): MissionRuntimeSceneRecord => (
   companionOffsetX: 0,
   companionOffsetY: 0,
   companionGlowStrength: 56,
+  feedbackCompanionPositiveImageUrl: '',
+  feedbackCompanionRetryImageUrl: '',
   audioUrl: '',
   promptAudioIconUrl: '',
   answerAudioIconUrl: '',
@@ -195,6 +199,8 @@ const sanitizeMissionRuntimeScene = (
     companionOffsetX: clamp(cleanNumber(scene.companionOffsetX, 0), -60, 60),
     companionOffsetY: clamp(cleanNumber(scene.companionOffsetY, 0), -60, 60),
     companionGlowStrength: clamp(cleanNumber(scene.companionGlowStrength, 56), 0, 100),
+    feedbackCompanionPositiveImageUrl: cleanString(scene.feedbackCompanionPositiveImageUrl),
+    feedbackCompanionRetryImageUrl: cleanString(scene.feedbackCompanionRetryImageUrl),
     audioUrl: cleanString(scene.audioUrl),
     promptAudioIconUrl: cleanString(scene.promptAudioIconUrl),
     answerAudioIconUrl: cleanString(scene.answerAudioIconUrl),
@@ -244,6 +250,8 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     companionOffsetX: 9,
     companionOffsetY: 6,
     companionGlowStrength: 54,
+    feedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
+    feedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     xpReward: 25,
     emotionalFeedbackTitle: 'Boa tentativa!',
     emotionalFeedbackBody: 'Tente usar uma frase mais completa. Você conseguiu!',
@@ -309,6 +317,8 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     companionOffsetX: 9,
     companionOffsetY: 6,
     companionGlowStrength: 54,
+    feedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
+    feedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     xpReward: 25,
     emotionalFeedbackTitle: 'Ótimo!',
     emotionalFeedbackBody: 'Resposta natural e confiante. Continue assim.',
@@ -374,6 +384,8 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     companionOffsetX: 8,
     companionOffsetY: 4,
     companionGlowStrength: 56,
+    feedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
+    feedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     xpReward: 30,
     emotionalFeedbackTitle: 'Nice recovery.',
     emotionalFeedbackBody: 'Você está encontrando o ritmo da missão.',
@@ -429,6 +441,8 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     companionOffsetX: 8,
     companionOffsetY: 6,
     companionGlowStrength: 42,
+    feedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
+    feedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     xpReward: 20,
     emotionalFeedbackTitle: 'Boa tentativa!',
     emotionalFeedbackBody: 'Pequenas escolhas rápidas também constroem confiança.',
@@ -484,6 +498,8 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     companionOffsetX: 7,
     companionOffsetY: 6,
     companionGlowStrength: 38,
+    feedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
+    feedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     xpReward: 20,
     emotionalFeedbackTitle: 'Excelente resposta.',
     emotionalFeedbackBody: 'Leve, natural e perfeita para a cena.',
