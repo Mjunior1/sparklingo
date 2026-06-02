@@ -98,41 +98,47 @@ const buildRuntimeAsset = (mission: MissionRuntimeMission, scene: MissionRuntime
   focalPointY: scene.backgroundFocalY,
 })
 
-const buildRuntimeLayerStyle = (
+const pickRuntimeBackgroundSource = (
   scene: MissionRuntimeSceneRecord | null,
   mission: MissionRuntimeMission,
+  isMobileViewport: boolean,
+) => {
+  if (!scene) return ''
+
+  if (isMobileViewport) {
+    return (
+      scene.backgroundImageUrlMobile ||
+      scene.backgroundImageUrl ||
+      mission.backgroundMobile ||
+      mission.backgroundDesktop ||
+      mission.asset.imageUrlMobile ||
+      mission.asset.mobileImageUrl ||
+      mission.asset.imageUrlDesktop ||
+      mission.asset.imageUrl ||
+      mission.asset.heroBackgroundImageUrl
+    )
+  }
+
+  return (
+    scene.backgroundImageUrl ||
+    scene.backgroundImageUrlMobile ||
+    mission.backgroundDesktop ||
+    mission.backgroundMobile ||
+    mission.asset.imageUrlDesktop ||
+    mission.asset.imageUrlMobile ||
+    mission.asset.imageUrl ||
+    mission.asset.heroBackgroundImageUrl
+  )
+}
+
+const buildRuntimeBackgroundImageStyle = (
+  scene: MissionRuntimeSceneRecord | null,
 ): CSSProperties | undefined => {
   if (!scene) return undefined
 
-  const desktopSource =
-    scene.backgroundImageUrl ||
-    scene.backgroundImageUrlMobile ||
-    mission.backgroundDesktop ||
-    mission.backgroundMobile ||
-    mission.asset.imageUrlDesktop ||
-    mission.asset.imageUrlMobile ||
-    mission.asset.imageUrl ||
-    mission.asset.heroBackgroundImageUrl
-
-  const mobileSource =
-    scene.backgroundImageUrlMobile ||
-    scene.backgroundImageUrl ||
-    mission.backgroundMobile ||
-    mission.backgroundDesktop ||
-    mission.asset.imageUrlMobile ||
-    mission.asset.mobileImageUrl ||
-    mission.asset.imageUrlDesktop ||
-    mission.asset.imageUrl ||
-    mission.asset.heroBackgroundImageUrl
-
   return {
-    '--runtime-stage-image-desktop': `url("${desktopSource}")`,
-    '--runtime-stage-image-mobile': `url("${mobileSource}")`,
-    '--runtime-bg-scale': `${scene.backgroundScale / 100}`,
-    '--runtime-bg-offset-x': `${scene.backgroundOffsetX}%`,
-    '--runtime-bg-offset-y': `${scene.backgroundOffsetY}%`,
-    '--runtime-bg-focal-x': `${scene.backgroundFocalX}%`,
-    '--runtime-bg-focal-y': `${scene.backgroundFocalY}%`,
+    objectPosition: `${scene.backgroundFocalX}% ${scene.backgroundFocalY}%`,
+    transform: `translate3d(${scene.backgroundOffsetX}%, ${scene.backgroundOffsetY}%, 0) scale(${scene.backgroundScale / 100})`,
   } as CSSProperties
 }
 
@@ -185,24 +191,24 @@ export function MissionRuntimeScenePreviewCard({
   scene: MissionRuntimeSceneRecord
   missionTitle?: string
 }) {
-  const previewStyle = {
-    '--runtime-preview-image': `url(${scene.backgroundImageUrl || scene.backgroundImageUrlMobile})`,
-    '--runtime-preview-focal-x': `${scene.backgroundFocalX}%`,
-    '--runtime-preview-focal-y': `${scene.backgroundFocalY}%`,
-    '--runtime-preview-offset-x': `${scene.backgroundOffsetX}%`,
-    '--runtime-preview-offset-y': `${scene.backgroundOffsetY}%`,
-    '--runtime-preview-scale': `${scene.backgroundScale / 100}`,
-    '--runtime-preview-companion-scale': `${scene.companionScale / 100}`,
-    '--runtime-preview-companion-offset-x': `${scene.companionOffsetX}%`,
-    '--runtime-preview-companion-offset-y': `${scene.companionOffsetY}%`,
+  const previewImageStyle = {
+    objectPosition: `${scene.backgroundFocalX}% ${scene.backgroundFocalY}%`,
+    transform: `translate3d(${scene.backgroundOffsetX}%, ${scene.backgroundOffsetY}%, 0) scale(${scene.backgroundScale / 100})`,
   } as CSSProperties
+  const previewImageSrc = scene.backgroundImageUrl || scene.backgroundImageUrlMobile
 
   return (
-    <article
-      className={`runtime-scene-preview runtime-scene-preview-${scene.emotionalFeedbackTone}`}
-      style={previewStyle}
-    >
-      <div className="runtime-scene-preview-image" />
+    <article className={`runtime-scene-preview runtime-scene-preview-${scene.emotionalFeedbackTone}`}>
+      {previewImageSrc ? (
+        <img
+          className="runtime-scene-preview-image"
+          src={previewImageSrc}
+          alt=""
+          aria-hidden="true"
+          referrerPolicy="no-referrer"
+          style={previewImageStyle}
+        />
+      ) : null}
       <div className="runtime-scene-preview-overlay" />
       <div className="runtime-scene-preview-copy">
         <span>{missionTitle || scene.missionTitle || 'Mission Runtime'}</span>
@@ -243,7 +249,20 @@ export function MissionRuntime({
   const [comboCount, setComboCount] = useState(0)
   const [feedbackPulse, setFeedbackPulse] = useState(false)
   const [previousSceneId, setPreviousSceneId] = useState<string | null>(null)
+  const [isMobileViewport, setIsMobileViewport] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 780px)').matches : false,
+  )
   const activeSceneRef = useRef<string | null>(null)
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined
+
+    const media = window.matchMedia('(max-width: 780px)')
+    const handleChange = () => setIsMobileViewport(media.matches)
+    handleChange()
+    media.addEventListener('change', handleChange)
+    return () => media.removeEventListener('change', handleChange)
+  }, [])
 
   useEffect(() => {
     setSceneIndex(0)
@@ -275,10 +294,10 @@ export function MissionRuntime({
   const selectedAnswer =
     currentScene?.answers.find((answer) => answer.id === selectedAnswerId) ?? null
   const feedback = currentScene ? buildFeedback(currentScene, selectedAnswer) : null
-  const feedbackTitle = selectedAnswer ? feedback?.title || currentScene?.emotionalFeedbackTitle || '' : 'Aguardando resposta'
+  const feedbackTitle = selectedAnswer ? feedback?.title || currentScene?.emotionalFeedbackTitle || '' : 'Escolha uma resposta'
   const feedbackBody = selectedAnswer
     ? feedback?.body || currentScene?.emotionalFeedbackBody || ''
-    : 'Escolha uma resposta para receber o feedback emocional desta cena.'
+    : 'Responda para receber o feedback emocional desta cena.'
   const feedbackXpValue = selectedAnswer ? feedback?.xp ?? currentScene?.xpReward ?? 0 : 0
   const feedbackCompanionImage =
     currentScene && selectedAnswer
@@ -289,17 +308,38 @@ export function MissionRuntime({
 
   const currentAsset = currentScene ? buildRuntimeAsset(mission, currentScene) : mission.asset
   const previousAsset = previousScene ? buildRuntimeAsset(mission, previousScene) : null
-  const currentLayerStyle = buildRuntimeLayerStyle(currentScene, mission)
-  const previousLayerStyle = buildRuntimeLayerStyle(previousScene, mission)
+  const currentBackgroundSource = pickRuntimeBackgroundSource(currentScene, mission, isMobileViewport)
+  const previousBackgroundSource = pickRuntimeBackgroundSource(previousScene, mission, isMobileViewport)
+  const currentBackgroundStyle = currentScene
+    ? ({
+        ...buildRuntimeBackgroundImageStyle(currentScene),
+      } as CSSProperties)
+    : undefined
+  const previousBackgroundStyle = previousScene
+    ? ({
+        ...buildRuntimeBackgroundImageStyle(previousScene),
+      } as CSSProperties)
+    : undefined
   const rewardBadgeIconUrl = currentScene?.rewardIconUrl
   const rewardChestIconUrl = currentScene?.rewardChestIconUrl || currentScene?.rewardIconUrl
   const progressPercent = currentScene
     ? Math.min(100, Math.max(0, (currentScene.sceneNumber / Math.max(1, currentScene.sceneTotal)) * 100))
     : 0
+  const rewardProgressCount = currentScene
+    ? Math.max(
+        0,
+        Math.min(currentScene.sceneTotal, currentScene.sceneNumber - 1 + (selectedAnswer?.isCorrect ? 1 : 0)),
+      )
+    : 0
 
   const totalXpLabel = totalXp + earnedXp
   const canAdvance = currentScene ? currentScene.answers.length === 0 || Boolean(selectedAnswer) : false
   const rewardDots = currentScene ? Array.from({ length: currentScene.sceneTotal }) : []
+  const rewardLabel = !selectedAnswer
+    ? 'Checkpoint'
+    : selectedAnswer.isCorrect
+      ? 'Excelente!'
+      : 'Boa tentativa!'
   const companionStyle = currentScene
     ? ({
         '--runtime-companion-scale': `${currentScene.companionScale / 100}`,
@@ -308,14 +348,17 @@ export function MissionRuntime({
         '--runtime-companion-glow-strength': `${currentScene.companionGlowStrength / 100}`,
       } as CSSProperties)
     : undefined
+  const storyContextImageSource =
+    currentScene?.backgroundImageUrl ||
+    currentScene?.backgroundImageUrlMobile ||
+    mission.backgroundDesktop ||
+    mission.backgroundMobile ||
+    mission.posterImage ||
+    ''
   const storyContextStyle = currentScene
     ? ({
-        '--runtime-story-image': `url(${currentScene.backgroundImageUrl || currentScene.backgroundImageUrlMobile || mission.backgroundDesktop || mission.backgroundMobile || mission.posterImage})`,
-        '--runtime-story-focal-x': `${currentScene.backgroundFocalX}%`,
-        '--runtime-story-focal-y': `${currentScene.backgroundFocalY}%`,
-        '--runtime-story-offset-x': `${currentScene.backgroundOffsetX}%`,
-        '--runtime-story-offset-y': `${currentScene.backgroundOffsetY}%`,
-        '--runtime-story-scale': `${currentScene.backgroundScale / 100}`,
+        objectPosition: `${currentScene.backgroundFocalX}% ${currentScene.backgroundFocalY}%`,
+        transform: `translate3d(${currentScene.backgroundOffsetX}%, ${currentScene.backgroundOffsetY}%, 0) scale(${currentScene.backgroundScale / 100})`,
       } as CSSProperties)
     : undefined
 
@@ -389,16 +432,43 @@ export function MissionRuntime({
     <div className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone}`}>
       <div className="mission-runtime-stage">
         <div className="mission-runtime-background" aria-hidden="true">
-          <div className="mission-runtime-background-layer mission-runtime-background-layer-ambient" style={currentLayerStyle}>
-            <div className="mission-runtime-background-image" />
+          <div className="mission-runtime-background-layer mission-runtime-background-layer-ambient">
+            {currentBackgroundSource ? (
+              <img
+                className="mission-runtime-background-image"
+                src={currentBackgroundSource}
+                alt=""
+                aria-hidden="true"
+                referrerPolicy="no-referrer"
+                style={currentBackgroundStyle}
+              />
+            ) : null}
           </div>
           {previousAsset && (
-            <div className="mission-runtime-background-layer mission-runtime-background-layer-previous" style={previousLayerStyle}>
-              <div className="mission-runtime-background-image" />
+            <div className="mission-runtime-background-layer mission-runtime-background-layer-previous">
+              {previousBackgroundSource ? (
+                <img
+                  className="mission-runtime-background-image"
+                  src={previousBackgroundSource}
+                  alt=""
+                  aria-hidden="true"
+                  referrerPolicy="no-referrer"
+                  style={previousBackgroundStyle}
+                />
+              ) : null}
             </div>
           )}
-          <div className="mission-runtime-background-layer mission-runtime-background-layer-current" style={currentLayerStyle}>
-            <div className="mission-runtime-background-image" />
+          <div className="mission-runtime-background-layer mission-runtime-background-layer-current">
+            {currentBackgroundSource ? (
+              <img
+                className="mission-runtime-background-image"
+                src={currentBackgroundSource}
+                alt=""
+                aria-hidden="true"
+                referrerPolicy="no-referrer"
+                style={currentBackgroundStyle}
+              />
+            ) : null}
           </div>
           <div className="mission-runtime-global-overlay" />
           <NarrativeOverlay asset={currentAsset} />
@@ -530,13 +600,13 @@ export function MissionRuntime({
                 </RuntimeIcon>
               </span>
               <div>
-                <small>{selectedAnswer?.isCorrect ? 'Excelente!' : 'Checkpoint'}</small>
+                <small>{rewardLabel}</small>
                 <strong>+{selectedAnswer ? feedbackXpValue : currentScene.xpReward} XP</strong>
               </div>
             </div>
             <div className="mission-runtime-reward-dots">
               {rewardDots.map((_, index) => (
-                <span key={`${currentScene.id}-${index}`} className={index < currentScene.sceneNumber ? 'is-filled' : ''} />
+                <span key={`${currentScene.id}-${index}`} className={index < rewardProgressCount ? 'is-filled' : ''} />
               ))}
             </div>
             <div className="mission-runtime-reward-chest">
@@ -560,8 +630,17 @@ export function MissionRuntime({
         <div className="mission-runtime-story-cards">
           <article className="mission-runtime-story-card">
             <span className="mission-runtime-story-label">Pergunta e contexto</span>
-            <div className="mission-runtime-context-scene" style={storyContextStyle}>
-              <div className="mission-runtime-context-image" />
+            <div className="mission-runtime-context-scene">
+              {storyContextImageSource ? (
+                <img
+                  className="mission-runtime-context-image"
+                  src={storyContextImageSource}
+                  alt=""
+                  aria-hidden="true"
+                  referrerPolicy="no-referrer"
+                  style={storyContextStyle}
+                />
+              ) : null}
               <div className="mission-runtime-context-overlay" />
               <div className="mission-runtime-context-prompt">
                 <div className="mission-runtime-context-head">

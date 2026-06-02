@@ -25,14 +25,6 @@
   padding: 24px 28px 26px;
 }
 
-.mission-runtime-background-layer {
-  --runtime-bg-scale: 1.04;
-  --runtime-bg-offset-x: 0%;
-  --runtime-bg-offset-y: 0%;
-  --runtime-bg-focal-x: 50%;
-  --runtime-bg-focal-y: 50%;
-}
-
 .mission-runtime-background,
 .mission-runtime-background-layer,
 .mission-runtime-background-image {
@@ -46,11 +38,11 @@
 }
 
 .mission-runtime-background-image {
-  background-image: var(--runtime-stage-image-desktop);
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: var(--runtime-bg-focal-x) var(--runtime-bg-focal-y);
-  transform: translate3d(var(--runtime-bg-offset-x), var(--runtime-bg-offset-y), 0) scale(var(--runtime-bg-scale));
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transform-origin: center;
 }
 
 .mission-runtime-background-layer {
@@ -451,10 +443,12 @@
 }
 
 .mission-runtime-companion-column {
-  display: grid;
-  justify-items: end;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
   align-self: stretch;
-  align-content: end;
+  min-height: 100%;
   gap: 18px;
   padding-top: 0;
 }
@@ -492,6 +486,7 @@
 
 .mission-runtime-feedback-card {
   width: min(342px, 100%);
+  margin-top: auto;
   padding: 28px 24px 26px;
   border-radius: 30px;
   display: grid;
@@ -606,11 +601,14 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(180deg, rgba(253, 215, 113, 0.28), rgba(148, 90, 255, 0.16));
-  color: #ffe68a;
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 252, 228, 0.5), rgba(255, 226, 140, 0.22) 24%, rgba(172, 118, 32, 0.08) 74%),
+    linear-gradient(180deg, rgba(73, 51, 19, 0.96), rgba(28, 22, 20, 0.9));
+  color: #ffd874;
   box-shadow:
-    0 0 20px rgba(245, 187, 93, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    0 0 20px rgba(245, 187, 93, 0.18),
+    0 0 34px rgba(255, 199, 102, 0.08),
+    inset 0 1px 0 rgba(255, 249, 220, 0.24);
 }
 
 .mission-runtime-reward-badge {
@@ -641,17 +639,19 @@
   height: 12px;
   border-radius: 999px;
   background:
-    radial-gradient(circle at 30% 30%, rgba(255, 228, 170, 0.16), rgba(70, 56, 32, 0.22));
-  box-shadow: inset 0 1px 0 rgba(255, 246, 206, 0.06);
+    radial-gradient(circle at 30% 30%, rgba(255, 233, 183, 0.12), rgba(69, 52, 27, 0.18));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 246, 206, 0.06),
+    0 0 0 1px rgba(255, 214, 126, 0.03);
 }
 
 .mission-runtime-reward-dots span.is-filled {
   background:
-    radial-gradient(circle at 32% 28%, #fff8db 0%, #ffe494 18%, #ffc85a 46%, #f0a52b 72%, #7b5114 100%);
+    radial-gradient(circle at 34% 28%, #fff6d1 0%, #ffecaf 18%, #ffd26f 44%, #f5b347 68%, #875112 100%);
   box-shadow:
-    0 0 16px rgba(255, 206, 104, 0.42),
-    0 0 30px rgba(240, 164, 43, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.36);
+    0 0 14px rgba(255, 214, 117, 0.38),
+    0 0 28px rgba(236, 167, 48, 0.14),
+    inset 0 1px 0 rgba(255, 253, 239, 0.34);
 }
 
 .mission-runtime-reward-chest {
@@ -738,11 +738,11 @@
 }
 
 .mission-runtime-context-image {
-  background-image: var(--runtime-story-image);
-  background-size: cover;
-  background-repeat: no-repeat;
-  background-position: var(--runtime-story-focal-x) var(--runtime-story-focal-y);
-  transform: translate3d(var(--runtime-story-offset-x), var(--runtime-story-offset-y), 0) scale(var(--runtime-story-scale));
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transform-origin: center;
 }
 
 .mission-runtime-context-overlay {
@@ -835,9 +835,11 @@
 
 .runtime-scene-preview-image {
   inset: 0;
-  background: var(--runtime-preview-image) center / cover no-repeat;
-  background-position: var(--runtime-preview-focal-x, 50%) var(--runtime-preview-focal-y, 50%);
-  transform: translate3d(var(--runtime-preview-offset-x, 0%), var(--runtime-preview-offset-y, 0%), 0) scale(var(--runtime-preview-scale, 1.04));
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transform-origin: center;
 }
 
 .runtime-scene-preview-overlay {
@@ -1331,10 +1333,6 @@
 }
 
 @media (max-width: 780px) {
-  .mission-runtime-background-image {
-    background-image: var(--runtime-stage-image-mobile);
-  }
-
   .mission-runtime-shell {
     width: min(calc(100vw - 12px), 100%);
     gap: 14px;
