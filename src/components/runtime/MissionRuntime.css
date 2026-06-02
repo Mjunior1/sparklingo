@@ -87,7 +87,8 @@
 }
 
 .mission-runtime-stage .scene-overlay {
-  opacity: 1;
+  opacity: calc(var(--scene-overlay-opacity, 0.55) * 0.42);
+  backdrop-filter: blur(calc(var(--scene-blur-strength, 8px) * 0.58));
 }
 
 .mission-runtime-atmosphere {
