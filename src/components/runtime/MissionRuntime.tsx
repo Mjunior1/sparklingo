@@ -367,11 +367,16 @@ export function MissionRuntime({
   const previousBackgroundSource =
     previousBackgroundCandidates[previousBackgroundIndex] ||
     pickRuntimeBackgroundSource(previousScene, mission, isMobileViewport)
-  const currentBackgroundStyle = currentScene
-    ? ({
-        ...buildRuntimeBackgroundImageStyle(currentScene),
-      } as CSSProperties)
-    : undefined
+    const currentBackgroundStyle = currentScene
+      ? ({
+          ...buildRuntimeBackgroundImageStyle(currentScene),
+        } as CSSProperties)
+      : undefined
+    const currentBackgroundContainerStyle = currentScene
+      ? ({
+          ...buildRuntimeBackgroundLayerStyle(currentBackgroundSource, currentScene),
+        } as CSSProperties)
+      : undefined
   const currentBackgroundLayerStyle = currentScene
     ? ({
         ...buildRuntimeBackgroundLayerStyle(currentBackgroundSource, currentScene),
@@ -419,11 +424,12 @@ export function MissionRuntime({
       ? currentScene?.reactionSpeechPositiveTitle || selectedAnswer.feedbackTitle || 'Nice choice!'
       : currentScene?.reactionSpeechRetryTitle || selectedAnswer.feedbackTitle || 'Keep going!'
     : ''
-  const reactionSpeechBody = selectedAnswer
-    ? selectedAnswer.isCorrect
-      ? currentScene?.reactionSpeechPositiveBody || selectedAnswer.feedbackBody || 'You sounded confident and natural.'
-      : currentScene?.reactionSpeechRetryBody || selectedAnswer.feedbackBody || 'Try a clearer phrase and keep the rhythm.'
-    : ''
+    const reactionSpeechBody = selectedAnswer
+      ? selectedAnswer.isCorrect
+        ? currentScene?.reactionSpeechPositiveBody || selectedAnswer.feedbackBody || 'You sounded confident and natural.'
+        : currentScene?.reactionSpeechRetryBody || selectedAnswer.feedbackBody || 'Try a clearer phrase and keep the rhythm.'
+      : ''
+    const reactionSpeechPosition = currentScene?.reactionSpeechPosition || 'left'
 
   const totalXpLabel = totalXp + earnedXp
   const canAdvance = currentScene ? currentScene.answers.length === 0 || Boolean(selectedAnswer) : false
@@ -541,13 +547,13 @@ export function MissionRuntime({
   }
 
   return (
-    <div className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone}`}>
-      <div className="mission-runtime-stage">
-        <div className="mission-runtime-background" aria-hidden="true">
-          <div
-            className="mission-runtime-background-layer mission-runtime-background-layer-ambient"
-            style={currentBackgroundLayerStyle}
-          >
+      <div className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone}`}>
+        <div className="mission-runtime-stage">
+          <div className="mission-runtime-background" aria-hidden="true" style={currentBackgroundContainerStyle}>
+            <div
+              className="mission-runtime-background-layer mission-runtime-background-layer-ambient"
+              style={currentBackgroundLayerStyle}
+            >
             {currentBackgroundSource ? (
               <img
                 className="mission-runtime-background-image"
@@ -703,40 +709,42 @@ export function MissionRuntime({
             </div>
           </section>
 
-          <aside className="mission-runtime-companion-column">
-            <div className="mission-runtime-companion-stack">
-              {reactionBubbleVisible && selectedAnswer && (
-                <div className={`mission-runtime-speech-bubble${selectedAnswer.isCorrect ? ' is-positive' : ' is-retry'}`}>
-                  <strong>{reactionSpeechTitle}</strong>
-                  <p>{reactionSpeechBody}</p>
-                </div>
-              )}
-              {stageCompanionImage && (
+            <aside className="mission-runtime-companion-column">
+              <div className="mission-runtime-feedback-stage">
+                {reactionBubbleVisible && selectedAnswer && (
+                  <div
+                    className={`mission-runtime-speech-bubble${selectedAnswer.isCorrect ? ' is-positive' : ' is-retry'} is-${reactionSpeechPosition}`}
+                  >
+                    <strong>{reactionSpeechTitle}</strong>
+                    <p>{reactionSpeechBody}</p>
+                  </div>
+                )}
+                {stageCompanionImage && (
                 <div className="mission-runtime-character" style={companionStyle}>
                   <img src={stageCompanionImage} alt="Spark companion" />
                 </div>
               )}
-            </div>
-            <article className={`mission-runtime-feedback-card${feedbackPulse ? ' is-pulsing' : ''}`}>
-              <span className="mission-runtime-feedback-star">
-                <RuntimeIcon iconUrl={currentScene.feedbackIconUrl} alt="Feedback icon">
-                  <Sparkles size={16} />
-                </RuntimeIcon>
-              </span>
-              <div className="mission-runtime-feedback-copy">
-                <strong>{feedbackTitle}</strong>
-                <p>{feedbackBody}</p>
-                {selectedAnswer && (
-                  <span className="mission-runtime-feedback-xp">
-                    <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="XP reward icon">
-                      <Star size={16} />
+                <article className={`mission-runtime-feedback-card${feedbackPulse ? ' is-pulsing' : ''}`}>
+                  <span className="mission-runtime-feedback-star">
+                    <RuntimeIcon iconUrl={currentScene.feedbackIconUrl} alt="Feedback icon">
+                      <Sparkles size={16} />
                     </RuntimeIcon>
-                    +{feedbackXpValue} XP
                   </span>
-                )}
+                  <div className="mission-runtime-feedback-copy">
+                    <strong>{feedbackTitle}</strong>
+                    <p>{feedbackBody}</p>
+                    {selectedAnswer && (
+                      <span className="mission-runtime-feedback-xp">
+                        <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="XP reward icon">
+                          <Star size={16} />
+                        </RuntimeIcon>
+                        +{feedbackXpValue} XP
+                      </span>
+                    )}
+                  </div>
+                </article>
               </div>
-            </article>
-          </aside>
+            </aside>
         </div>
 
         <div className="mission-runtime-footer">

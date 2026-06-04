@@ -35,6 +35,10 @@
 .mission-runtime-background {
   overflow: hidden;
   border-radius: 34px;
+  background-color: #090d1f;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
 }
 
 .mission-runtime-background-image {
@@ -82,11 +86,11 @@
 
 .mission-runtime-global-overlay {
   background:
-    linear-gradient(180deg, rgba(5, 7, 18, 0.7) 0%, rgba(9, 10, 24, 0.12) 26%, rgba(7, 8, 20, 0.66) 100%),
-    radial-gradient(circle at 15% 24%, rgba(46, 24, 78, 0.34), transparent 32%),
-    radial-gradient(circle at 78% 22%, rgba(245, 174, 108, 0.13), transparent 28%),
-    radial-gradient(circle at 74% 78%, rgba(139, 91, 255, 0.08), transparent 24%),
-    linear-gradient(90deg, rgba(5, 8, 19, 0.5) 0%, rgba(5, 8, 19, 0.06) 20%, rgba(5, 8, 19, 0.06) 80%, rgba(5, 8, 19, 0.38) 100%);
+    linear-gradient(180deg, rgba(5, 7, 18, 0.34) 0%, rgba(9, 10, 24, 0.05) 25%, rgba(7, 8, 20, 0.34) 100%),
+    radial-gradient(circle at 15% 24%, rgba(46, 24, 78, 0.16), transparent 34%),
+    radial-gradient(circle at 78% 22%, rgba(245, 174, 108, 0.16), transparent 30%),
+    radial-gradient(circle at 74% 78%, rgba(139, 91, 255, 0.06), transparent 24%),
+    linear-gradient(90deg, rgba(5, 8, 19, 0.22) 0%, rgba(5, 8, 19, 0.02) 18%, rgba(5, 8, 19, 0.02) 82%, rgba(5, 8, 19, 0.22) 100%);
 }
 
 .mission-runtime-stage .scene-overlay {
@@ -106,8 +110,8 @@
 
 .mission-runtime-vignette {
   background:
-    linear-gradient(90deg, rgba(6, 8, 18, 0.68) 0%, rgba(6, 8, 18, 0.04) 24%, rgba(6, 8, 18, 0.04) 78%, rgba(6, 8, 18, 0.6) 100%),
-    linear-gradient(180deg, rgba(6, 8, 18, 0.46) 0%, rgba(6, 8, 18, 0.03) 22%, rgba(6, 8, 18, 0.03) 84%, rgba(6, 8, 18, 0.6) 100%);
+    linear-gradient(90deg, rgba(6, 8, 18, 0.28) 0%, rgba(6, 8, 18, 0.02) 24%, rgba(6, 8, 18, 0.02) 78%, rgba(6, 8, 18, 0.24) 100%),
+    linear-gradient(180deg, rgba(6, 8, 18, 0.22) 0%, rgba(6, 8, 18, 0.02) 22%, rgba(6, 8, 18, 0.02) 84%, rgba(6, 8, 18, 0.28) 100%);
 }
 
 .mission-runtime-topbar,
@@ -449,26 +453,23 @@
 .mission-runtime-companion-column {
   position: relative;
   display: flex;
-  flex-direction: column;
   align-items: flex-end;
   justify-content: flex-end;
   align-self: stretch;
   min-height: 100%;
-  gap: 18px;
-  padding-top: 0;
 }
 
-.mission-runtime-companion-stack {
+.mission-runtime-feedback-stage {
   position: relative;
-  display: grid;
-  justify-items: end;
-  gap: 10px;
+  width: min(342px, 100%);
   margin-top: auto;
+  padding-top: 182px;
 }
 
 .mission-runtime-speech-bubble {
-  position: relative;
-  width: min(286px, 100%);
+  position: absolute;
+  top: 10px;
+  width: min(286px, calc(100% - 92px));
   padding: 18px 20px 16px;
   border-radius: 24px;
   border: 1px solid rgba(202, 176, 255, 0.16);
@@ -480,12 +481,12 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
   backdrop-filter: blur(22px);
   animation: runtimeBubbleRise 320ms ease;
+  z-index: 4;
 }
 
 .mission-runtime-speech-bubble::after {
   content: '';
   position: absolute;
-  right: 44px;
   bottom: -12px;
   width: 26px;
   height: 26px;
@@ -494,6 +495,32 @@
   background: rgba(12, 12, 29, 0.92);
   transform: rotate(40deg) skewX(6deg);
   border-bottom-right-radius: 10px;
+}
+
+.mission-runtime-speech-bubble.is-left {
+  right: 122px;
+}
+
+.mission-runtime-speech-bubble.is-left::after {
+  right: 28px;
+}
+
+.mission-runtime-speech-bubble.is-right {
+  left: 122px;
+}
+
+.mission-runtime-speech-bubble.is-right::after {
+  left: 28px;
+  right: auto;
+}
+
+.mission-runtime-speech-bubble.is-above {
+  right: 8px;
+  top: -12px;
+}
+
+.mission-runtime-speech-bubble.is-above::after {
+  right: 44px;
 }
 
 .mission-runtime-speech-bubble strong {
@@ -526,10 +553,12 @@
 }
 
 .mission-runtime-character {
-  align-self: end;
-  margin-top: auto;
-  width: min(312px, 100%);
-  position: relative;
+  position: absolute;
+  right: -6px;
+  bottom: calc(100% - 12px);
+  width: min(208px, 100%);
+  margin: 0;
+  z-index: 3;
   filter:
     drop-shadow(0 28px 46px rgba(0, 0, 0, 0.36))
     drop-shadow(0 0 36px rgba(255, 182, 122, calc(var(--runtime-companion-glow-strength, 0.56) * 0.26)));
@@ -557,14 +586,18 @@
 }
 
 .mission-runtime-feedback-card {
-  width: min(342px, 100%);
-  margin-top: auto;
+  width: 100%;
+  margin-top: 0;
   padding: 28px 24px 26px;
   border-radius: 30px;
   display: grid;
   gap: 12px;
   justify-self: end;
   align-self: end;
+  overflow: visible;
+  position: relative;
+  z-index: 2;
+  min-height: 206px;
   background:
     linear-gradient(180deg, rgba(19, 17, 40, 0.82), rgba(14, 14, 31, 0.76)),
     radial-gradient(circle at top right, rgba(239, 204, 108, 0.12), transparent 28%);
@@ -1414,15 +1447,16 @@
   }
 
   .mission-runtime-companion-column {
-    justify-items: stretch;
-    grid-template-columns: 1fr 1fr;
-    display: grid;
-    align-items: end;
+    display: flex;
+    align-items: flex-end;
+  }
+
+  .mission-runtime-feedback-stage {
+    width: min(360px, 100%);
   }
 
   .mission-runtime-character {
-    width: min(220px, 100%);
-    justify-self: end;
+    width: min(196px, 100%);
   }
 
   .mission-runtime-feedback-card {
@@ -1501,15 +1535,18 @@
   }
 
   .mission-runtime-companion-column {
-    grid-template-columns: 1fr;
+    align-items: stretch;
   }
 
-  .mission-runtime-companion-stack {
-    justify-items: start;
+  .mission-runtime-feedback-stage {
+    width: 100%;
+    padding-top: 142px;
   }
 
   .mission-runtime-character {
     width: min(180px, 56vw);
+    right: 0;
+    bottom: calc(100% - 10px);
   }
 
   .mission-runtime-feedback-card {
@@ -1518,7 +1555,19 @@
   }
 
   .mission-runtime-speech-bubble {
-    width: min(100%, 260px);
+    width: min(100%, 250px);
+  }
+
+  .mission-runtime-speech-bubble.is-left {
+    right: 94px;
+  }
+
+  .mission-runtime-speech-bubble.is-right {
+    left: 18px;
+  }
+
+  .mission-runtime-speech-bubble.is-above {
+    right: 0;
   }
 
   .mission-runtime-feedback-card strong {

@@ -11,6 +11,7 @@ import {
 import { requireFirebase } from '../lib/firebase'
 
 export type MissionRuntimeFeedbackTone = 'encouraging' | 'celebration' | 'recovery' | 'calm'
+export type MissionRuntimeSpeechBubblePosition = 'left' | 'right' | 'above'
 
 export type MissionRuntimeAnswerRecord = {
   id: string
@@ -64,6 +65,7 @@ export type MissionRuntimeSceneRecord = {
   reactionSpeechPositiveBody: string
   reactionSpeechRetryTitle: string
   reactionSpeechRetryBody: string
+  reactionSpeechPosition: MissionRuntimeSpeechBubblePosition
   emotionalFeedbackTitle: string
   emotionalFeedbackBody: string
   emotionalFeedbackTone: MissionRuntimeFeedbackTone
@@ -80,6 +82,11 @@ export const missionRuntimeFeedbackToneOptions: MissionRuntimeFeedbackTone[] = [
   'celebration',
   'recovery',
   'calm',
+]
+export const missionRuntimeSpeechBubblePositionOptions: MissionRuntimeSpeechBubblePosition[] = [
+  'left',
+  'right',
+  'above',
 ]
 
 const cleanString = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
@@ -144,6 +151,7 @@ export const createEmptyMissionRuntimeScene = (): MissionRuntimeSceneRecord => (
   reactionSpeechPositiveBody: 'You sounded confident and natural.',
   reactionSpeechRetryTitle: 'Keep going!',
   reactionSpeechRetryBody: 'Try a clearer phrase and keep the rhythm.',
+  reactionSpeechPosition: 'left',
   emotionalFeedbackTitle: 'Boa tentativa!',
   emotionalFeedbackBody: 'Continue. Você está entrando no ritmo da missão.',
   emotionalFeedbackTone: 'encouraging',
@@ -228,6 +236,11 @@ const sanitizeMissionRuntimeScene = (
     reactionSpeechRetryTitle: cleanString(scene.reactionSpeechRetryTitle) || 'Keep going!',
     reactionSpeechRetryBody:
       cleanString(scene.reactionSpeechRetryBody) || 'Try a clearer phrase and keep the rhythm.',
+    reactionSpeechPosition: pickEnum(
+      scene.reactionSpeechPosition,
+      missionRuntimeSpeechBubblePositionOptions,
+      'left',
+    ),
     emotionalFeedbackTitle: cleanString(scene.emotionalFeedbackTitle) || 'Boa tentativa!',
     emotionalFeedbackBody:
       cleanString(scene.emotionalFeedbackBody) || 'Continue. Você está entrando no ritmo da missão.',

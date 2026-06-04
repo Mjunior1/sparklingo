@@ -144,6 +144,7 @@ import {
   deleteMissionRuntimeScene,
   getMissionRuntimeScenes,
   missionRuntimeFeedbackToneOptions,
+  missionRuntimeSpeechBubblePositionOptions,
   seedDefaultMissionRuntimeScenes,
   upsertMissionRuntimeScene,
   type MissionRuntimeAnswerRecord,
@@ -2496,24 +2497,41 @@ export function AdminScreen({
                   />
                 </label>
               </div>
-              <div className="scene-asset-inline-grid">
-                <label>Speech bubble body (positive)
-                  <textarea
-                    value={missionRuntimeDraft.reactionSpeechPositiveBody}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, reactionSpeechPositiveBody: event.target.value }))}
+                <div className="scene-asset-inline-grid">
+                  <label>Speech bubble body (positive)
+                    <textarea
+                      value={missionRuntimeDraft.reactionSpeechPositiveBody}
+                      onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, reactionSpeechPositiveBody: event.target.value }))}
                   />
                 </label>
                 <label>Speech bubble body (retry)
                   <textarea
                     value={missionRuntimeDraft.reactionSpeechRetryBody}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, reactionSpeechRetryBody: event.target.value }))}
-                  />
-                </label>
-              </div>
-              <div className="scene-asset-inline-grid">
-                <label>XP badge icon URL
-                  <input
-                    value={missionRuntimeDraft.rewardIconUrl}
+                      onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, reactionSpeechRetryBody: event.target.value }))}
+                    />
+                  </label>
+                </div>
+                <div className="scene-asset-inline-grid">
+                  <label>Speech bubble position
+                    <select
+                      value={missionRuntimeDraft.reactionSpeechPosition}
+                      onChange={(event) =>
+                        setMissionRuntimeDraft((current) => ({
+                          ...current,
+                          reactionSpeechPosition: event.target.value as MissionRuntimeSceneRecord['reactionSpeechPosition'],
+                        }))
+                      }
+                    >
+                      {missionRuntimeSpeechBubblePositionOptions.map((item) => (
+                        <option key={item} value={item}>{item}</option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                <div className="scene-asset-inline-grid">
+                  <label>XP badge icon URL
+                    <input
+                      value={missionRuntimeDraft.rewardIconUrl}
                     onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, rewardIconUrl: event.target.value }))}
                     placeholder="https://.../xp-badge-icon.png"
                   />
