@@ -9,6 +9,7 @@ import {
   type DocumentData,
 } from 'firebase/firestore'
 import { requireFirebase } from '../lib/firebase'
+import type { SceneAssetSafeArea } from './sceneAssets'
 
 export type MissionRuntimeFeedbackTone = 'encouraging' | 'celebration' | 'recovery' | 'calm'
 export type MissionRuntimeSpeechBubblePosition = 'left' | 'right' | 'above'
@@ -66,6 +67,7 @@ export type MissionRuntimeSceneRecord = {
   reactionSpeechRetryTitle: string
   reactionSpeechRetryBody: string
   reactionSpeechPosition: MissionRuntimeSpeechBubblePosition
+  reactionSpeechSafeArea: SceneAssetSafeArea
   emotionalFeedbackTitle: string
   emotionalFeedbackBody: string
   emotionalFeedbackTone: MissionRuntimeFeedbackTone
@@ -89,6 +91,13 @@ export const missionRuntimeSpeechBubblePositionOptions: MissionRuntimeSpeechBubb
   'above',
 ]
 
+const defaultReactionSpeechSafeArea: SceneAssetSafeArea = {
+  x: 10,
+  y: 8,
+  width: 66,
+  height: 24,
+}
+
 const cleanString = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
 const cleanBoolean = (value: unknown, fallback = true) => (typeof value === 'boolean' ? value : fallback)
 const cleanNumber = (value: unknown, fallback = 0) => {
@@ -98,6 +107,18 @@ const cleanNumber = (value: unknown, fallback = 0) => {
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
 const pickEnum = <T extends string>(value: unknown, allowed: T[], fallback: T): T =>
   typeof value === 'string' && allowed.includes(value as T) ? (value as T) : fallback
+const sanitizeSafeArea = (
+  value: unknown,
+  fallback: SceneAssetSafeArea,
+): SceneAssetSafeArea => {
+  const raw = value && typeof value === 'object' ? (value as Partial<SceneAssetSafeArea>) : {}
+  return {
+    x: clamp(cleanNumber(raw.x, fallback.x), 0, 100),
+    y: clamp(cleanNumber(raw.y, fallback.y), 0, 100),
+    width: clamp(cleanNumber(raw.width, fallback.width), 10, 100),
+    height: clamp(cleanNumber(raw.height, fallback.height), 10, 100),
+  }
+}
 
 const createEmptyAnswer = (id = 'answer-1'): MissionRuntimeAnswerRecord => ({
   id,
@@ -152,6 +173,7 @@ export const createEmptyMissionRuntimeScene = (): MissionRuntimeSceneRecord => (
   reactionSpeechRetryTitle: 'Keep going!',
   reactionSpeechRetryBody: 'Try a clearer phrase and keep the rhythm.',
   reactionSpeechPosition: 'left',
+  reactionSpeechSafeArea: { ...defaultReactionSpeechSafeArea },
   emotionalFeedbackTitle: 'Boa tentativa!',
   emotionalFeedbackBody: 'Continue. Você está entrando no ritmo da missão.',
   emotionalFeedbackTone: 'encouraging',
@@ -241,6 +263,7 @@ const sanitizeMissionRuntimeScene = (
       missionRuntimeSpeechBubblePositionOptions,
       'left',
     ),
+    reactionSpeechSafeArea: sanitizeSafeArea(scene.reactionSpeechSafeArea, defaultReactionSpeechSafeArea),
     emotionalFeedbackTitle: cleanString(scene.emotionalFeedbackTitle) || 'Boa tentativa!',
     emotionalFeedbackBody:
       cleanString(scene.emotionalFeedbackBody) || 'Continue. Você está entrando no ritmo da missão.',

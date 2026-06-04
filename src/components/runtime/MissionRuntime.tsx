@@ -424,12 +424,20 @@ export function MissionRuntime({
       ? currentScene?.reactionSpeechPositiveTitle || selectedAnswer.feedbackTitle || 'Nice choice!'
       : currentScene?.reactionSpeechRetryTitle || selectedAnswer.feedbackTitle || 'Keep going!'
     : ''
-    const reactionSpeechBody = selectedAnswer
-      ? selectedAnswer.isCorrect
-        ? currentScene?.reactionSpeechPositiveBody || selectedAnswer.feedbackBody || 'You sounded confident and natural.'
-        : currentScene?.reactionSpeechRetryBody || selectedAnswer.feedbackBody || 'Try a clearer phrase and keep the rhythm.'
-      : ''
-    const reactionSpeechPosition = currentScene?.reactionSpeechPosition || 'left'
+  const reactionSpeechBody = selectedAnswer
+    ? selectedAnswer.isCorrect
+      ? currentScene?.reactionSpeechPositiveBody || selectedAnswer.feedbackBody || 'You sounded confident and natural.'
+      : currentScene?.reactionSpeechRetryBody || selectedAnswer.feedbackBody || 'Try a clearer phrase and keep the rhythm.'
+    : ''
+  const reactionSpeechPosition = currentScene?.reactionSpeechPosition || 'left'
+  const reactionSpeechStyle = currentScene
+    ? ({
+        '--runtime-speech-left': `${currentScene.reactionSpeechSafeArea.x}%`,
+        '--runtime-speech-top': `${currentScene.reactionSpeechSafeArea.y}%`,
+        '--runtime-speech-width': `clamp(170px, ${currentScene.reactionSpeechSafeArea.width}%, 320px)`,
+        '--runtime-speech-height': `clamp(96px, ${currentScene.reactionSpeechSafeArea.height}%, 180px)`,
+      } as CSSProperties)
+    : undefined
 
   const totalXpLabel = totalXp + earnedXp
   const canAdvance = currentScene ? currentScene.answers.length === 0 || Boolean(selectedAnswer) : false
@@ -711,19 +719,6 @@ export function MissionRuntime({
 
             <aside className="mission-runtime-companion-column">
               <div className="mission-runtime-feedback-stage">
-                {reactionBubbleVisible && selectedAnswer && (
-                  <div
-                    className={`mission-runtime-speech-bubble${selectedAnswer.isCorrect ? ' is-positive' : ' is-retry'} is-${reactionSpeechPosition}`}
-                  >
-                    <strong>{reactionSpeechTitle}</strong>
-                    <p>{reactionSpeechBody}</p>
-                  </div>
-                )}
-                {stageCompanionImage && (
-                <div className="mission-runtime-character" style={companionStyle}>
-                  <img src={stageCompanionImage} alt="Spark companion" />
-                </div>
-              )}
                 <article className={`mission-runtime-feedback-card${feedbackPulse ? ' is-pulsing' : ''}`}>
                   <span className="mission-runtime-feedback-star">
                     <RuntimeIcon iconUrl={currentScene.feedbackIconUrl} alt="Feedback icon">
@@ -743,6 +738,20 @@ export function MissionRuntime({
                     )}
                   </div>
                 </article>
+                {stageCompanionImage && (
+                  <div className="mission-runtime-character" style={companionStyle}>
+                    <img src={stageCompanionImage} alt="Spark companion" />
+                  </div>
+                )}
+                {reactionBubbleVisible && selectedAnswer && (
+                  <div
+                    className={`mission-runtime-speech-bubble${selectedAnswer.isCorrect ? ' is-positive' : ' is-retry'} is-${reactionSpeechPosition}`}
+                    style={reactionSpeechStyle}
+                  >
+                    <strong>{reactionSpeechTitle}</strong>
+                    <p>{reactionSpeechBody}</p>
+                  </div>
+                )}
               </div>
             </aside>
         </div>

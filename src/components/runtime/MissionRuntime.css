@@ -463,13 +463,20 @@
   position: relative;
   width: min(342px, 100%);
   margin-top: auto;
-  padding-top: 182px;
+  min-height: 430px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  isolation: isolate;
 }
 
 .mission-runtime-speech-bubble {
   position: absolute;
-  top: 10px;
-  width: min(286px, calc(100% - 92px));
+  left: var(--runtime-speech-left, 10%);
+  top: var(--runtime-speech-top, 8%);
+  width: min(var(--runtime-speech-width, 286px), calc(100% - 12px));
+  max-width: calc(100% - 12px);
+  min-height: var(--runtime-speech-height, 104px);
   padding: 18px 20px 16px;
   border-radius: 24px;
   border: 1px solid rgba(202, 176, 255, 0.16);
@@ -498,15 +505,16 @@
 }
 
 .mission-runtime-speech-bubble.is-left {
-  right: 122px;
+  right: auto;
 }
 
 .mission-runtime-speech-bubble.is-left::after {
   right: 28px;
+  left: auto;
 }
 
 .mission-runtime-speech-bubble.is-right {
-  left: 122px;
+  right: auto;
 }
 
 .mission-runtime-speech-bubble.is-right::after {
@@ -515,12 +523,12 @@
 }
 
 .mission-runtime-speech-bubble.is-above {
-  right: 8px;
-  top: -12px;
+  right: auto;
 }
 
 .mission-runtime-speech-bubble.is-above::after {
   right: 44px;
+  left: auto;
 }
 
 .mission-runtime-speech-bubble strong {
@@ -554,11 +562,12 @@
 
 .mission-runtime-character {
   position: absolute;
-  right: -6px;
-  bottom: calc(100% - 12px);
+  right: 14px;
+  bottom: 148px;
   width: min(208px, 100%);
   margin: 0;
-  z-index: 3;
+  z-index: 1;
+  pointer-events: none;
   filter:
     drop-shadow(0 28px 46px rgba(0, 0, 0, 0.36))
     drop-shadow(0 0 36px rgba(255, 182, 122, calc(var(--runtime-companion-glow-strength, 0.56) * 0.26)));
@@ -1453,10 +1462,13 @@
 
   .mission-runtime-feedback-stage {
     width: min(360px, 100%);
+    min-height: 404px;
   }
 
   .mission-runtime-character {
     width: min(196px, 100%);
+    right: 12px;
+    bottom: 138px;
   }
 
   .mission-runtime-feedback-card {
@@ -1540,13 +1552,13 @@
 
   .mission-runtime-feedback-stage {
     width: 100%;
-    padding-top: 142px;
+    min-height: 340px;
   }
 
   .mission-runtime-character {
     width: min(180px, 56vw);
-    right: 0;
-    bottom: calc(100% - 10px);
+    right: 12px;
+    bottom: 128px;
   }
 
   .mission-runtime-feedback-card {
@@ -1555,19 +1567,8 @@
   }
 
   .mission-runtime-speech-bubble {
-    width: min(100%, 250px);
-  }
-
-  .mission-runtime-speech-bubble.is-left {
-    right: 94px;
-  }
-
-  .mission-runtime-speech-bubble.is-right {
-    left: 18px;
-  }
-
-  .mission-runtime-speech-bubble.is-above {
-    right: 0;
+    width: min(var(--runtime-speech-width, 250px), calc(100% - 10px));
+    max-width: calc(100% - 10px);
   }
 
   .mission-runtime-feedback-card strong {

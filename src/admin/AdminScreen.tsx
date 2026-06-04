@@ -1258,6 +1258,7 @@ export function AdminScreen({
       scene
         ? {
             ...scene,
+            reactionSpeechSafeArea: { ...scene.reactionSpeechSafeArea },
             answers: scene.answers.map((answer) => ({ ...answer })),
           }
         : createEmptyMissionRuntimeScene(),
@@ -1270,6 +1271,16 @@ export function AdminScreen({
       ...current,
       [key]: {
         ...current[key],
+        [field]: Number(value) || 0,
+      },
+    }))
+  }
+
+  const updateMissionRuntimeSpeechSafeArea = (field: keyof SceneAssetSafeArea, value: string) => {
+    setMissionRuntimeDraft((current) => ({
+      ...current,
+      reactionSpeechSafeArea: {
+        ...current.reactionSpeechSafeArea,
         [field]: Number(value) || 0,
       },
     }))
@@ -2528,6 +2539,11 @@ export function AdminScreen({
                     </select>
                   </label>
                 </div>
+                <SafeAreaFieldset
+                  title="Speech bubble safe area"
+                  area={missionRuntimeDraft.reactionSpeechSafeArea}
+                  onChange={updateMissionRuntimeSpeechSafeArea}
+                />
                 <div className="scene-asset-inline-grid">
                   <label>XP badge icon URL
                     <input
