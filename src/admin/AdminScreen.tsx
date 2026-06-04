@@ -1111,6 +1111,7 @@ export function AdminScreen({
     async () => {
       await upsertQuickWin({ ...quickWinDraft, id: quickWinDraft.id || quickWinIdPreview })
       await refreshQuickWins()
+      if (onRefresh) await onRefresh()
       setQuickWinDraft(createEmptyQuickWin())
       closeDrawer()
     },
@@ -1122,6 +1123,7 @@ export function AdminScreen({
     async () => {
       await upsertSceneAsset({ ...sceneAssetDraft, id: sceneAssetDraft.id || sceneAssetIdPreview })
       await refreshSceneAssets()
+      if (onRefresh) await onRefresh()
       setSceneAssetDraft(createEmptySceneAsset())
       closeDrawer()
     },
@@ -1136,6 +1138,7 @@ export function AdminScreen({
         id: missionRuntimeDraft.id || missionRuntimeIdPreview,
       })
       await refreshMissionRuntime()
+      if (onRefresh) await onRefresh()
       setMissionRuntimeDraft(createEmptyMissionRuntimeScene())
       closeDrawer()
     },
@@ -2349,6 +2352,22 @@ export function AdminScreen({
                 </label>
               </div>
               <div className="scene-asset-inline-grid">
+                <label>Story feedback mascot (positive)
+                  <input
+                    value={missionRuntimeDraft.storyFeedbackCompanionPositiveImageUrl}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, storyFeedbackCompanionPositiveImageUrl: event.target.value }))}
+                    placeholder="/Images/Mascote/spark-happy-story.png"
+                  />
+                </label>
+                <label>Story feedback mascot (retry)
+                  <input
+                    value={missionRuntimeDraft.storyFeedbackCompanionRetryImageUrl}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, storyFeedbackCompanionRetryImageUrl: event.target.value }))}
+                    placeholder="/Images/Mascote/spark-try-again-story.png"
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
                 <label>Foco horizontal do background ({missionRuntimeDraft.backgroundFocalX}%)
                   <input
                     type="range"
@@ -2464,6 +2483,34 @@ export function AdminScreen({
                 </label>
               </div>
               <div className="scene-asset-inline-grid">
+                <label>Speech bubble title (positive)
+                  <input
+                    value={missionRuntimeDraft.reactionSpeechPositiveTitle}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, reactionSpeechPositiveTitle: event.target.value }))}
+                  />
+                </label>
+                <label>Speech bubble title (retry)
+                  <input
+                    value={missionRuntimeDraft.reactionSpeechRetryTitle}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, reactionSpeechRetryTitle: event.target.value }))}
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
+                <label>Speech bubble body (positive)
+                  <textarea
+                    value={missionRuntimeDraft.reactionSpeechPositiveBody}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, reactionSpeechPositiveBody: event.target.value }))}
+                  />
+                </label>
+                <label>Speech bubble body (retry)
+                  <textarea
+                    value={missionRuntimeDraft.reactionSpeechRetryBody}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, reactionSpeechRetryBody: event.target.value }))}
+                  />
+                </label>
+              </div>
+              <div className="scene-asset-inline-grid">
                 <label>XP badge icon URL
                   <input
                     value={missionRuntimeDraft.rewardIconUrl}
@@ -2495,8 +2542,10 @@ export function AdminScreen({
                   { label: 'Feedback', url: missionRuntimeDraft.feedbackIconUrl },
                   { label: 'Prompt audio', url: missionRuntimeDraft.promptAudioIconUrl },
                   { label: 'Answer audio', url: missionRuntimeDraft.answerAudioIconUrl },
-                  { label: 'Mascot +', url: missionRuntimeDraft.feedbackCompanionPositiveImageUrl || missionRuntimeDraft.companionImageUrl },
-                  { label: 'Mascot retry', url: missionRuntimeDraft.feedbackCompanionRetryImageUrl || missionRuntimeDraft.companionImageUrl },
+                  { label: 'Stage mascot +', url: missionRuntimeDraft.feedbackCompanionPositiveImageUrl || missionRuntimeDraft.companionImageUrl },
+                  { label: 'Stage mascot retry', url: missionRuntimeDraft.feedbackCompanionRetryImageUrl || missionRuntimeDraft.companionImageUrl },
+                  { label: 'Story mascot +', url: missionRuntimeDraft.storyFeedbackCompanionPositiveImageUrl || missionRuntimeDraft.feedbackCompanionPositiveImageUrl || missionRuntimeDraft.companionImageUrl },
+                  { label: 'Story mascot retry', url: missionRuntimeDraft.storyFeedbackCompanionRetryImageUrl || missionRuntimeDraft.feedbackCompanionRetryImageUrl || missionRuntimeDraft.companionImageUrl },
                 ].map((item) => (
                   <div key={item.label} className="runtime-icon-preview">
                     <span>{item.label}</span>

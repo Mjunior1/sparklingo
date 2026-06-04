@@ -17,7 +17,6 @@ import {
   UserRound,
   Volume2,
 } from 'lucide-react'
-import { NarrativeOverlay } from '../scene/SceneRenderer'
 import type { SceneAssetRecord } from '../../services/sceneAssets'
 import type { MissionRuntimeAnswerRecord, MissionRuntimeSceneRecord } from '../../services/missionRuntime'
 
@@ -131,6 +130,39 @@ const pickRuntimeBackgroundSource = (
   )
 }
 
+const buildRuntimeBackgroundCandidates = (
+  scene: MissionRuntimeSceneRecord | null,
+  mission: MissionRuntimeMission,
+  asset: SceneAssetRecord,
+  isMobileViewport: boolean,
+) => {
+  const rawCandidates = isMobileViewport
+    ? [
+        scene?.backgroundImageUrlMobile,
+        scene?.backgroundImageUrl,
+        mission.backgroundMobile,
+        mission.backgroundDesktop,
+        asset.imageUrlMobile,
+        asset.mobileImageUrl,
+        asset.imageUrlDesktop,
+        asset.imageUrl,
+        asset.heroBackgroundImageUrl,
+      ]
+    : [
+        scene?.backgroundImageUrl,
+        scene?.backgroundImageUrlMobile,
+        mission.backgroundDesktop,
+        mission.backgroundMobile,
+        asset.imageUrlDesktop,
+        asset.imageUrl,
+        asset.imageUrlMobile,
+        asset.mobileImageUrl,
+        asset.heroBackgroundImageUrl,
+      ]
+
+  return Array.from(new Set(rawCandidates.map((candidate) => (candidate || '').trim()).filter(Boolean)))
+}
+
 const buildRuntimeBackgroundImageStyle = (
   scene: MissionRuntimeSceneRecord | null,
 ): CSSProperties | undefined => {
@@ -139,6 +171,22 @@ const buildRuntimeBackgroundImageStyle = (
   return {
     objectPosition: `${scene.backgroundFocalX}% ${scene.backgroundFocalY}%`,
     transform: `translate3d(${scene.backgroundOffsetX}%, ${scene.backgroundOffsetY}%, 0) scale(${scene.backgroundScale / 100})`,
+  } as CSSProperties
+}
+
+const buildRuntimeBackgroundLayerStyle = (
+  source: string,
+  scene: MissionRuntimeSceneRecord | null,
+): CSSProperties | undefined => {
+  if (!source || !scene) return undefined
+
+  const escapedSource = source.replace(/"/g, '\\"')
+
+  return {
+    backgroundImage: `url("${escapedSource}")`,
+    backgroundPosition: `${scene.backgroundFocalX + scene.backgroundOffsetX}% ${scene.backgroundFocalY + scene.backgroundOffsetY}%`,
+    backgroundRepeat: 'no-repeat',
+    backgroundSize: `${scene.backgroundScale}%`,
   } as CSSProperties
 }
 
@@ -252,6 +300,9 @@ export function MissionRuntime({
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 780px)').matches : false,
   )
+  const [reactionBubbleVisible, setReactionBubbleVisible] = useState(false)
+  const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0)
+  const [previousBackgroundIndex, setPreviousBackgroundIndex] = useState(0)
   const activeSceneRef = useRef<string | null>(null)
 
   useEffect(() => {
@@ -299,25 +350,41 @@ export function MissionRuntime({
     ? feedback?.body || currentScene?.emotionalFeedbackBody || ''
     : 'Responda para receber o feedback emocional desta cena.'
   const feedbackXpValue = selectedAnswer ? feedback?.xp ?? currentScene?.xpReward ?? 0 : 0
-  const feedbackCompanionImage =
-    currentScene && selectedAnswer
-      ? selectedAnswer.isCorrect
-        ? currentScene.feedbackCompanionPositiveImageUrl || currentScene.companionImageUrl
-        : currentScene.feedbackCompanionRetryImageUrl || currentScene.companionImageUrl
-      : ''
 
   const currentAsset = currentScene ? buildRuntimeAsset(mission, currentScene) : mission.asset
   const previousAsset = previousScene ? buildRuntimeAsset(mission, previousScene) : null
-  const currentBackgroundSource = pickRuntimeBackgroundSource(currentScene, mission, isMobileViewport)
-  const previousBackgroundSource = pickRuntimeBackgroundSource(previousScene, mission, isMobileViewport)
+  const currentBackgroundCandidates = useMemo(
+    () => buildRuntimeBackgroundCandidates(currentScene, mission, currentAsset, isMobileViewport),
+    [currentAsset, currentScene, isMobileViewport, mission],
+  )
+  const previousBackgroundCandidates = useMemo(
+    () => (previousAsset ? buildRuntimeBackgroundCandidates(previousScene, mission, previousAsset, isMobileViewport) : []),
+    [isMobileViewport, mission, previousAsset, previousScene],
+  )
+  const currentBackgroundSource =
+    currentBackgroundCandidates[currentBackgroundIndex] ||
+    pickRuntimeBackgroundSource(currentScene, mission, isMobileViewport)
+  const previousBackgroundSource =
+    previousBackgroundCandidates[previousBackgroundIndex] ||
+    pickRuntimeBackgroundSource(previousScene, mission, isMobileViewport)
   const currentBackgroundStyle = currentScene
     ? ({
         ...buildRuntimeBackgroundImageStyle(currentScene),
       } as CSSProperties)
     : undefined
+  const currentBackgroundLayerStyle = currentScene
+    ? ({
+        ...buildRuntimeBackgroundLayerStyle(currentBackgroundSource, currentScene),
+      } as CSSProperties)
+    : undefined
   const previousBackgroundStyle = previousScene
     ? ({
         ...buildRuntimeBackgroundImageStyle(previousScene),
+      } as CSSProperties)
+    : undefined
+  const previousBackgroundLayerStyle = previousScene
+    ? ({
+        ...buildRuntimeBackgroundLayerStyle(previousBackgroundSource, previousScene),
       } as CSSProperties)
     : undefined
   const rewardBadgeIconUrl = currentScene?.rewardIconUrl
@@ -331,6 +398,32 @@ export function MissionRuntime({
         Math.min(currentScene.sceneTotal, currentScene.sceneNumber - 1 + (selectedAnswer?.isCorrect ? 1 : 0)),
       )
     : 0
+  const stageCompanionImage = currentScene
+    ? selectedAnswer
+      ? selectedAnswer.isCorrect
+        ? currentScene.feedbackCompanionPositiveImageUrl || currentScene.companionImageUrl
+        : currentScene.feedbackCompanionRetryImageUrl || currentScene.companionImageUrl
+      : currentScene.companionImageUrl
+    : ''
+  const storyFeedbackCompanionImage = currentScene && selectedAnswer
+    ? selectedAnswer.isCorrect
+      ? currentScene.storyFeedbackCompanionPositiveImageUrl ||
+        currentScene.feedbackCompanionPositiveImageUrl ||
+        currentScene.companionImageUrl
+      : currentScene.storyFeedbackCompanionRetryImageUrl ||
+        currentScene.feedbackCompanionRetryImageUrl ||
+        currentScene.companionImageUrl
+    : ''
+  const reactionSpeechTitle = selectedAnswer
+    ? selectedAnswer.isCorrect
+      ? currentScene?.reactionSpeechPositiveTitle || selectedAnswer.feedbackTitle || 'Nice choice!'
+      : currentScene?.reactionSpeechRetryTitle || selectedAnswer.feedbackTitle || 'Keep going!'
+    : ''
+  const reactionSpeechBody = selectedAnswer
+    ? selectedAnswer.isCorrect
+      ? currentScene?.reactionSpeechPositiveBody || selectedAnswer.feedbackBody || 'You sounded confident and natural.'
+      : currentScene?.reactionSpeechRetryBody || selectedAnswer.feedbackBody || 'Try a clearer phrase and keep the rhythm.'
+    : ''
 
   const totalXpLabel = totalXp + earnedXp
   const canAdvance = currentScene ? currentScene.answers.length === 0 || Boolean(selectedAnswer) : false
@@ -361,6 +454,25 @@ export function MissionRuntime({
         transform: `translate3d(${currentScene.backgroundOffsetX}%, ${currentScene.backgroundOffsetY}%, 0) scale(${currentScene.backgroundScale / 100})`,
       } as CSSProperties)
     : undefined
+
+  useEffect(() => {
+    setCurrentBackgroundIndex(0)
+  }, [currentScene?.id, isMobileViewport])
+
+  useEffect(() => {
+    setPreviousBackgroundIndex(0)
+  }, [previousScene?.id, isMobileViewport])
+
+  useEffect(() => {
+    if (!selectedAnswerId) {
+      setReactionBubbleVisible(false)
+      return undefined
+    }
+
+    setReactionBubbleVisible(true)
+    const timeout = window.setTimeout(() => setReactionBubbleVisible(false), 3400)
+    return () => window.clearTimeout(timeout)
+  }, [selectedAnswerId])
 
   const handleSelectAnswer = (answer: MissionRuntimeAnswerRecord) => {
     if (!currentScene) return
@@ -432,7 +544,10 @@ export function MissionRuntime({
     <div className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone}`}>
       <div className="mission-runtime-stage">
         <div className="mission-runtime-background" aria-hidden="true">
-          <div className="mission-runtime-background-layer mission-runtime-background-layer-ambient">
+          <div
+            className="mission-runtime-background-layer mission-runtime-background-layer-ambient"
+            style={currentBackgroundLayerStyle}
+          >
             {currentBackgroundSource ? (
               <img
                 className="mission-runtime-background-image"
@@ -441,24 +556,40 @@ export function MissionRuntime({
                 aria-hidden="true"
                 referrerPolicy="no-referrer"
                 style={currentBackgroundStyle}
+                onError={() =>
+                  setCurrentBackgroundIndex((index) =>
+                    index < currentBackgroundCandidates.length - 1 ? index + 1 : index,
+                  )
+                }
               />
             ) : null}
           </div>
           {previousAsset && (
-            <div className="mission-runtime-background-layer mission-runtime-background-layer-previous">
+            <div
+              className="mission-runtime-background-layer mission-runtime-background-layer-previous"
+              style={previousBackgroundLayerStyle}
+            >
               {previousBackgroundSource ? (
                 <img
                   className="mission-runtime-background-image"
-                  src={previousBackgroundSource}
-                  alt=""
-                  aria-hidden="true"
-                  referrerPolicy="no-referrer"
-                  style={previousBackgroundStyle}
-                />
+                src={previousBackgroundSource}
+                alt=""
+                aria-hidden="true"
+                referrerPolicy="no-referrer"
+                style={previousBackgroundStyle}
+                onError={() =>
+                  setPreviousBackgroundIndex((index) =>
+                    index < previousBackgroundCandidates.length - 1 ? index + 1 : index,
+                  )
+                }
+              />
               ) : null}
             </div>
           )}
-          <div className="mission-runtime-background-layer mission-runtime-background-layer-current">
+          <div
+            className="mission-runtime-background-layer mission-runtime-background-layer-current"
+            style={currentBackgroundLayerStyle}
+          >
             {currentBackgroundSource ? (
               <img
                 className="mission-runtime-background-image"
@@ -467,11 +598,15 @@ export function MissionRuntime({
                 aria-hidden="true"
                 referrerPolicy="no-referrer"
                 style={currentBackgroundStyle}
+                onError={() =>
+                  setCurrentBackgroundIndex((index) =>
+                    index < currentBackgroundCandidates.length - 1 ? index + 1 : index,
+                  )
+                }
               />
             ) : null}
           </div>
           <div className="mission-runtime-global-overlay" />
-          <NarrativeOverlay asset={currentAsset} />
           <div className="mission-runtime-atmosphere" />
           <div className="mission-runtime-vignette" />
         </div>
@@ -569,19 +704,37 @@ export function MissionRuntime({
           </section>
 
           <aside className="mission-runtime-companion-column">
-            {currentScene.companionImageUrl && (
-              <div className="mission-runtime-character" style={companionStyle}>
-                <img src={currentScene.companionImageUrl} alt="Spark companion" />
-              </div>
-            )}
+            <div className="mission-runtime-companion-stack">
+              {reactionBubbleVisible && selectedAnswer && (
+                <div className={`mission-runtime-speech-bubble${selectedAnswer.isCorrect ? ' is-positive' : ' is-retry'}`}>
+                  <strong>{reactionSpeechTitle}</strong>
+                  <p>{reactionSpeechBody}</p>
+                </div>
+              )}
+              {stageCompanionImage && (
+                <div className="mission-runtime-character" style={companionStyle}>
+                  <img src={stageCompanionImage} alt="Spark companion" />
+                </div>
+              )}
+            </div>
             <article className={`mission-runtime-feedback-card${feedbackPulse ? ' is-pulsing' : ''}`}>
               <span className="mission-runtime-feedback-star">
                 <RuntimeIcon iconUrl={currentScene.feedbackIconUrl} alt="Feedback icon">
                   <Sparkles size={16} />
                 </RuntimeIcon>
               </span>
-              <strong>{feedbackTitle}</strong>
-              <p>{feedbackBody}</p>
+              <div className="mission-runtime-feedback-copy">
+                <strong>{feedbackTitle}</strong>
+                <p>{feedbackBody}</p>
+                {selectedAnswer && (
+                  <span className="mission-runtime-feedback-xp">
+                    <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="XP reward icon">
+                      <Star size={16} />
+                    </RuntimeIcon>
+                    +{feedbackXpValue} XP
+                  </span>
+                )}
+              </div>
             </article>
           </aside>
         </div>
@@ -730,9 +883,9 @@ export function MissionRuntime({
                   </span>
                 )}
               </div>
-              {feedbackCompanionImage && (
+              {storyFeedbackCompanionImage && (
                 <div className="mission-runtime-story-feedback-companion">
-                  <img src={feedbackCompanionImage} alt="Spark companion emotional feedback" />
+                  <img src={storyFeedbackCompanionImage} alt="Spark companion emotional feedback" />
                 </div>
               )}
             </div>
