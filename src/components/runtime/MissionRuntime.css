@@ -463,101 +463,11 @@
   position: relative;
   width: min(342px, 100%);
   margin-top: auto;
-  min-height: 430px;
+  min-height: 340px;
   display: flex;
   align-items: flex-end;
   justify-content: flex-end;
   isolation: isolate;
-}
-
-.mission-runtime-speech-bubble {
-  position: absolute;
-  left: var(--runtime-speech-left, 10%);
-  top: var(--runtime-speech-top, 8%);
-  width: min(var(--runtime-speech-width, 286px), calc(100% - 12px));
-  max-width: calc(100% - 12px);
-  min-height: var(--runtime-speech-height, 104px);
-  padding: 18px 20px 16px;
-  border-radius: 24px;
-  border: 1px solid rgba(202, 176, 255, 0.16);
-  background:
-    linear-gradient(180deg, rgba(18, 16, 37, 0.92), rgba(11, 11, 28, 0.88)),
-    radial-gradient(circle at 78% 18%, rgba(255, 203, 117, 0.1), transparent 22%);
-  box-shadow:
-    0 22px 38px rgba(0, 0, 0, 0.22),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(22px);
-  animation: runtimeBubbleRise 320ms ease;
-  z-index: 4;
-}
-
-.mission-runtime-speech-bubble::after {
-  content: '';
-  position: absolute;
-  bottom: -12px;
-  width: 26px;
-  height: 26px;
-  border-right: 1px solid rgba(202, 176, 255, 0.14);
-  border-bottom: 1px solid rgba(202, 176, 255, 0.14);
-  background: rgba(12, 12, 29, 0.92);
-  transform: rotate(40deg) skewX(6deg);
-  border-bottom-right-radius: 10px;
-}
-
-.mission-runtime-speech-bubble.is-left {
-  right: auto;
-}
-
-.mission-runtime-speech-bubble.is-left::after {
-  right: 28px;
-  left: auto;
-}
-
-.mission-runtime-speech-bubble.is-right {
-  right: auto;
-}
-
-.mission-runtime-speech-bubble.is-right::after {
-  left: 28px;
-  right: auto;
-}
-
-.mission-runtime-speech-bubble.is-above {
-  right: auto;
-}
-
-.mission-runtime-speech-bubble.is-above::after {
-  right: 44px;
-  left: auto;
-}
-
-.mission-runtime-speech-bubble strong {
-  display: block;
-  margin-bottom: 6px;
-  color: #fff4ff;
-  font-size: 1.18rem;
-  line-height: 1.08;
-}
-
-.mission-runtime-speech-bubble p {
-  margin: 0;
-  color: rgba(238, 228, 246, 0.84);
-  font-size: 0.98rem;
-  line-height: 1.45;
-}
-
-.mission-runtime-speech-bubble.is-positive {
-  box-shadow:
-    0 24px 42px rgba(0, 0, 0, 0.22),
-    0 0 26px rgba(255, 198, 101, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.mission-runtime-speech-bubble.is-retry {
-  box-shadow:
-    0 24px 42px rgba(0, 0, 0, 0.22),
-    0 0 26px rgba(166, 112, 255, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .mission-runtime-character {
@@ -1462,7 +1372,7 @@
 
   .mission-runtime-feedback-stage {
     width: min(360px, 100%);
-    min-height: 404px;
+    min-height: 316px;
   }
 
   .mission-runtime-character {
@@ -1552,7 +1462,7 @@
 
   .mission-runtime-feedback-stage {
     width: 100%;
-    min-height: 340px;
+    min-height: 292px;
   }
 
   .mission-runtime-character {
@@ -1565,12 +1475,6 @@
     padding: 20px;
     border-radius: 22px;
   }
-
-  .mission-runtime-speech-bubble {
-    width: min(var(--runtime-speech-width, 250px), calc(100% - 10px));
-    max-width: calc(100% - 10px);
-  }
-
   .mission-runtime-feedback-card strong {
     font-size: 1.55rem;
   }

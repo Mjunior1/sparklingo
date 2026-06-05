@@ -144,7 +144,6 @@ import {
   deleteMissionRuntimeScene,
   getMissionRuntimeScenes,
   missionRuntimeFeedbackToneOptions,
-  missionRuntimeSpeechBubblePositionOptions,
   seedDefaultMissionRuntimeScenes,
   upsertMissionRuntimeScene,
   type MissionRuntimeAnswerRecord,
@@ -1258,7 +1257,6 @@ export function AdminScreen({
       scene
         ? {
             ...scene,
-            reactionSpeechSafeArea: { ...scene.reactionSpeechSafeArea },
             answers: scene.answers.map((answer) => ({ ...answer })),
           }
         : createEmptyMissionRuntimeScene(),
@@ -1271,16 +1269,6 @@ export function AdminScreen({
       ...current,
       [key]: {
         ...current[key],
-        [field]: Number(value) || 0,
-      },
-    }))
-  }
-
-  const updateMissionRuntimeSpeechSafeArea = (field: keyof SceneAssetSafeArea, value: string) => {
-    setMissionRuntimeDraft((current) => ({
-      ...current,
-      reactionSpeechSafeArea: {
-        ...current.reactionSpeechSafeArea,
         [field]: Number(value) || 0,
       },
     }))
@@ -2455,7 +2443,7 @@ export function AdminScreen({
                     min="-60"
                     max="60"
                     value={missionRuntimeDraft.companionOffsetY}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, companionOffsetY: Number(event.target.value) || 0 }))}
+                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, companionOffsetY: Number(event.target.value) || -55 }))}
                   />
                 </label>
               </div>
@@ -2494,56 +2482,6 @@ export function AdminScreen({
                   </select>
                 </label>
               </div>
-              <div className="scene-asset-inline-grid">
-                <label>Speech bubble title (positive)
-                  <input
-                    value={missionRuntimeDraft.reactionSpeechPositiveTitle}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, reactionSpeechPositiveTitle: event.target.value }))}
-                  />
-                </label>
-                <label>Speech bubble title (retry)
-                  <input
-                    value={missionRuntimeDraft.reactionSpeechRetryTitle}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, reactionSpeechRetryTitle: event.target.value }))}
-                  />
-                </label>
-              </div>
-                <div className="scene-asset-inline-grid">
-                  <label>Speech bubble body (positive)
-                    <textarea
-                      value={missionRuntimeDraft.reactionSpeechPositiveBody}
-                      onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, reactionSpeechPositiveBody: event.target.value }))}
-                  />
-                </label>
-                <label>Speech bubble body (retry)
-                  <textarea
-                    value={missionRuntimeDraft.reactionSpeechRetryBody}
-                      onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, reactionSpeechRetryBody: event.target.value }))}
-                    />
-                  </label>
-                </div>
-                <div className="scene-asset-inline-grid">
-                  <label>Speech bubble position
-                    <select
-                      value={missionRuntimeDraft.reactionSpeechPosition}
-                      onChange={(event) =>
-                        setMissionRuntimeDraft((current) => ({
-                          ...current,
-                          reactionSpeechPosition: event.target.value as MissionRuntimeSceneRecord['reactionSpeechPosition'],
-                        }))
-                      }
-                    >
-                      {missionRuntimeSpeechBubblePositionOptions.map((item) => (
-                        <option key={item} value={item}>{item}</option>
-                      ))}
-                    </select>
-                  </label>
-                </div>
-                <SafeAreaFieldset
-                  title="Speech bubble safe area"
-                  area={missionRuntimeDraft.reactionSpeechSafeArea}
-                  onChange={updateMissionRuntimeSpeechSafeArea}
-                />
                 <div className="scene-asset-inline-grid">
                   <label>XP badge icon URL
                     <input

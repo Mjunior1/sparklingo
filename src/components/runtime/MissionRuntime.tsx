@@ -300,7 +300,6 @@ export function MissionRuntime({
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 780px)').matches : false,
   )
-  const [reactionBubbleVisible, setReactionBubbleVisible] = useState(false)
   const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0)
   const [previousBackgroundIndex, setPreviousBackgroundIndex] = useState(0)
   const activeSceneRef = useRef<string | null>(null)
@@ -419,25 +418,6 @@ export function MissionRuntime({
         currentScene.feedbackCompanionRetryImageUrl ||
         currentScene.companionImageUrl
     : ''
-  const reactionSpeechTitle = selectedAnswer
-    ? selectedAnswer.isCorrect
-      ? currentScene?.reactionSpeechPositiveTitle || selectedAnswer.feedbackTitle || 'Nice choice!'
-      : currentScene?.reactionSpeechRetryTitle || selectedAnswer.feedbackTitle || 'Keep going!'
-    : ''
-  const reactionSpeechBody = selectedAnswer
-    ? selectedAnswer.isCorrect
-      ? currentScene?.reactionSpeechPositiveBody || selectedAnswer.feedbackBody || 'You sounded confident and natural.'
-      : currentScene?.reactionSpeechRetryBody || selectedAnswer.feedbackBody || 'Try a clearer phrase and keep the rhythm.'
-    : ''
-  const reactionSpeechPosition = currentScene?.reactionSpeechPosition || 'left'
-  const reactionSpeechStyle = currentScene
-    ? ({
-        '--runtime-speech-left': `${currentScene.reactionSpeechSafeArea.x}%`,
-        '--runtime-speech-top': `${currentScene.reactionSpeechSafeArea.y}%`,
-        '--runtime-speech-width': `clamp(170px, ${currentScene.reactionSpeechSafeArea.width}%, 320px)`,
-        '--runtime-speech-height': `clamp(96px, ${currentScene.reactionSpeechSafeArea.height}%, 180px)`,
-      } as CSSProperties)
-    : undefined
 
   const totalXpLabel = totalXp + earnedXp
   const canAdvance = currentScene ? currentScene.answers.length === 0 || Boolean(selectedAnswer) : false
@@ -476,17 +456,6 @@ export function MissionRuntime({
   useEffect(() => {
     setPreviousBackgroundIndex(0)
   }, [previousScene?.id, isMobileViewport])
-
-  useEffect(() => {
-    if (!selectedAnswerId) {
-      setReactionBubbleVisible(false)
-      return undefined
-    }
-
-    setReactionBubbleVisible(true)
-    const timeout = window.setTimeout(() => setReactionBubbleVisible(false), 3400)
-    return () => window.clearTimeout(timeout)
-  }, [selectedAnswerId])
 
   const handleSelectAnswer = (answer: MissionRuntimeAnswerRecord) => {
     if (!currentScene) return
@@ -741,15 +710,6 @@ export function MissionRuntime({
                 {stageCompanionImage && (
                   <div className="mission-runtime-character" style={companionStyle}>
                     <img src={stageCompanionImage} alt="Spark companion" />
-                  </div>
-                )}
-                {reactionBubbleVisible && selectedAnswer && (
-                  <div
-                    className={`mission-runtime-speech-bubble${selectedAnswer.isCorrect ? ' is-positive' : ' is-retry'} is-${reactionSpeechPosition}`}
-                    style={reactionSpeechStyle}
-                  >
-                    <strong>{reactionSpeechTitle}</strong>
-                    <p>{reactionSpeechBody}</p>
                   </div>
                 )}
               </div>

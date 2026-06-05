@@ -9,10 +9,8 @@ import {
   type DocumentData,
 } from 'firebase/firestore'
 import { requireFirebase } from '../lib/firebase'
-import type { SceneAssetSafeArea } from './sceneAssets'
 
 export type MissionRuntimeFeedbackTone = 'encouraging' | 'celebration' | 'recovery' | 'calm'
-export type MissionRuntimeSpeechBubblePosition = 'left' | 'right' | 'above'
 
 export type MissionRuntimeAnswerRecord = {
   id: string
@@ -62,12 +60,6 @@ export type MissionRuntimeSceneRecord = {
   rewardIconUrl: string
   rewardChestIconUrl: string
   xpReward: number
-  reactionSpeechPositiveTitle: string
-  reactionSpeechPositiveBody: string
-  reactionSpeechRetryTitle: string
-  reactionSpeechRetryBody: string
-  reactionSpeechPosition: MissionRuntimeSpeechBubblePosition
-  reactionSpeechSafeArea: SceneAssetSafeArea
   emotionalFeedbackTitle: string
   emotionalFeedbackBody: string
   emotionalFeedbackTone: MissionRuntimeFeedbackTone
@@ -85,18 +77,6 @@ export const missionRuntimeFeedbackToneOptions: MissionRuntimeFeedbackTone[] = [
   'recovery',
   'calm',
 ]
-export const missionRuntimeSpeechBubblePositionOptions: MissionRuntimeSpeechBubblePosition[] = [
-  'left',
-  'right',
-  'above',
-]
-
-const defaultReactionSpeechSafeArea: SceneAssetSafeArea = {
-  x: 10,
-  y: 8,
-  width: 66,
-  height: 24,
-}
 
 const cleanString = (value: unknown) => (typeof value === 'string' ? value.trim() : '')
 const cleanBoolean = (value: unknown, fallback = true) => (typeof value === 'boolean' ? value : fallback)
@@ -107,18 +87,6 @@ const cleanNumber = (value: unknown, fallback = 0) => {
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
 const pickEnum = <T extends string>(value: unknown, allowed: T[], fallback: T): T =>
   typeof value === 'string' && allowed.includes(value as T) ? (value as T) : fallback
-const sanitizeSafeArea = (
-  value: unknown,
-  fallback: SceneAssetSafeArea,
-): SceneAssetSafeArea => {
-  const raw = value && typeof value === 'object' ? (value as Partial<SceneAssetSafeArea>) : {}
-  return {
-    x: clamp(cleanNumber(raw.x, fallback.x), 0, 100),
-    y: clamp(cleanNumber(raw.y, fallback.y), 0, 100),
-    width: clamp(cleanNumber(raw.width, fallback.width), 10, 100),
-    height: clamp(cleanNumber(raw.height, fallback.height), 10, 100),
-  }
-}
 
 const createEmptyAnswer = (id = 'answer-1'): MissionRuntimeAnswerRecord => ({
   id,
@@ -155,7 +123,7 @@ export const createEmptyMissionRuntimeScene = (): MissionRuntimeSceneRecord => (
   companionImageUrl: '',
   companionScale: 100,
   companionOffsetX: 0,
-  companionOffsetY: 0,
+  companionOffsetY: -55,
   companionGlowStrength: 56,
   feedbackCompanionPositiveImageUrl: '',
   feedbackCompanionRetryImageUrl: '',
@@ -168,12 +136,6 @@ export const createEmptyMissionRuntimeScene = (): MissionRuntimeSceneRecord => (
   rewardIconUrl: '',
   rewardChestIconUrl: '',
   xpReward: 25,
-  reactionSpeechPositiveTitle: 'Nice choice!',
-  reactionSpeechPositiveBody: 'You sounded confident and natural.',
-  reactionSpeechRetryTitle: 'Keep going!',
-  reactionSpeechRetryBody: 'Try a clearer phrase and keep the rhythm.',
-  reactionSpeechPosition: 'left',
-  reactionSpeechSafeArea: { ...defaultReactionSpeechSafeArea },
   emotionalFeedbackTitle: 'Boa tentativa!',
   emotionalFeedbackBody: 'Continue. Você está entrando no ritmo da missão.',
   emotionalFeedbackTone: 'encouraging',
@@ -239,7 +201,7 @@ const sanitizeMissionRuntimeScene = (
     companionImageUrl: cleanString(scene.companionImageUrl),
     companionScale: clamp(cleanNumber(scene.companionScale, 100), 50, 180),
     companionOffsetX: clamp(cleanNumber(scene.companionOffsetX, 0), -60, 60),
-    companionOffsetY: clamp(cleanNumber(scene.companionOffsetY, 0), -60, 60),
+    companionOffsetY: clamp(cleanNumber(scene.companionOffsetY, -55), -60, 60),
     companionGlowStrength: clamp(cleanNumber(scene.companionGlowStrength, 56), 0, 100),
     feedbackCompanionPositiveImageUrl: cleanString(scene.feedbackCompanionPositiveImageUrl),
     feedbackCompanionRetryImageUrl: cleanString(scene.feedbackCompanionRetryImageUrl),
@@ -252,18 +214,6 @@ const sanitizeMissionRuntimeScene = (
     rewardIconUrl: cleanString(scene.rewardIconUrl),
     rewardChestIconUrl: cleanString(scene.rewardChestIconUrl),
     xpReward: clamp(cleanNumber(scene.xpReward, 25), 0, 500),
-    reactionSpeechPositiveTitle: cleanString(scene.reactionSpeechPositiveTitle) || 'Nice choice!',
-    reactionSpeechPositiveBody:
-      cleanString(scene.reactionSpeechPositiveBody) || 'You sounded confident and natural.',
-    reactionSpeechRetryTitle: cleanString(scene.reactionSpeechRetryTitle) || 'Keep going!',
-    reactionSpeechRetryBody:
-      cleanString(scene.reactionSpeechRetryBody) || 'Try a clearer phrase and keep the rhythm.',
-    reactionSpeechPosition: pickEnum(
-      scene.reactionSpeechPosition,
-      missionRuntimeSpeechBubblePositionOptions,
-      'left',
-    ),
-    reactionSpeechSafeArea: sanitizeSafeArea(scene.reactionSpeechSafeArea, defaultReactionSpeechSafeArea),
     emotionalFeedbackTitle: cleanString(scene.emotionalFeedbackTitle) || 'Boa tentativa!',
     emotionalFeedbackBody:
       cleanString(scene.emotionalFeedbackBody) || 'Continue. Você está entrando no ritmo da missão.',
@@ -304,17 +254,13 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     companionImageUrl: '/Images/Mascote/Sparklingo.png',
     companionScale: 96,
     companionOffsetX: 9,
-    companionOffsetY: 6,
+    companionOffsetY: -55,
     companionGlowStrength: 54,
     feedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
     feedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     storyFeedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
     storyFeedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     xpReward: 25,
-    reactionSpeechPositiveTitle: 'Nice choice!',
-    reactionSpeechPositiveBody: 'You sounded confident and natural.',
-    reactionSpeechRetryTitle: 'Keep going!',
-    reactionSpeechRetryBody: 'Try a more complete phrase and stay confident.',
     emotionalFeedbackTitle: 'Boa tentativa!',
     emotionalFeedbackBody: 'Tente usar uma frase mais completa. Você conseguiu!',
     emotionalFeedbackTone: 'recovery',
@@ -377,17 +323,13 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     companionImageUrl: '/Images/Mascote/Sparklingo.png',
     companionScale: 96,
     companionOffsetX: 9,
-    companionOffsetY: 6,
+    companionOffsetY: -55,
     companionGlowStrength: 54,
     feedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
     feedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     storyFeedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
     storyFeedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     xpReward: 25,
-    reactionSpeechPositiveTitle: 'Great confidence!',
-    reactionSpeechPositiveBody: 'That answer sounded smooth and natural.',
-    reactionSpeechRetryTitle: 'Boa tentativa!',
-    reactionSpeechRetryBody: 'Ajuste a ideia e tente responder de forma mais direta.',
     emotionalFeedbackTitle: 'Ótimo!',
     emotionalFeedbackBody: 'Resposta natural e confiante. Continue assim.',
     emotionalFeedbackTone: 'celebration',
@@ -450,17 +392,13 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     companionImageUrl: '/Images/Mascote/Sparklingo.png',
     companionScale: 98,
     companionOffsetX: 8,
-    companionOffsetY: 4,
+    companionOffsetY: -55,
     companionGlowStrength: 56,
     feedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
     feedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     storyFeedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
     storyFeedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     xpReward: 30,
-    reactionSpeechPositiveTitle: 'Checkpoint unlocked!',
-    reactionSpeechPositiveBody: 'You are moving through the mission with more confidence.',
-    reactionSpeechRetryTitle: 'Tudo bem.',
-    reactionSpeechRetryBody: 'Respire, reorganize a resposta e siga no seu ritmo.',
     emotionalFeedbackTitle: 'Nice recovery.',
     emotionalFeedbackBody: 'Você está encontrando o ritmo da missão.',
     emotionalFeedbackTone: 'encouraging',
@@ -513,17 +451,13 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     companionImageUrl: '/Images/Mascote/Sparklingo.png',
     companionScale: 94,
     companionOffsetX: 8,
-    companionOffsetY: 6,
+    companionOffsetY: -55,
     companionGlowStrength: 42,
     feedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
     feedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     storyFeedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
     storyFeedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     xpReward: 20,
-    reactionSpeechPositiveTitle: 'Warm choice!',
-    reactionSpeechPositiveBody: 'That sounded calm, polite and natural.',
-    reactionSpeechRetryTitle: 'Quase lá.',
-    reactionSpeechRetryBody: 'Você está perto. Só falta deixar a frase mais natural.',
     emotionalFeedbackTitle: 'Boa tentativa!',
     emotionalFeedbackBody: 'Pequenas escolhas rápidas também constroem confiança.',
     emotionalFeedbackTone: 'calm',
@@ -576,17 +510,13 @@ export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
     companionImageUrl: '/Images/Mascote/Sparklingo.png',
     companionScale: 94,
     companionOffsetX: 7,
-    companionOffsetY: 6,
+    companionOffsetY: -55,
     companionGlowStrength: 38,
     feedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
     feedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     storyFeedbackCompanionPositiveImageUrl: '/Images/Mascote/Sparklingo.png',
     storyFeedbackCompanionRetryImageUrl: '/Images/Mascote/Sparklingo.png',
     xpReward: 20,
-    reactionSpeechPositiveTitle: 'Soft and clear!',
-    reactionSpeechPositiveBody: 'You kept the scene light and natural.',
-    reactionSpeechRetryTitle: 'Continue refinando.',
-    reactionSpeechRetryBody: 'Ajuste uma palavra e mantenha a calma da cena.',
     emotionalFeedbackTitle: 'Excelente resposta.',
     emotionalFeedbackBody: 'Leve, natural e perfeita para a cena.',
     emotionalFeedbackTone: 'celebration',
