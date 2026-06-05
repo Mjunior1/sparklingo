@@ -17,6 +17,14 @@ import {
   UserRound,
   Volume2,
 } from 'lucide-react'
+import type {
+  ListeningExperiencePayload,
+  MultipleChoiceExperiencePayload,
+  RuntimeAnswerOption,
+  RuntimeExperienceContract,
+  RuntimeSceneContract,
+  SpeakingExperiencePayload,
+} from '../../services/learning'
 import type { SceneAssetRecord } from '../../services/sceneAssets'
 import type { MissionRuntimeAnswerRecord, MissionRuntimeSceneRecord } from '../../services/missionRuntime'
 
@@ -34,11 +42,46 @@ export type MissionRuntimeMission = {
 type MissionRuntimeProps = {
   mission: MissionRuntimeMission
   scenes: MissionRuntimeSceneRecord[]
+  sceneContracts?: RuntimeSceneContract[]
   streakDays: number
   totalXp: number
   avatarUrl?: string | null
   onBack: () => void
   onOpenAdmin?: () => void
+}
+
+type RuntimePhase = 'intro' | 'scene' | 'complete'
+type RuntimeSceneStep = 'listening' | 'speaking' | 'feedback'
+
+type RuntimeAnswerViewModel = {
+  id: string
+  text: string
+  translation: string
+  audioUrl: string
+  isCorrect: boolean
+  feedbackTitle: string
+  feedbackBody: string
+  xpReward: number
+}
+
+type RuntimeSceneFlow = {
+  scene: MissionRuntimeSceneRecord
+  contract: RuntimeSceneContract | null
+  interactiveExperience: RuntimeExperienceContract<'multiple_choice'> | RuntimeExperienceContract<'listening'> | null
+  listeningExperience: RuntimeExperienceContract<'listening'> | null
+  speakingExperience: RuntimeExperienceContract<'speaking'> | null
+  feedbackExperience: RuntimeExperienceContract<'emotional_feedback'> | null
+}
+
+type RuntimePromptViewModel = {
+  type: 'multiple_choice' | 'listening' | 'speaking'
+  npc: string
+  question: string
+  translation: string
+  answers: RuntimeAnswerViewModel[]
+  audioUrl: string
+  helperLabel: string
+  helperActionLabel: string
 }
 
 const waveformBars = Array.from({ length: 24 }, (_, index) => 20 + ((index * 17) % 65))
@@ -225,12 +268,119 @@ const playSpeech = (text: string, audioUrl?: string) => {
 
 const buildFeedback = (
   scene: MissionRuntimeSceneRecord,
-  selectedAnswer: MissionRuntimeAnswerRecord | null,
+  selectedAnswer: RuntimeAnswerViewModel | null,
+  feedbackExperience: RuntimeExperienceContract<'emotional_feedback'> | null,
 ) => ({
-  title: selectedAnswer?.feedbackTitle || scene.emotionalFeedbackTitle,
-  body: selectedAnswer?.feedbackBody || scene.emotionalFeedbackBody,
-  xp: selectedAnswer?.xpReward ?? scene.xpReward,
+  title:
+    selectedAnswer?.feedbackTitle ||
+    feedbackExperience?.payload.title ||
+    scene.emotionalFeedbackTitle,
+  body:
+    selectedAnswer?.feedbackBody ||
+    feedbackExperience?.payload.body ||
+    scene.emotionalFeedbackBody,
+  xp:
+    selectedAnswer?.xpReward ??
+    feedbackExperience?.payload.xpReward ??
+    scene.xpReward,
+  tone:
+    feedbackExperience?.payload.tone ||
+    scene.emotionalFeedbackTone,
 })
+
+const getLegacySceneIdFromContract = (contract: RuntimeSceneContract) =>
+  contract.experiences.find((experience) => experience.meta?.legacyRuntimeSceneId)?.meta?.legacyRuntimeSceneId ||
+  contract.scene.id.replace(/^scene-/, '')
+
+const buildRuntimeAnswerViewModel = (
+  answer: RuntimeAnswerOption | MissionRuntimeAnswerRecord,
+): RuntimeAnswerViewModel => ({
+  id: answer.id,
+  text: answer.text,
+  translation: 'translation' in answer ? answer.translation || '' : '',
+  audioUrl: 'audioUrl' in answer ? answer.audioUrl || '' : '',
+  isCorrect: Boolean('isCorrect' in answer ? answer.isCorrect : false),
+  feedbackTitle: 'feedbackTitle' in answer ? answer.feedbackTitle || '' : '',
+  feedbackBody: 'feedbackBody' in answer ? answer.feedbackBody || '' : '',
+  xpReward: 'xpReward' in answer && typeof answer.xpReward === 'number' ? answer.xpReward : 0,
+})
+
+const buildInteractivePrompt = (
+  scene: MissionRuntimeSceneRecord,
+  interactiveExperience: RuntimeSceneFlow['interactiveExperience'],
+): RuntimePromptViewModel => {
+  if (!interactiveExperience) {
+    return {
+      type: 'multiple_choice' as const,
+      npc: scene.character || scene.dialogue,
+      question: scene.question,
+      translation: scene.questionTranslation,
+      answers: scene.answers.map(buildRuntimeAnswerViewModel),
+      audioUrl: scene.audioUrl,
+      helperLabel: 'Dialogue choice',
+      helperActionLabel: 'Ouça a cena',
+    }
+  }
+
+  if (interactiveExperience.type === 'listening') {
+    const payload = interactiveExperience.payload as ListeningExperiencePayload
+
+    return {
+      type: 'listening' as const,
+      npc: payload.npc,
+      question: payload.prompt,
+      translation: payload.translation || '',
+      answers: payload.answers.map(buildRuntimeAnswerViewModel),
+      audioUrl: payload.audio.url,
+      helperLabel: 'Listening moment',
+      helperActionLabel: 'Toque para ouvir',
+    }
+  }
+
+  const payload = interactiveExperience.payload as MultipleChoiceExperiencePayload
+
+  return {
+    type: 'multiple_choice' as const,
+    npc: payload.npc,
+    question: payload.question,
+    translation: payload.translation || '',
+    answers: payload.answers.map(buildRuntimeAnswerViewModel),
+    audioUrl: payload.audio?.url || scene.audioUrl,
+    helperLabel: 'Dialogue choice',
+    helperActionLabel: 'Ouça a cena',
+  }
+}
+
+const buildSpeakingPrompt = (
+  scene: MissionRuntimeSceneRecord,
+  speakingExperience: RuntimeExperienceContract<'speaking'> | null,
+): RuntimePromptViewModel => {
+  if (!speakingExperience) {
+    return {
+      type: 'speaking' as const,
+      npc: scene.character || scene.dialogue,
+      question: 'How would you answer the officer?',
+      translation: 'Escolha a resposta que soe mais natural para continuar a cena.',
+      answers: scene.answers.map(buildRuntimeAnswerViewModel),
+      audioUrl: scene.audioUrl,
+      helperLabel: 'Speaking moment',
+      helperActionLabel: 'Diga sua resposta',
+    }
+  }
+
+  const payload = speakingExperience.payload as SpeakingExperiencePayload
+
+  return {
+    type: 'speaking' as const,
+    npc: payload.npc,
+    question: payload.prompt,
+    translation: payload.translation || '',
+    answers: scene.answers.map(buildRuntimeAnswerViewModel),
+    audioUrl: payload.audio?.url || scene.audioUrl,
+    helperLabel: 'Speaking moment',
+    helperActionLabel: 'Fale com confiança',
+  }
+}
 
 export function MissionRuntimeScenePreviewCard({
   scene,
@@ -277,6 +427,7 @@ export function MissionRuntimeScenePreviewCard({
 export function MissionRuntime({
   mission,
   scenes,
+  sceneContracts = [],
   streakDays,
   totalXp,
   avatarUrl,
@@ -291,8 +442,64 @@ export function MissionRuntime({
     [scenes],
   )
 
+  const sceneFlow = useMemo<RuntimeSceneFlow[]>(() => {
+    if (!sortedScenes.length) return []
+
+    const sceneMap = new Map(sortedScenes.map((scene) => [scene.id, scene]))
+
+    if (sceneContracts.length) {
+      const flows: RuntimeSceneFlow[] = []
+
+      sceneContracts.forEach((contract, index) => {
+          const legacyId = getLegacySceneIdFromContract(contract)
+          const scene = sceneMap.get(legacyId) ?? sortedScenes[index] ?? null
+          if (!scene) return
+
+          flows.push({
+            scene,
+            contract,
+            interactiveExperience:
+              contract.experiences.find(
+                (
+                  experience,
+                ): experience is RuntimeExperienceContract<'multiple_choice'> | RuntimeExperienceContract<'listening'> =>
+                  experience.type === 'multiple_choice' || experience.type === 'listening',
+              ) ?? null,
+            listeningExperience:
+              contract.experiences.find(
+                (experience): experience is RuntimeExperienceContract<'listening'> =>
+                  experience.type === 'listening',
+              ) ?? null,
+            speakingExperience:
+              contract.experiences.find(
+                (experience): experience is RuntimeExperienceContract<'speaking'> =>
+                  experience.type === 'speaking',
+              ) ?? null,
+            feedbackExperience:
+              contract.experiences.find(
+                (experience): experience is RuntimeExperienceContract<'emotional_feedback'> =>
+                  experience.type === 'emotional_feedback',
+              ) ?? null,
+          })
+      })
+
+      return flows
+    }
+
+    return sortedScenes.map((scene) => ({
+      scene,
+      contract: null,
+      interactiveExperience: null,
+      listeningExperience: null,
+      speakingExperience: null,
+      feedbackExperience: null,
+    }))
+  }, [sceneContracts, sortedScenes])
+
+  const [phase, setPhase] = useState<RuntimePhase>('intro')
   const [sceneIndex, setSceneIndex] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({})
+  const [sceneSteps, setSceneSteps] = useState<Record<string, RuntimeSceneStep>>({})
   const [earnedXp, setEarnedXp] = useState(0)
   const [comboCount, setComboCount] = useState(0)
   const [feedbackPulse, setFeedbackPulse] = useState(false)
@@ -315,15 +522,23 @@ export function MissionRuntime({
   }, [])
 
   useEffect(() => {
+    setPhase('intro')
     setSceneIndex(0)
     setSelectedAnswers({})
+    setSceneSteps({})
     setEarnedXp(0)
     setComboCount(0)
     setPreviousSceneId(null)
     activeSceneRef.current = null
   }, [mission.id])
 
-  const currentScene = sortedScenes[sceneIndex] ?? null
+  const currentFlow = sceneFlow[sceneIndex] ?? null
+  const currentScene = currentFlow?.scene ?? null
+  const currentContract = currentFlow?.contract ?? null
+  const interactiveExperience = currentFlow?.interactiveExperience ?? null
+  const listeningExperience = currentFlow?.listeningExperience ?? null
+  const speakingExperience = currentFlow?.speakingExperience ?? null
+  const feedbackExperience = currentFlow?.feedbackExperience ?? null
 
   useEffect(() => {
     if (!currentScene) return
@@ -339,15 +554,45 @@ export function MissionRuntime({
     return undefined
   }, [currentScene])
 
-  const previousScene = sortedScenes.find((scene) => scene.id === previousSceneId) ?? null
+  const previousScene = sceneFlow.find((item) => item.scene.id === previousSceneId)?.scene ?? null
+  const isImmigrationPlayableSlice =
+    currentScene?.sceneNumber === 1 &&
+    /airport/i.test(currentScene.missionTitle || mission.title) &&
+    Boolean(listeningExperience && speakingExperience)
+  const currentSceneStep = currentScene
+    ? sceneSteps[currentScene.id] ?? (isImmigrationPlayableSlice ? 'listening' : 'speaking')
+    : 'speaking'
+  const prompt = currentScene
+    ? currentSceneStep === 'speaking' || currentSceneStep === 'feedback'
+      ? buildSpeakingPrompt(currentScene, speakingExperience)
+      : buildInteractivePrompt(currentScene, interactiveExperience)
+    : null
+  const answerOptions = prompt?.answers ?? []
   const selectedAnswerId = currentScene ? selectedAnswers[currentScene.id] ?? '' : ''
-  const selectedAnswer =
-    currentScene?.answers.find((answer) => answer.id === selectedAnswerId) ?? null
-  const feedback = currentScene ? buildFeedback(currentScene, selectedAnswer) : null
-  const feedbackTitle = selectedAnswer ? feedback?.title || currentScene?.emotionalFeedbackTitle || '' : 'Escolha uma resposta'
-  const feedbackBody = selectedAnswer
-    ? feedback?.body || currentScene?.emotionalFeedbackBody || ''
-    : 'Responda para receber o feedback emocional desta cena.'
+  const selectedAnswer = answerOptions.find((answer) => answer.id === selectedAnswerId) ?? null
+  const feedback = currentScene ? buildFeedback(currentScene, selectedAnswer, feedbackExperience) : null
+  const feedbackTitle =
+    phase === 'scene'
+      ? selectedAnswer
+        ? feedback?.title || currentScene?.emotionalFeedbackTitle || ''
+        : isImmigrationPlayableSlice
+          ? currentSceneStep === 'listening'
+            ? 'Spark is with you.'
+            : 'Answer naturally.'
+          : interactiveExperience?.type === 'listening'
+            ? 'Listen first.'
+            : 'Choose your response.'
+      : ''
+  const feedbackBody =
+    phase === 'scene'
+      ? selectedAnswer
+        ? feedback?.body || currentScene?.emotionalFeedbackBody || ''
+        : isImmigrationPlayableSlice
+          ? currentSceneStep === 'listening'
+            ? 'Take in the officer’s question first. Then respond with calm, natural English.'
+            : 'Pick the response that sounds most real inside this situation.'
+          : 'React to the scene and Spark will guide your next move.'
+      : ''
   const feedbackXpValue = selectedAnswer ? feedback?.xp ?? currentScene?.xpReward ?? 0 : 0
 
   const currentAsset = currentScene ? buildRuntimeAsset(mission, currentScene) : mission.asset
@@ -356,9 +601,20 @@ export function MissionRuntime({
     () => buildRuntimeBackgroundCandidates(currentScene, mission, currentAsset, isMobileViewport),
     [currentAsset, currentScene, isMobileViewport, mission],
   )
+  const currentBackgroundCandidatesKey = useMemo(
+    () => currentBackgroundCandidates.join('||'),
+    [currentBackgroundCandidates],
+  )
   const previousBackgroundCandidates = useMemo(
-    () => (previousAsset ? buildRuntimeBackgroundCandidates(previousScene, mission, previousAsset, isMobileViewport) : []),
+    () =>
+      previousAsset
+        ? buildRuntimeBackgroundCandidates(previousScene, mission, previousAsset, isMobileViewport)
+        : [],
     [isMobileViewport, mission, previousAsset, previousScene],
+  )
+  const previousBackgroundCandidatesKey = useMemo(
+    () => previousBackgroundCandidates.join('||'),
+    [previousBackgroundCandidates],
   )
   const currentBackgroundSource =
     currentBackgroundCandidates[currentBackgroundIndex] ||
@@ -366,16 +622,16 @@ export function MissionRuntime({
   const previousBackgroundSource =
     previousBackgroundCandidates[previousBackgroundIndex] ||
     pickRuntimeBackgroundSource(previousScene, mission, isMobileViewport)
-    const currentBackgroundStyle = currentScene
-      ? ({
-          ...buildRuntimeBackgroundImageStyle(currentScene),
-        } as CSSProperties)
-      : undefined
-    const currentBackgroundContainerStyle = currentScene
-      ? ({
-          ...buildRuntimeBackgroundLayerStyle(currentBackgroundSource, currentScene),
-        } as CSSProperties)
-      : undefined
+  const currentBackgroundStyle = currentScene
+    ? ({
+        ...buildRuntimeBackgroundImageStyle(currentScene),
+      } as CSSProperties)
+    : undefined
+  const currentBackgroundContainerStyle = currentScene
+    ? ({
+        ...buildRuntimeBackgroundLayerStyle(currentBackgroundSource, currentScene),
+      } as CSSProperties)
+    : undefined
   const currentBackgroundLayerStyle = currentScene
     ? ({
         ...buildRuntimeBackgroundLayerStyle(currentBackgroundSource, currentScene),
@@ -391,17 +647,38 @@ export function MissionRuntime({
         ...buildRuntimeBackgroundLayerStyle(previousBackgroundSource, previousScene),
       } as CSSProperties)
     : undefined
+
+  useEffect(() => {
+    setCurrentBackgroundIndex(0)
+  }, [currentScene?.id, currentBackgroundCandidatesKey, isMobileViewport])
+
+  useEffect(() => {
+    setPreviousBackgroundIndex(0)
+  }, [previousScene?.id, previousBackgroundCandidatesKey, isMobileViewport])
+
   const rewardBadgeIconUrl = currentScene?.rewardIconUrl
   const rewardChestIconUrl = currentScene?.rewardChestIconUrl || currentScene?.rewardIconUrl
-  const progressPercent = currentScene
-    ? Math.min(100, Math.max(0, (currentScene.sceneNumber / Math.max(1, currentScene.sceneTotal)) * 100))
-    : 0
-  const rewardProgressCount = currentScene
-    ? Math.max(
-        0,
-        Math.min(currentScene.sceneTotal, currentScene.sceneNumber - 1 + (selectedAnswer?.isCorrect ? 1 : 0)),
-      )
-    : 0
+  const totalSceneCount = Math.max(1, sceneFlow.length || currentScene?.sceneTotal || mission.sceneCount || 1)
+  const displaySceneNumber =
+    phase === 'intro'
+      ? 1
+      : phase === 'complete'
+        ? isImmigrationPlayableSlice
+          ? 1
+          : totalSceneCount
+        : sceneIndex + 1
+  const progressPercent =
+    phase === 'intro'
+      ? 0
+      : Math.min(100, Math.max(0, (displaySceneNumber / totalSceneCount) * 100))
+  const rewardProgressCount =
+    phase === 'complete'
+      ? isImmigrationPlayableSlice
+        ? 1
+        : totalSceneCount
+      : phase === 'intro'
+        ? 0
+        : Math.max(0, Math.min(totalSceneCount, sceneIndex + (selectedAnswer?.isCorrect ? 1 : 0)))
   const stageCompanionImage = currentScene
     ? selectedAnswer
       ? selectedAnswer.isCorrect
@@ -418,15 +695,35 @@ export function MissionRuntime({
         currentScene.feedbackCompanionRetryImageUrl ||
         currentScene.companionImageUrl
     : ''
-
   const totalXpLabel = totalXp + earnedXp
-  const canAdvance = currentScene ? currentScene.answers.length === 0 || Boolean(selectedAnswer) : false
-  const rewardDots = currentScene ? Array.from({ length: currentScene.sceneTotal }) : []
-  const rewardLabel = !selectedAnswer
-    ? 'Checkpoint'
-    : selectedAnswer.isCorrect
-      ? 'Excelente!'
-      : 'Boa tentativa!'
+  const completedSceneCount = isImmigrationPlayableSlice ? 1 : totalSceneCount
+  const canAdvance =
+    phase === 'intro'
+      ? true
+      : phase === 'complete'
+        ? true
+        : isImmigrationPlayableSlice
+          ? currentSceneStep === 'listening'
+            ? true
+            : currentSceneStep === 'speaking'
+              ? Boolean(selectedAnswer)
+              : true
+          : answerOptions.length === 0 || Boolean(selectedAnswer)
+  const rewardDots = Array.from({ length: totalSceneCount })
+  const rewardLabel =
+    phase === 'intro'
+      ? 'Mission ready'
+      : phase === 'complete'
+        ? isImmigrationPlayableSlice
+          ? 'Checkpoint complete'
+          : 'Mission complete'
+        : isImmigrationPlayableSlice && currentSceneStep === 'listening'
+          ? 'Listen first'
+          : !selectedAnswer
+          ? 'Checkpoint'
+          : selectedAnswer.isCorrect
+            ? 'Excelente!'
+            : 'Boa tentativa!'
   const companionStyle = currentScene
     ? ({
         '--runtime-companion-scale': `${currentScene.companionScale / 100}`,
@@ -448,17 +745,23 @@ export function MissionRuntime({
         transform: `translate3d(${currentScene.backgroundOffsetX}%, ${currentScene.backgroundOffsetY}%, 0) scale(${currentScene.backgroundScale / 100})`,
       } as CSSProperties)
     : undefined
+  const introCompanionImage = currentScene?.companionImageUrl || ''
+  const introWorldTitle = currentContract?.world.title || 'Airport Survival'
+  const introSceneTitles = sceneFlow.map((item) => item.scene.title)
+  const topbarXpValue = phase === 'complete' ? earnedXp || currentScene?.xpReward || 0 : selectedAnswer ? feedbackXpValue : currentScene?.xpReward || 0
+  const nextTeaserScene =
+    currentScene?.nextSceneId
+      ? sceneFlow.find((item) => item.scene.id === currentScene.nextSceneId)?.scene ??
+        sceneFlow[sceneIndex + 1]?.scene ??
+        null
+      : sceneFlow[sceneIndex + 1]?.scene ?? null
+  const completionTitle = isImmigrationPlayableSlice ? 'You cleared immigration.' : `${mission.title} complete.`
+  const completionBody = isImmigrationPlayableSlice
+    ? 'You answered the officer, kept your confidence and moved one step deeper into the airport.'
+    : 'You survived the airport with more confidence, clearer English and visible progress.'
 
-  useEffect(() => {
-    setCurrentBackgroundIndex(0)
-  }, [currentScene?.id, isMobileViewport])
-
-  useEffect(() => {
-    setPreviousBackgroundIndex(0)
-  }, [previousScene?.id, isMobileViewport])
-
-  const handleSelectAnswer = (answer: MissionRuntimeAnswerRecord) => {
-    if (!currentScene) return
+  const handleSelectAnswer = (answer: RuntimeAnswerViewModel) => {
+    if (!currentScene || phase !== 'scene') return
 
     const wasSelected = selectedAnswers[currentScene.id]
     if (wasSelected === answer.id) {
@@ -473,7 +776,7 @@ export function MissionRuntime({
 
     setEarnedXp((current) => {
       if (wasSelected) {
-        const previousAnswer = currentScene.answers.find((item) => item.id === wasSelected)
+        const previousAnswer = answerOptions.find((item) => item.id === wasSelected)
         return current - (previousAnswer?.xpReward ?? 0) + answer.xpReward
       }
       return current + answer.xpReward
@@ -482,22 +785,106 @@ export function MissionRuntime({
     setComboCount((current) => (answer.isCorrect ? current + 1 : Math.max(0, current - 1)))
     setFeedbackPulse(true)
     window.setTimeout(() => setFeedbackPulse(false), 520)
+    if (isImmigrationPlayableSlice) {
+      setSceneSteps((current) => ({
+        ...current,
+        [currentScene.id]: 'feedback',
+      }))
+    }
     playSpeech(answer.text, answer.audioUrl)
   }
 
   const goToNextScene = () => {
+    if (phase === 'intro') {
+      if (currentScene && isImmigrationPlayableSlice) {
+        setSceneSteps((current) => ({
+          ...current,
+          [currentScene.id]: 'listening',
+        }))
+      }
+      setPhase('scene')
+      return
+    }
+
+    if (phase === 'complete') {
+      onBack()
+      return
+    }
+
     if (!currentScene) return
+
+    if (isImmigrationPlayableSlice) {
+      if (currentSceneStep === 'listening') {
+        playSpeech(prompt?.question || currentScene.question, prompt?.audioUrl || currentScene.audioUrl)
+        setSceneSteps((current) => ({
+          ...current,
+          [currentScene.id]: 'speaking',
+        }))
+        return
+      }
+
+      if (currentSceneStep === 'speaking') {
+        if (!selectedAnswer) return
+        setSceneSteps((current) => ({
+          ...current,
+          [currentScene.id]: 'feedback',
+        }))
+        return
+      }
+
+      setPhase('complete')
+      return
+    }
+
     const linkedIndex = currentScene.nextSceneId
-      ? sortedScenes.findIndex((scene) => scene.id === currentScene.nextSceneId)
+      ? sceneFlow.findIndex((item) => item.scene.id === currentScene.nextSceneId)
       : -1
-    const nextIndex =
-      linkedIndex >= 0 ? linkedIndex : Math.min(sortedScenes.length - 1, sceneIndex + 1)
+    const nextIndex = linkedIndex >= 0 ? linkedIndex : sceneIndex + 1
+
+    if (nextIndex >= sceneFlow.length) {
+      setPhase('complete')
+      return
+    }
+
     setSceneIndex(nextIndex)
   }
 
   const skipScene = () => {
-    if (!sortedScenes.length) return
-    setSceneIndex((current) => Math.min(sortedScenes.length - 1, current + 1))
+    if (!sceneFlow.length) return
+    if (phase === 'intro') {
+      if (currentScene && isImmigrationPlayableSlice) {
+        setSceneSteps((current) => ({
+          ...current,
+          [currentScene.id]: 'listening',
+        }))
+      }
+      setPhase('scene')
+      return
+    }
+
+    if (isImmigrationPlayableSlice) {
+      setPhase('complete')
+      return
+    }
+
+    const nextIndex = Math.min(sceneFlow.length, sceneIndex + 1)
+    if (nextIndex >= sceneFlow.length) {
+      setPhase('complete')
+      return
+    }
+
+    setSceneIndex(nextIndex)
+  }
+
+  const restartMission = () => {
+    setPhase('intro')
+    setSceneIndex(0)
+    setSelectedAnswers({})
+    setSceneSteps({})
+    setEarnedXp(0)
+    setComboCount(0)
+    setPreviousSceneId(null)
+    activeSceneRef.current = null
   }
 
   if (!currentScene) {
@@ -524,13 +911,10 @@ export function MissionRuntime({
   }
 
   return (
-      <div className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone}`}>
-        <div className="mission-runtime-stage">
-          <div className="mission-runtime-background" aria-hidden="true" style={currentBackgroundContainerStyle}>
-            <div
-              className="mission-runtime-background-layer mission-runtime-background-layer-ambient"
-              style={currentBackgroundLayerStyle}
-            >
+    <div className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone}`}>
+      <div className="mission-runtime-stage">
+        <div className="mission-runtime-background" aria-hidden="true" style={currentBackgroundContainerStyle}>
+          <div className="mission-runtime-background-layer mission-runtime-background-layer-ambient" style={currentBackgroundLayerStyle}>
             {currentBackgroundSource ? (
               <img
                 className="mission-runtime-background-image"
@@ -547,32 +931,26 @@ export function MissionRuntime({
               />
             ) : null}
           </div>
-          {previousAsset && (
-            <div
-              className="mission-runtime-background-layer mission-runtime-background-layer-previous"
-              style={previousBackgroundLayerStyle}
-            >
+          {previousAsset ? (
+            <div className="mission-runtime-background-layer mission-runtime-background-layer-previous" style={previousBackgroundLayerStyle}>
               {previousBackgroundSource ? (
                 <img
                   className="mission-runtime-background-image"
-                src={previousBackgroundSource}
-                alt=""
-                aria-hidden="true"
-                referrerPolicy="no-referrer"
-                style={previousBackgroundStyle}
-                onError={() =>
-                  setPreviousBackgroundIndex((index) =>
-                    index < previousBackgroundCandidates.length - 1 ? index + 1 : index,
-                  )
-                }
-              />
+                  src={previousBackgroundSource}
+                  alt=""
+                  aria-hidden="true"
+                  referrerPolicy="no-referrer"
+                  style={previousBackgroundStyle}
+                  onError={() =>
+                    setPreviousBackgroundIndex((index) =>
+                      index < previousBackgroundCandidates.length - 1 ? index + 1 : index,
+                    )
+                  }
+                />
               ) : null}
             </div>
-          )}
-          <div
-            className="mission-runtime-background-layer mission-runtime-background-layer-current"
-            style={currentBackgroundLayerStyle}
-          >
+          ) : null}
+          <div className="mission-runtime-background-layer mission-runtime-background-layer-current" style={currentBackgroundLayerStyle}>
             {currentBackgroundSource ? (
               <img
                 className="mission-runtime-background-image"
@@ -600,7 +978,7 @@ export function MissionRuntime({
             {mission.title}
           </button>
           <div className="mission-runtime-topbar-pill">
-            {currentScene.chapter} • Scene {currentScene.sceneNumber} of {currentScene.sceneTotal}
+            {currentScene.chapter} • Scene {displaySceneNumber} of {totalSceneCount}
           </div>
           <div className="mission-runtime-progress-head">
             <span>Scene Progress</span>
@@ -608,14 +986,14 @@ export function MissionRuntime({
               <span style={{ width: `${progressPercent}%` }} />
             </div>
             <strong>
-              {currentScene.sceneNumber}/{currentScene.sceneTotal}
+              {Math.min(displaySceneNumber, totalSceneCount)}/{totalSceneCount}
             </strong>
           </div>
           <div className="mission-runtime-topbar-pill mission-runtime-topbar-pill-xp">
             <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="XP reward icon">
               <Star size={15} />
             </RuntimeIcon>
-            +{feedback?.xp ?? currentScene.xpReward} XP
+            +{topbarXpValue} XP
           </div>
           <div className="mission-runtime-topbar-status">
             <div className="mission-runtime-status-pill">
@@ -638,296 +1016,473 @@ export function MissionRuntime({
           </div>
         </header>
 
-        <div className="mission-runtime-main">
-          <section className="mission-runtime-dialogue">
-            <article className="mission-runtime-prompt-card">
-              <div className="mission-runtime-prompt-head">
-                <span>{currentScene.character}</span>
-                <button type="button" onClick={() => playSpeech(currentScene.question, currentScene.audioUrl)} aria-label="Play prompt audio">
-                  <RuntimeIcon iconUrl={currentScene.promptAudioIconUrl} alt="Prompt audio icon">
-                    <Volume2 size={18} />
-                  </RuntimeIcon>
-                </button>
-              </div>
-              <h1>{currentScene.question}</h1>
-              <p>{currentScene.questionTranslation}</p>
-            </article>
-
-            <div className="mission-runtime-dots" aria-hidden="true">
-              <span className={selectedAnswer ? 'is-active' : ''} />
-              <span className={selectedAnswer ? 'is-active' : ''} />
-              <span className={selectedAnswer ? 'is-active' : ''} />
+        {phase === 'intro' ? (
+          <>
+            <div className="mission-runtime-main mission-runtime-main-phase">
+              <section className="mission-runtime-phase-panel">
+                <p className="mission-runtime-phase-kicker">{introWorldTitle}</p>
+                <h1>{mission.title}</h1>
+                <p>
+                  You landed inside a noisy terminal. Answer clearly, recover when pressure rises and let Spark guide
+                  you through the airport.
+                </p>
+                <div className="mission-runtime-phase-route">
+                  {introSceneTitles.map((title) => (
+                    <span key={title}>{title}</span>
+                  ))}
+                </div>
+                <div className="mission-runtime-phase-note">
+                  <strong>Spark joins you at key moments.</strong>
+                  <p>Not to explain grammar, but to keep your confidence moving when the scene gets tense.</p>
+                </div>
+              </section>
+              <aside className="mission-runtime-phase-side">
+                {introCompanionImage ? (
+                  <div className="mission-runtime-phase-companion">
+                    <img src={introCompanionImage} alt="Spark companion" />
+                  </div>
+                ) : null}
+              </aside>
             </div>
-
-            <div className="mission-runtime-answers">
-              {currentScene.answers.map((answer) => (
-                <button
-                  key={answer.id}
-                  className={`mission-runtime-answer${selectedAnswer?.id === answer.id ? ' is-selected' : ''}`}
-                  type="button"
-                  onClick={() => handleSelectAnswer(answer)}
-                >
-                  <span className="mission-runtime-answer-audio">
-                    <RuntimeIcon iconUrl={currentScene.answerAudioIconUrl} alt="Answer audio icon">
-                      <AudioLines size={18} />
+            <div className="mission-runtime-footer">
+              <button className="mission-runtime-secondary" type="button" onClick={skipScene}>
+                <Play size={16} />
+                Pular intro
+              </button>
+              <div className="mission-runtime-reward-rail">
+                <div className="mission-runtime-reward-core">
+                  <span className="mission-runtime-reward-badge">
+                    <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="Reward badge icon">
+                      <Star size={16} />
                     </RuntimeIcon>
                   </span>
-                  <span className="mission-runtime-answer-copy">
-                    <strong>{answer.text}</strong>
-                    <small>{answer.translation}</small>
-                  </span>
-                  {selectedAnswer?.id === answer.id && (
-                    <span className="mission-runtime-answer-check">
-                      <Check size={18} />
-                    </span>
-                  )}
-                </button>
-              ))}
+                  <div>
+                    <small>Mission ready</small>
+                    <strong>3 scenes</strong>
+                  </div>
+                </div>
+                <div className="mission-runtime-reward-dots">
+                  {rewardDots.map((_, index) => (
+                    <span key={`intro-${index}`} className={index < rewardProgressCount ? 'is-filled' : ''} />
+                  ))}
+                </div>
+                <div className="mission-runtime-reward-chest">
+                  <RuntimeIcon iconUrl={rewardChestIconUrl} alt="Reward chest icon">
+                    <Gift size={18} />
+                  </RuntimeIcon>
+                </div>
+              </div>
+              <button className="mission-runtime-primary" type="button" onClick={goToNextScene}>
+                Start mission
+                <ArrowRight size={18} />
+              </button>
             </div>
-          </section>
+          </>
+        ) : phase === 'complete' ? (
+          <>
+            <div className="mission-runtime-main mission-runtime-main-phase">
+              <section className="mission-runtime-phase-panel mission-runtime-phase-panel-complete">
+                <p className="mission-runtime-phase-kicker">{introWorldTitle}</p>
+                <h1>{completionTitle}</h1>
+                <p>{completionBody}</p>
+                <div className="mission-runtime-phase-stats">
+                  <div>
+                    <small>XP earned</small>
+                    <strong>+{earnedXp}</strong>
+                  </div>
+                  <div>
+                    <small>Scenes cleared</small>
+                    <strong>{completedSceneCount}</strong>
+                  </div>
+                  <div>
+                    <small>Confidence loop</small>
+                    <strong>{Math.max(comboCount, 1)}x</strong>
+                  </div>
+                </div>
+                {isImmigrationPlayableSlice && nextTeaserScene ? (
+                  <div className="mission-runtime-next-teaser">
+                    <small>Next scene teaser</small>
+                    <strong>{nextTeaserScene.title}</strong>
+                    <p>{nextTeaserScene.subtitle || 'A new problem is waiting just beyond the checkpoint.'}</p>
+                  </div>
+                ) : null}
+              </section>
+              <aside className="mission-runtime-phase-side">
+                {stageCompanionImage ? (
+                  <div className="mission-runtime-phase-companion mission-runtime-phase-companion-complete">
+                    <img src={stageCompanionImage} alt="Spark celebrating the mission" />
+                  </div>
+                ) : null}
+              </aside>
+            </div>
+            <div className="mission-runtime-footer">
+              <button className="mission-runtime-secondary" type="button" onClick={restartMission}>
+                <Play size={16} />
+                Replay mission
+              </button>
+              <div className="mission-runtime-reward-rail">
+                <div className="mission-runtime-reward-core">
+                  <span className="mission-runtime-reward-badge">
+                    <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="Reward badge icon">
+                      <Star size={16} />
+                    </RuntimeIcon>
+                  </span>
+                  <div>
+                    <small>Mission complete</small>
+                    <strong>+{earnedXp} XP</strong>
+                  </div>
+                </div>
+                <div className="mission-runtime-reward-dots">
+                  {rewardDots.map((_, index) => (
+                    <span key={`complete-${index}`} className={index < rewardProgressCount ? 'is-filled' : ''} />
+                  ))}
+                </div>
+                <div className="mission-runtime-reward-chest">
+                  <RuntimeIcon iconUrl={rewardChestIconUrl} alt="Reward chest icon">
+                    <Gift size={18} />
+                  </RuntimeIcon>
+                </div>
+              </div>
+              <button className="mission-runtime-primary" type="button" onClick={onBack}>
+                {isImmigrationPlayableSlice ? 'Back home' : 'Back home'}
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="mission-runtime-main">
+              <section className="mission-runtime-dialogue">
+                <article className="mission-runtime-prompt-card">
+                  <div className="mission-runtime-prompt-head">
+                    <span>{prompt?.npc || currentScene.character}</span>
+                    <button
+                      type="button"
+                      onClick={() => playSpeech(prompt?.question || currentScene.question, prompt?.audioUrl || currentScene.audioUrl)}
+                      aria-label="Play prompt audio"
+                    >
+                      <RuntimeIcon iconUrl={currentScene.promptAudioIconUrl} alt="Prompt audio icon">
+                        <Volume2 size={18} />
+                      </RuntimeIcon>
+                    </button>
+                  </div>
+                  <h1>{prompt?.question || currentScene.question}</h1>
+                  <p>{prompt?.translation || currentScene.questionTranslation}</p>
+                </article>
 
-            <aside className="mission-runtime-companion-column">
-              <div className="mission-runtime-feedback-stage">
-                <article className={`mission-runtime-feedback-card${feedbackPulse ? ' is-pulsing' : ''}`}>
-                  <span className="mission-runtime-feedback-star">
-                    <RuntimeIcon iconUrl={currentScene.feedbackIconUrl} alt="Feedback icon">
+                <div className="mission-runtime-dots" aria-hidden="true">
+                  <span className={currentSceneStep !== 'listening' ? 'is-active' : ''} />
+                  <span className={currentSceneStep === 'feedback' || Boolean(selectedAnswer) ? 'is-active' : ''} />
+                  <span className={currentSceneStep === 'feedback' ? 'is-active' : ''} />
+                </div>
+
+                <div className="mission-runtime-answers">
+                  {isImmigrationPlayableSlice && currentSceneStep === 'listening' ? (
+                    <button
+                      className="mission-runtime-listening-panel"
+                      type="button"
+                      onClick={() => goToNextScene()}
+                    >
+                      <span className="mission-runtime-listening-audio">
+                        <RuntimeIcon iconUrl={currentScene.promptAudioIconUrl} alt="Listening audio icon">
+                          <Volume2 size={18} />
+                        </RuntimeIcon>
+                      </span>
+                      <span className="mission-runtime-listening-copy">
+                        <strong>{prompt?.helperLabel || 'Listening moment'}</strong>
+                        <small>Hear the officer first, then answer naturally.</small>
+                      </span>
+                      <span className="mission-runtime-answer-check">
+                        <ArrowRight size={18} />
+                      </span>
+                    </button>
+                  ) : (
+                    answerOptions.map((answer) => (
+                      <button
+                        key={answer.id}
+                        className={`mission-runtime-answer${selectedAnswer?.id === answer.id ? ' is-selected' : ''}`}
+                        type="button"
+                        onClick={() => handleSelectAnswer(answer)}
+                      >
+                        <span className="mission-runtime-answer-audio">
+                          <RuntimeIcon iconUrl={currentScene.answerAudioIconUrl} alt="Answer audio icon">
+                            {prompt?.type === 'listening' ? <Volume2 size={18} /> : <AudioLines size={18} />}
+                          </RuntimeIcon>
+                        </span>
+                        <span className="mission-runtime-answer-copy">
+                          <strong>{answer.text}</strong>
+                          <small>{answer.translation}</small>
+                        </span>
+                        {selectedAnswer?.id === answer.id ? (
+                          <span className="mission-runtime-answer-check">
+                            <Check size={18} />
+                          </span>
+                        ) : null}
+                      </button>
+                    ))
+                  )}
+                </div>
+              </section>
+
+              <aside className="mission-runtime-companion-column">
+                <div className="mission-runtime-feedback-stage">
+                  <article className={`mission-runtime-feedback-card${feedbackPulse ? ' is-pulsing' : ''}`}>
+                    <span className="mission-runtime-feedback-star">
+                      <RuntimeIcon iconUrl={currentScene.feedbackIconUrl} alt="Feedback icon">
+                        <Sparkles size={16} />
+                      </RuntimeIcon>
+                    </span>
+                    <div className="mission-runtime-feedback-copy">
+                      <strong>{feedbackTitle}</strong>
+                      <p>{feedbackBody}</p>
+                      {selectedAnswer ? (
+                        <span className="mission-runtime-feedback-xp">
+                          <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="XP reward icon">
+                            <Star size={16} />
+                          </RuntimeIcon>
+                          +{feedbackXpValue} XP
+                        </span>
+                      ) : null}
+                    </div>
+                  </article>
+                  {stageCompanionImage ? (
+                    <div className="mission-runtime-character" style={companionStyle}>
+                      <img src={stageCompanionImage} alt="Spark companion" />
+                    </div>
+                  ) : null}
+                </div>
+              </aside>
+            </div>
+
+            <div className="mission-runtime-footer">
+              <button className="mission-runtime-secondary" type="button" onClick={skipScene}>
+                <Play size={16} />
+                Pular cena
+              </button>
+
+              <div className="mission-runtime-reward-rail">
+                <div className="mission-runtime-reward-core">
+                  <span className="mission-runtime-reward-badge">
+                    <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="Reward badge icon">
+                      <Star size={16} />
+                    </RuntimeIcon>
+                  </span>
+                  <div>
+                    <small>{rewardLabel}</small>
+                    <strong>+{selectedAnswer ? feedbackXpValue : currentScene.xpReward} XP</strong>
+                  </div>
+                </div>
+                <div className="mission-runtime-reward-dots">
+                  {rewardDots.map((_, index) => (
+                    <span key={`${currentScene.id}-${index}`} className={index < rewardProgressCount ? 'is-filled' : ''} />
+                  ))}
+                </div>
+                <div className="mission-runtime-reward-chest">
+                  <RuntimeIcon iconUrl={rewardChestIconUrl} alt="Reward chest icon">
+                    <Gift size={18} />
+                  </RuntimeIcon>
+                </div>
+              </div>
+
+              <button className="mission-runtime-primary" type="button" disabled={!canAdvance} onClick={goToNextScene}>
+                {isImmigrationPlayableSlice
+                  ? currentSceneStep === 'listening'
+                    ? 'I understood'
+                    : currentSceneStep === 'feedback'
+                      ? 'See what happens next'
+                      : 'Continue'
+                  : sceneIndex >= totalSceneCount - 1
+                    ? 'Complete mission'
+                    : 'Próxima'}
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {phase === 'scene' ? (
+        <>
+          <section className="mission-runtime-story-grid">
+            <div className="mission-runtime-section-head">
+              <span>EXPERIÊNCIA DA MISSÃO</span>
+            </div>
+            <div className="mission-runtime-story-cards">
+              <article className="mission-runtime-story-card">
+                <span className="mission-runtime-story-label">Pergunta e contexto</span>
+                <div className="mission-runtime-context-scene">
+                  {storyContextImageSource ? (
+                    <img
+                      className="mission-runtime-context-image"
+                      src={storyContextImageSource}
+                      alt=""
+                      aria-hidden="true"
+                      referrerPolicy="no-referrer"
+                      style={storyContextStyle}
+                    />
+                  ) : null}
+                  <div className="mission-runtime-context-overlay" />
+                  <div className="mission-runtime-context-prompt">
+                    <div className="mission-runtime-context-head">
+                      <span>{prompt?.npc || currentScene.character}</span>
+                      <button
+                        type="button"
+                        onClick={() => playSpeech(prompt?.question || currentScene.question, prompt?.audioUrl || currentScene.audioUrl)}
+                        aria-label="Play prompt audio"
+                      >
+                        <RuntimeIcon iconUrl={currentScene.promptAudioIconUrl} alt="Voice prompt icon">
+                          <Volume2 size={16} />
+                        </RuntimeIcon>
+                      </button>
+                    </div>
+                    <strong>{prompt?.question || currentScene.question}</strong>
+                    <p>{prompt?.translation || currentScene.questionTranslation}</p>
+                  </div>
+                  <button
+                    className="mission-runtime-story-voice mission-runtime-story-voice-wave"
+                    type="button"
+                    onClick={() => playSpeech(prompt?.question || currentScene.question, prompt?.audioUrl || currentScene.audioUrl)}
+                  >
+                    <span className="mission-runtime-story-voice-orb">
+                      <RuntimeIcon iconUrl={currentScene.promptAudioIconUrl} alt="Voice prompt icon">
+                        {prompt?.type === 'listening' ? <Volume2 size={16} /> : <Mic size={16} />}
+                      </RuntimeIcon>
+                    </span>
+                    <span className="mission-runtime-story-voice-line" aria-hidden="true">
+                      {waveformBars.slice(0, 18).map((height, index) => (
+                        <i
+                          key={`${currentScene.id}-prompt-wave-${index}`}
+                          style={{ height: `${Math.max(20, height - 6)}%`, animationDelay: `${index * 55}ms` }}
+                        />
+                      ))}
+                    </span>
+                    <span className="mission-runtime-story-voice-text">{prompt?.helperActionLabel || 'Toque para falar'}</span>
+                  </button>
+                </div>
+              </article>
+
+              <article className="mission-runtime-story-card mission-runtime-story-card-response">
+                <span className="mission-runtime-story-label">Resposta do usuário</span>
+                <div className="mission-runtime-story-response-card">
+                  <small>YOU</small>
+                  <strong>{selectedAnswer?.text || 'Choose a response to keep the scene moving.'}</strong>
+                  <p>{selectedAnswer?.translation || 'Your selected response will appear here with confirmation and audio.'}</p>
+                  <button
+                    type="button"
+                    className="mission-runtime-mini-audio"
+                    onClick={() => selectedAnswer && playSpeech(selectedAnswer.text, selectedAnswer.audioUrl)}
+                    disabled={!selectedAnswer}
+                  >
+                    <RuntimeIcon iconUrl={currentScene.answerAudioIconUrl} alt="Selected answer audio icon">
+                      <Volume2 size={16} />
+                    </RuntimeIcon>
+                  </button>
+                </div>
+                <div className="mission-runtime-waveform-card">
+                  <div className="mission-runtime-waveform">
+                    {waveformBars.map((height, index) => (
+                      <span
+                        key={`${currentScene.id}-wave-${index}`}
+                        style={{ height: `${height}%`, animationDelay: `${index * 40}ms` }}
+                      />
+                    ))}
+                  </div>
+                  <span className={`mission-runtime-waveform-check${selectedAnswer ? ' is-visible' : ''}`}>
+                    <Check size={16} />
+                  </span>
+                </div>
+              </article>
+
+              <article className="mission-runtime-story-card mission-runtime-story-card-feedback">
+                <span className="mission-runtime-story-label">Feedback emocional</span>
+                <div className="mission-runtime-story-feedback-card">
+                  <span className="mission-runtime-story-feedback-star">
+                    <RuntimeIcon iconUrl={currentScene.feedbackIconUrl} alt="Feedback sparkle icon">
                       <Sparkles size={16} />
                     </RuntimeIcon>
                   </span>
-                  <div className="mission-runtime-feedback-copy">
+                  <div className="mission-runtime-story-feedback-copy">
                     <strong>{feedbackTitle}</strong>
                     <p>{feedbackBody}</p>
-                    {selectedAnswer && (
-                      <span className="mission-runtime-feedback-xp">
+                    {selectedAnswer ? (
+                      <span className="mission-runtime-story-feedback-xp">
                         <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="XP reward icon">
                           <Star size={16} />
                         </RuntimeIcon>
                         +{feedbackXpValue} XP
                       </span>
-                    )}
+                    ) : null}
                   </div>
-                </article>
-                {stageCompanionImage && (
-                  <div className="mission-runtime-character" style={companionStyle}>
-                    <img src={stageCompanionImage} alt="Spark companion" />
+                  {storyFeedbackCompanionImage ? (
+                    <div className="mission-runtime-story-feedback-companion">
+                      <img src={storyFeedbackCompanionImage} alt="Spark companion emotional feedback" />
+                    </div>
+                  ) : null}
+                </div>
+              </article>
+            </div>
+          </section>
+
+          <section className="mission-runtime-system-grid">
+            <div className="mission-runtime-section-head">
+              <span>SISTEMAS INTEGRADOS</span>
+            </div>
+            <div className="mission-runtime-system-cards">
+              <article className="mission-runtime-system-card">
+                <div className="mission-runtime-system-icon">
+                  <Sparkles size={18} />
+                </div>
+                <strong>Feedback Adaptativo</strong>
+                <p>Respostas se adaptam ao desempenho e ao tom do usuário.</p>
+              </article>
+              <article className="mission-runtime-system-card">
+                <div className="mission-runtime-system-icon">
+                  <Shield size={18} />
+                </div>
+                <strong>Companheiro Emocional</strong>
+                <p>O Spark te acompanha, reage e celebra suas conquistas.</p>
+              </article>
+              <article className="mission-runtime-system-card">
+                <div className="mission-runtime-system-icon">
+                  <Star size={18} />
+                </div>
+                <strong>XP, Combo & Streak</strong>
+                <div className="mission-runtime-system-stats">
+                  <div>
+                    <small>Combo</small>
+                    <strong>{comboCount}</strong>
                   </div>
-                )}
-              </div>
-            </aside>
-        </div>
-
-        <div className="mission-runtime-footer">
-          <button className="mission-runtime-secondary" type="button" onClick={skipScene}>
-            <Play size={16} />
-            Pular cena
-          </button>
-
-          <div className="mission-runtime-reward-rail">
-            <div className="mission-runtime-reward-core">
-              <span className="mission-runtime-reward-badge">
-                <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="Reward badge icon">
-                  <Star size={16} />
-                </RuntimeIcon>
-              </span>
-              <div>
-                <small>{rewardLabel}</small>
-                <strong>+{selectedAnswer ? feedbackXpValue : currentScene.xpReward} XP</strong>
-              </div>
-            </div>
-            <div className="mission-runtime-reward-dots">
-              {rewardDots.map((_, index) => (
-                <span key={`${currentScene.id}-${index}`} className={index < rewardProgressCount ? 'is-filled' : ''} />
-              ))}
-            </div>
-            <div className="mission-runtime-reward-chest">
-              <RuntimeIcon iconUrl={rewardChestIconUrl} alt="Reward chest icon">
-                <Gift size={18} />
-              </RuntimeIcon>
-            </div>
-          </div>
-
-          <button className="mission-runtime-primary" type="button" disabled={!canAdvance} onClick={goToNextScene}>
-            Próxima
-            <ArrowRight size={18} />
-          </button>
-        </div>
-      </div>
-
-      <section className="mission-runtime-story-grid">
-        <div className="mission-runtime-section-head">
-          <span>EXPERIÊNCIA DA MISSÃO</span>
-        </div>
-        <div className="mission-runtime-story-cards">
-          <article className="mission-runtime-story-card">
-            <span className="mission-runtime-story-label">Pergunta e contexto</span>
-            <div className="mission-runtime-context-scene">
-              {storyContextImageSource ? (
-                <img
-                  className="mission-runtime-context-image"
-                  src={storyContextImageSource}
-                  alt=""
-                  aria-hidden="true"
-                  referrerPolicy="no-referrer"
-                  style={storyContextStyle}
-                />
-              ) : null}
-              <div className="mission-runtime-context-overlay" />
-              <div className="mission-runtime-context-prompt">
-                <div className="mission-runtime-context-head">
-                  <span>{currentScene.character}</span>
-                  <button
-                    type="button"
-                    onClick={() => playSpeech(currentScene.question, currentScene.audioUrl)}
-                    aria-label="Play prompt audio"
-                  >
-                    <RuntimeIcon iconUrl={currentScene.promptAudioIconUrl} alt="Voice prompt icon">
-                      <Volume2 size={16} />
-                    </RuntimeIcon>
-                  </button>
+                  <div>
+                    <small>Streak</small>
+                    <strong>{streakDays}</strong>
+                  </div>
                 </div>
-                <strong>{currentScene.question}</strong>
-                <p>{currentScene.questionTranslation}</p>
-              </div>
-              <button
-                className="mission-runtime-story-voice mission-runtime-story-voice-wave"
-                type="button"
-                onClick={() => playSpeech(currentScene.question, currentScene.audioUrl)}
-              >
-                <span className="mission-runtime-story-voice-orb">
-                  <RuntimeIcon iconUrl={currentScene.promptAudioIconUrl} alt="Voice prompt icon">
-                    <Mic size={16} />
-                  </RuntimeIcon>
-                </span>
-                <span className="mission-runtime-story-voice-line" aria-hidden="true">
-                  {waveformBars.slice(0, 18).map((height, index) => (
-                    <i key={`${currentScene.id}-prompt-wave-${index}`} style={{ height: `${Math.max(20, height - 6)}%`, animationDelay: `${index * 55}ms` }} />
-                  ))}
-                </span>
-                <span className="mission-runtime-story-voice-text">Toque para falar</span>
-              </button>
-            </div>
-          </article>
-
-          <article className="mission-runtime-story-card mission-runtime-story-card-response">
-            <span className="mission-runtime-story-label">Resposta do usuário</span>
-            <div className="mission-runtime-story-response-card">
-              <small>YOU</small>
-              <strong>{selectedAnswer?.text || 'Escolha uma resposta para continuar a cena.'}</strong>
-              <p>{selectedAnswer?.translation || 'A resposta escolhida aparecerá aqui com áudio e confirmação.'}</p>
-              <button
-                type="button"
-                className="mission-runtime-mini-audio"
-                onClick={() => selectedAnswer && playSpeech(selectedAnswer.text, selectedAnswer.audioUrl)}
-                disabled={!selectedAnswer}
-              >
-                <RuntimeIcon iconUrl={currentScene.answerAudioIconUrl} alt="Selected answer audio icon">
-                  <Volume2 size={16} />
-                </RuntimeIcon>
-              </button>
-            </div>
-            <div className="mission-runtime-waveform-card">
-              <div className="mission-runtime-waveform">
-                {waveformBars.map((height, index) => (
-                  <span
-                    key={`${currentScene.id}-wave-${index}`}
-                    style={{ height: `${height}%`, animationDelay: `${index * 40}ms` }}
-                  />
-                ))}
-              </div>
-              <span className={`mission-runtime-waveform-check${selectedAnswer ? ' is-visible' : ''}`}>
-                <Check size={16} />
-              </span>
-            </div>
-          </article>
-
-          <article className="mission-runtime-story-card mission-runtime-story-card-feedback">
-            <span className="mission-runtime-story-label">Feedback emocional</span>
-            <div className="mission-runtime-story-feedback-card">
-              <span className="mission-runtime-story-feedback-star">
-                <RuntimeIcon iconUrl={currentScene.feedbackIconUrl} alt="Feedback sparkle icon">
-                  <Sparkles size={16} />
-                </RuntimeIcon>
-              </span>
-              <div className="mission-runtime-story-feedback-copy">
-                <strong>{feedbackTitle}</strong>
-                <p>{feedbackBody}</p>
-                {selectedAnswer && (
-                  <span className="mission-runtime-story-feedback-xp">
-                    <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="XP reward icon">
-                      <Star size={16} />
-                    </RuntimeIcon>
-                    +{feedbackXpValue} XP
-                  </span>
-                )}
-              </div>
-              {storyFeedbackCompanionImage && (
-                <div className="mission-runtime-story-feedback-companion">
-                  <img src={storyFeedbackCompanionImage} alt="Spark companion emotional feedback" />
+              </article>
+              <article className="mission-runtime-system-card">
+                <div className="mission-runtime-system-icon">
+                  <Volume2 size={18} />
                 </div>
-              )}
+                <strong>Cena Cinemática</strong>
+                <p>Ambientes vivos que mudam com a sua progressão.</p>
+              </article>
+              <article className="mission-runtime-system-card">
+                <div className="mission-runtime-system-icon">
+                  <ChevronRight size={18} />
+                </div>
+                <strong>Progresso da Missão</strong>
+                <div className="mission-runtime-system-progress">
+                  <small>
+                    {currentScene.chapter} • Scene {displaySceneNumber} of {totalSceneCount}
+                  </small>
+                  <div className="mission-runtime-mini-progress">
+                    <span style={{ width: `${progressPercent}%` }} />
+                  </div>
+                </div>
+              </article>
             </div>
-          </article>
-        </div>
-      </section>
-
-      <section className="mission-runtime-system-grid">
-        <div className="mission-runtime-section-head">
-          <span>SISTEMAS INTEGRADOS</span>
-        </div>
-        <div className="mission-runtime-system-cards">
-          <article className="mission-runtime-system-card">
-            <div className="mission-runtime-system-icon">
-              <Sparkles size={18} />
-            </div>
-            <strong>Feedback Adaptativo</strong>
-            <p>Respostas se adaptam ao desempenho e ao tom do usuário.</p>
-          </article>
-          <article className="mission-runtime-system-card">
-            <div className="mission-runtime-system-icon">
-              <Shield size={18} />
-            </div>
-            <strong>Companheiro Emocional</strong>
-            <p>O Spark te acompanha, reage e celebra suas conquistas.</p>
-          </article>
-          <article className="mission-runtime-system-card">
-            <div className="mission-runtime-system-icon">
-              <Star size={18} />
-            </div>
-            <strong>XP, Combo & Streak</strong>
-            <div className="mission-runtime-system-stats">
-              <div>
-                <small>Combo</small>
-                <strong>{comboCount}</strong>
-              </div>
-              <div>
-                <small>Streak</small>
-                <strong>{streakDays}</strong>
-              </div>
-            </div>
-          </article>
-          <article className="mission-runtime-system-card">
-            <div className="mission-runtime-system-icon">
-              <Volume2 size={18} />
-            </div>
-            <strong>Cena Cinemática</strong>
-            <p>Ambientes vivos que mudam com a sua progressão.</p>
-          </article>
-          <article className="mission-runtime-system-card">
-            <div className="mission-runtime-system-icon">
-              <ChevronRight size={18} />
-            </div>
-            <strong>Progresso da Missão</strong>
-            <div className="mission-runtime-system-progress">
-              <small>
-                {currentScene.chapter} • Scene {currentScene.sceneNumber} of {currentScene.sceneTotal}
-              </small>
-              <div className="mission-runtime-mini-progress">
-                <span style={{ width: `${progressPercent}%` }} />
-              </div>
-            </div>
-          </article>
-        </div>
-      </section>
+          </section>
+        </>
+      ) : null}
     </div>
   )
 }

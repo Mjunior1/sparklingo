@@ -8,9 +8,11 @@ import type { SceneAssetRecord } from '../sceneAssets'
 import {
   buildRuntimeContract,
   type EmotionalFeedbackExperiencePayload,
+  type ListeningExperiencePayload,
   type ExperiencePayloadMap,
   type MultipleChoiceExperiencePayload,
   type RuntimeSceneContract,
+  type SpeakingExperiencePayload,
 } from './contracts'
 import {
   createLearningSlug,
@@ -152,31 +154,79 @@ export const adaptMissionRuntimeSceneToExperiences = (
   missionId: string,
 ): ExperienceRecord[] => {
   const sceneId = `scene-${runtimeScene.id}`
+  const isAirportImmigrationScene =
+    runtimeScene.sceneNumber === 1 &&
+    includesNormalized(runtimeScene.missionTitle, 'airport arrival')
+  const promptType: ExperienceType =
+    runtimeScene.sceneNumber === 2 && includesNormalized(runtimeScene.missionTitle, 'airport arrival')
+      ? 'listening'
+      : 'multiple_choice'
 
   const promptExperience = sanitizeExperienceRecord({
-    id: `experience-${runtimeScene.id}-prompt`,
+    id: `experience-${runtimeScene.id}-${isAirportImmigrationScene ? 'listening' : 'prompt'}`,
     sceneId,
-    type: 'multiple_choice',
+    type: isAirportImmigrationScene ? 'listening' : promptType,
     xpReward: runtimeScene.xpReward,
     difficulty: 'A1',
-    duration: 45,
-    payload: {
-      npc: runtimeScene.character || runtimeScene.dialogue,
-      question: runtimeScene.question,
-      translation: runtimeScene.questionTranslation,
-      answers: runtimeScene.answers.map(adaptRuntimeAnswerToChoice),
-      audio: runtimeScene.audioUrl
-        ? {
-            url: runtimeScene.audioUrl,
-          }
-        : undefined,
-    } satisfies MultipleChoiceExperiencePayload,
+    duration: isAirportImmigrationScene || promptType === 'listening' ? 55 : 45,
+    payload:
+      isAirportImmigrationScene || promptType === 'listening'
+        ? ({
+            npc: runtimeScene.character || runtimeScene.dialogue,
+            prompt: runtimeScene.question,
+            translation: runtimeScene.questionTranslation,
+            audio: {
+              url: runtimeScene.audioUrl,
+              transcript: runtimeScene.question,
+            },
+            answers: runtimeScene.answers.map(adaptRuntimeAnswerToChoice),
+          } satisfies ListeningExperiencePayload)
+        : ({
+            npc: runtimeScene.character || runtimeScene.dialogue,
+            question: runtimeScene.question,
+            translation: runtimeScene.questionTranslation,
+            answers: runtimeScene.answers.map(adaptRuntimeAnswerToChoice),
+            audio: runtimeScene.audioUrl
+              ? {
+                  url: runtimeScene.audioUrl,
+                }
+              : undefined,
+          } satisfies MultipleChoiceExperiencePayload),
     aiGenerated: false,
     adaptiveEnabled: true,
     emotionalContext: runtimeScene.subtitle || runtimeScene.emotionalFeedbackBody,
     progressionOrder: 1,
     legacyRuntimeSceneId: runtimeScene.id,
   })
+
+  const speakingExperience = isAirportImmigrationScene
+    ? sanitizeExperienceRecord({
+        id: `experience-${runtimeScene.id}-speaking`,
+        sceneId,
+        type: 'speaking',
+        xpReward: runtimeScene.xpReward,
+        difficulty: 'A1',
+        duration: 40,
+        payload: {
+          npc: runtimeScene.character || runtimeScene.dialogue,
+          prompt: 'How would you answer the officer?',
+          translation: 'Escolha a resposta que soe mais natural para continuar a cena.',
+          expectedPhrases: runtimeScene.answers.filter((answer) => answer.isCorrect).map((answer) => answer.text),
+          audio: runtimeScene.audioUrl
+            ? {
+                url: runtimeScene.audioUrl,
+                transcript: runtimeScene.question,
+              }
+            : undefined,
+        } satisfies SpeakingExperiencePayload,
+        aiGenerated: false,
+        adaptiveEnabled: true,
+        emotionalContext:
+          runtimeScene.subtitle || 'Respond naturally to the officer and move through the checkpoint.',
+        progressionOrder: 2,
+        legacyRuntimeSceneId: runtimeScene.id,
+      })
+    : null
 
   const feedbackExperience = sanitizeExperienceRecord({
     id: `experience-${runtimeScene.id}-feedback`,
@@ -195,12 +245,14 @@ export const adaptMissionRuntimeSceneToExperiences = (
     aiGenerated: false,
     adaptiveEnabled: true,
     emotionalContext: runtimeScene.emotionalFeedbackBody,
-    progressionOrder: 2,
+    progressionOrder: speakingExperience ? 3 : 2,
     legacyRuntimeSceneId: runtimeScene.id,
   })
 
   void missionId
-  return [promptExperience, feedbackExperience]
+  return [promptExperience, speakingExperience, feedbackExperience].filter(
+    (experience): experience is ExperienceRecord => Boolean(experience),
+  )
 }
 
 const mapQuestionKindToExperienceType = (question: QuizQuestionItem): ExperienceType => {

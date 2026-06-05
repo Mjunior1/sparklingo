@@ -17,6 +17,7 @@ import { OnboardingScreen } from './auth/OnboardingScreen'
 import { QuickWinsSection } from './components/quickwins/QuickWinsSection'
 import { MissionRuntime, type MissionRuntimeMission } from './components/runtime/MissionRuntime'
 import { CinematicImage, NarrativeOverlay, SafeAreaContainer } from './components/scene/SceneRenderer'
+import { buildLegacyMissionBundle, buildRuntimeSceneContracts } from './services/learning'
 import {
   getAchievementCatalogRaw,
   getLessonsCatalogRaw,
@@ -38,7 +39,11 @@ import {
   type QuickWinsConfig,
 } from './services/quickWins'
 import { getSceneAssets, type SceneAssetRecord } from './services/sceneAssets'
-import { getMissionRuntimeScenes, type MissionRuntimeSceneRecord } from './services/missionRuntime'
+import {
+  defaultMissionRuntimeScenes,
+  getMissionRuntimeScenes,
+  type MissionRuntimeSceneRecord,
+} from './services/missionRuntime'
 
 const clampPercent = (value: number) => Math.min(100, Math.max(0, Math.round(value)))
 
@@ -175,6 +180,17 @@ const buildMissionVisual = (
   }
 }
 
+const mergeRuntimeSceneCatalog = (runtimeScenes: MissionRuntimeSceneRecord[]) => {
+  const merged = new Map(defaultMissionRuntimeScenes.map((scene) => [scene.id, scene]))
+  runtimeScenes.forEach((scene) => {
+    merged.set(scene.id, scene)
+  })
+
+  return [...merged.values()].sort(
+    (a, b) => a.order - b.order || a.sceneNumber - b.sceneNumber || a.id.localeCompare(b.id),
+  )
+}
+
 function App() {
   const { status, user, profile, signOut, platformConfig, patchProfile } = useAuth()
   const [view, setView] = useState<'home' | 'admin' | 'runtime'>('home')
@@ -280,6 +296,11 @@ function App() {
         .filter((asset) => asset.active)
         .sort((a, b) => a.progressionOrder - b.progressionOrder || a.title.localeCompare(b.title)),
     [sceneAssetsCatalog],
+  )
+
+  const runtimeSceneSourceCatalog = useMemo(
+    () => mergeRuntimeSceneCatalog(missionRuntimeCatalog),
+    [missionRuntimeCatalog],
   )
 
   const missionVisuals = useMemo(() => {
@@ -461,10 +482,40 @@ function App() {
     activeMission ??
     null
 
+  const runtimeBundle = useMemo(() => {
+    if (!runtimeMission?.lesson) return null
+
+    return buildLegacyMissionBundle({
+      lesson: runtimeMission.lesson,
+      quizzes: quizCatalog,
+      questions: quizQuestionCatalog,
+      runtimeScenes: runtimeSceneSourceCatalog,
+      sceneAssets: sceneAssetsCatalog,
+    })
+  }, [quizCatalog, quizQuestionCatalog, runtimeMission, runtimeSceneSourceCatalog, sceneAssetsCatalog])
+
+  const runtimeContracts = useMemo(
+    () => (runtimeBundle ? buildRuntimeSceneContracts(runtimeBundle) : []),
+    [runtimeBundle],
+  )
+
   const runtimeScenes = useMemo(() => {
     if (!runtimeMission) return [] as MissionRuntimeSceneRecord[]
-    return missionRuntimeCatalog.filter((scene) => scene.sceneAssetId === runtimeMission.asset.id)
-  }, [missionRuntimeCatalog, runtimeMission])
+    if (runtimeBundle?.scenes.length) {
+      const sourceMap = new Map(runtimeSceneSourceCatalog.map((scene) => [scene.id, scene]))
+      return runtimeBundle.scenes
+        .map((bundleScene) => {
+          const legacyId =
+            bundleScene.scene.legacyRuntimeSceneId ??
+            bundleScene.experiences.find((experience) => experience.legacyRuntimeSceneId)?.legacyRuntimeSceneId
+
+          return legacyId ? sourceMap.get(legacyId) ?? null : null
+        })
+        .filter((scene): scene is MissionRuntimeSceneRecord => Boolean(scene))
+    }
+
+    return runtimeSceneSourceCatalog.filter((scene) => scene.sceneAssetId === runtimeMission.asset.id)
+  }, [runtimeBundle, runtimeMission, runtimeSceneSourceCatalog])
 
   if (status === 'loading' || (user && catalogLoading && !activeSceneAssets.length)) {
     return (
@@ -528,6 +579,7 @@ function App() {
       <MissionRuntime
         mission={runtimeMissionCard}
         scenes={runtimeScenes}
+        sceneContracts={runtimeContracts}
         streakDays={streakDays}
         totalXp={totalXp}
         avatarUrl={profile?.avatarUrl}

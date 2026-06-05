@@ -385,6 +385,71 @@
   width: min(100%, 482px);
 }
 
+.mission-runtime-listening-panel {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 20px 22px;
+  border: 1px solid rgba(190, 164, 255, 0.16);
+  border-radius: 24px;
+  text-align: left;
+  color: #f7f1ff;
+  background:
+    linear-gradient(180deg, rgba(18, 18, 37, 0.82), rgba(12, 13, 28, 0.88)),
+    radial-gradient(circle at 18% 30%, rgba(92, 175, 255, 0.1), transparent 24%),
+    radial-gradient(circle at 84% 70%, rgba(194, 122, 255, 0.1), transparent 24%);
+  box-shadow:
+    0 22px 38px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition:
+    transform 260ms ease,
+    border-color 260ms ease,
+    box-shadow 260ms ease,
+    background-color 260ms ease;
+}
+
+.mission-runtime-listening-panel:hover,
+.mission-runtime-listening-panel:focus-visible {
+  transform: translateY(-4px);
+  border-color: rgba(190, 164, 255, 0.28);
+  box-shadow:
+    0 28px 46px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(190, 164, 255, 0.18),
+    0 0 24px rgba(126, 178, 255, 0.16);
+}
+
+.mission-runtime-listening-audio {
+  width: 46px;
+  height: 46px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 32% 30%, rgba(255, 255, 255, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(101, 168, 255, 0.24), rgba(79, 60, 160, 0.2));
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 216, 255, 0.16),
+    0 12px 24px rgba(42, 57, 113, 0.22);
+}
+
+.mission-runtime-listening-copy {
+  display: grid;
+  gap: 4px;
+}
+
+.mission-runtime-listening-copy strong {
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.mission-runtime-listening-copy small {
+  color: rgba(238, 229, 247, 0.72);
+  font-size: 0.94rem;
+}
+
 .mission-runtime-answer {
   display: grid;
   grid-template-columns: auto 1fr auto;
@@ -448,6 +513,97 @@
 .mission-runtime-answer-copy small {
   color: rgba(237, 228, 247, 0.74);
   font-size: 0.96rem;
+}
+
+.mission-runtime-phase-panel {
+  width: min(100%, 620px);
+  padding: 34px;
+  border-radius: 32px;
+  border: 1px solid rgba(190, 166, 255, 0.16);
+  background:
+    linear-gradient(180deg, rgba(18, 16, 37, 0.86), rgba(11, 12, 28, 0.88)),
+    radial-gradient(circle at 84% 20%, rgba(169, 104, 255, 0.12), transparent 24%);
+  box-shadow:
+    0 28px 46px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.mission-runtime-phase-kicker {
+  margin: 0 0 12px;
+  color: #b992ff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mission-runtime-phase-panel h1 {
+  margin: 0;
+  font-size: clamp(2.2rem, 4vw, 3.8rem);
+  line-height: 0.96;
+}
+
+.mission-runtime-phase-panel > p {
+  margin: 18px 0 0;
+  max-width: 52ch;
+  color: rgba(236, 228, 247, 0.82);
+  font-size: 1.05rem;
+  line-height: 1.62;
+}
+
+.mission-runtime-phase-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 24px;
+}
+
+.mission-runtime-phase-stats div {
+  padding: 16px 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(188, 162, 255, 0.14);
+  background: rgba(14, 14, 30, 0.66);
+}
+
+.mission-runtime-phase-stats small {
+  display: block;
+  color: rgba(230, 221, 247, 0.62);
+  margin-bottom: 6px;
+}
+
+.mission-runtime-phase-stats strong {
+  font-size: 1.35rem;
+}
+
+.mission-runtime-next-teaser {
+  margin-top: 22px;
+  padding: 18px 20px;
+  border-radius: 22px;
+  border: 1px solid rgba(188, 162, 255, 0.14);
+  background:
+    linear-gradient(180deg, rgba(16, 17, 35, 0.8), rgba(10, 11, 26, 0.84)),
+    radial-gradient(circle at 88% 22%, rgba(255, 200, 116, 0.1), transparent 24%);
+}
+
+.mission-runtime-next-teaser small {
+  display: block;
+  color: #bf98ff;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.mission-runtime-next-teaser strong {
+  display: block;
+  margin-top: 10px;
+  font-size: 1.2rem;
+}
+
+.mission-runtime-next-teaser p {
+  margin: 10px 0 0;
+  color: rgba(234, 225, 247, 0.76);
+  line-height: 1.55;
 }
 
 .mission-runtime-companion-column {
@@ -1451,8 +1607,23 @@
     font-size: clamp(1.8rem, 9vw, 3rem);
   }
 
+  .mission-runtime-phase-panel {
+    width: 100%;
+    padding: 24px;
+    border-radius: 24px;
+  }
+
+  .mission-runtime-phase-stats {
+    grid-template-columns: 1fr;
+  }
+
   .mission-runtime-answer {
     padding: 16px;
+    border-radius: 20px;
+  }
+
+  .mission-runtime-listening-panel {
+    padding: 18px;
     border-radius: 20px;
   }
 
