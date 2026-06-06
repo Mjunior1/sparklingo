@@ -149,6 +149,11 @@
 .mission-runtime-focus-listening .mission-runtime-global-overlay {
   opacity: 1;
   filter: saturate(0.96);
+  background:
+    linear-gradient(90deg, rgba(7, 8, 20, 0.14) 0%, rgba(7, 8, 20, 0.02) 26%, rgba(7, 8, 20, 0.22) 100%),
+    linear-gradient(180deg, rgba(5, 7, 18, 0.34) 0%, rgba(9, 10, 24, 0.06) 24%, rgba(7, 8, 20, 0.38) 100%),
+    radial-gradient(circle at 18% 28%, rgba(169, 104, 255, 0.14), transparent 30%),
+    radial-gradient(circle at 78% 24%, rgba(245, 174, 108, 0.1), transparent 28%);
 }
 
 .mission-runtime-focus-listening .mission-runtime-atmosphere {
@@ -158,12 +163,22 @@
 
 .mission-runtime-focus-speaking .mission-runtime-global-overlay {
   opacity: 0.92;
+  background:
+    linear-gradient(90deg, rgba(7, 8, 20, 0.2) 0%, rgba(7, 8, 20, 0.06) 22%, rgba(7, 8, 20, 0.14) 100%),
+    linear-gradient(180deg, rgba(5, 7, 18, 0.32) 0%, rgba(9, 10, 24, 0.04) 26%, rgba(7, 8, 20, 0.34) 100%),
+    radial-gradient(circle at 20% 28%, rgba(137, 97, 255, 0.08), transparent 28%),
+    radial-gradient(circle at 76% 70%, rgba(245, 174, 108, 0.08), transparent 28%);
 }
 
 .mission-runtime-focus-feedback .mission-runtime-global-overlay,
 .mission-runtime-focus-reward .mission-runtime-global-overlay {
   opacity: 0.84;
   filter: saturate(1.02);
+  background:
+    linear-gradient(90deg, rgba(7, 8, 20, 0.3) 0%, rgba(7, 8, 20, 0.1) 24%, rgba(7, 8, 20, 0.04) 100%),
+    linear-gradient(180deg, rgba(5, 7, 18, 0.32) 0%, rgba(9, 10, 24, 0.05) 26%, rgba(7, 8, 20, 0.32) 100%),
+    radial-gradient(circle at 78% 70%, rgba(139, 255, 214, 0.08), transparent 26%),
+    radial-gradient(circle at 82% 20%, rgba(255, 209, 111, 0.12), transparent 22%);
 }
 
 .mission-runtime-focus-feedback .mission-runtime-atmosphere,
@@ -186,6 +201,22 @@
 .mission-runtime-footer {
   position: relative;
   z-index: 1;
+}
+
+.mission-runtime-play-focus .mission-runtime-topbar {
+  opacity: 0.82;
+  transform: translateY(-2px);
+}
+
+.mission-runtime-focus-listening .mission-runtime-topbar,
+.mission-runtime-focus-speaking .mission-runtime-topbar {
+  opacity: 0.72;
+}
+
+.mission-runtime-focus-feedback .mission-runtime-topbar,
+.mission-runtime-focus-reward .mission-runtime-topbar {
+  opacity: 0.62;
+  filter: saturate(0.92);
 }
 
 .mission-runtime-topbar {
@@ -348,6 +379,14 @@
   transform: translateY(-2px);
 }
 
+.mission-runtime-focus-listening .mission-runtime-dialogue {
+  filter: none;
+}
+
+.mission-runtime-focus-speaking .mission-runtime-dialogue {
+  filter: saturate(0.98);
+}
+
 .mission-runtime-focus-listening .mission-runtime-companion-column {
   opacity: 0.84;
   transform: translateY(10px);
@@ -432,6 +471,22 @@
     0 32px 48px rgba(0, 0, 0, 0.24),
     0 0 28px rgba(167, 113, 255, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.mission-runtime-focus-speaking .mission-runtime-prompt-card {
+  opacity: 0.84;
+  transform: translateY(-2px) scale(0.995);
+  box-shadow:
+    0 24px 38px rgba(0, 0, 0, 0.18),
+    0 0 16px rgba(167, 113, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.mission-runtime-focus-feedback .mission-runtime-prompt-card,
+.mission-runtime-focus-reward .mission-runtime-prompt-card {
+  opacity: 0.52;
+  filter: blur(0.6px) saturate(0.9);
+  transform: translateY(6px) scale(0.992);
 }
 
 .mission-runtime-prompt-head {
@@ -542,6 +597,43 @@
   display: grid;
   gap: 14px;
   width: min(100%, 482px);
+  transition:
+    opacity 620ms ease,
+    transform 620ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    filter 620ms ease;
+}
+
+.mission-runtime-focus-listening .mission-runtime-answers {
+  opacity: 0.34;
+  filter: blur(1.4px) saturate(0.88);
+  transform: translateY(10px);
+  pointer-events: none;
+}
+
+.mission-runtime-focus-speaking .mission-runtime-answers {
+  opacity: 1;
+  transform: translateY(-2px);
+}
+
+.mission-runtime-focus-feedback .mission-runtime-answers,
+.mission-runtime-focus-reward .mission-runtime-answers {
+  opacity: 0.62;
+  transform: translateY(4px);
+}
+
+.mission-runtime-answers.has-selection .mission-runtime-answer.is-locked:not(.is-selected) {
+  opacity: 0.22;
+  filter: blur(1.2px) saturate(0.82);
+  transform: translateX(-8px) scale(0.985);
+}
+
+.mission-runtime-answers.has-selection .mission-runtime-answer.is-selected {
+  transform: translateY(-6px);
+  border-color: rgba(202, 168, 255, 0.34);
+  box-shadow:
+    0 28px 48px rgba(0, 0, 0, 0.24),
+    0 0 0 1px rgba(202, 168, 255, 0.22),
+    0 0 28px rgba(171, 109, 255, 0.18);
 }
 
 .mission-runtime-listening-panel {
@@ -877,6 +969,29 @@
   align-items: flex-end;
   justify-content: flex-end;
   isolation: isolate;
+  transition:
+    opacity 720ms ease,
+    transform 720ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    filter 720ms ease;
+}
+
+.mission-runtime-focus-listening .mission-runtime-feedback-stage {
+  opacity: 0.38;
+  transform: translateY(16px);
+  filter: saturate(0.88);
+}
+
+.mission-runtime-focus-speaking .mission-runtime-feedback-stage {
+  opacity: 0.58;
+  transform: translateY(10px);
+  filter: saturate(0.92);
+}
+
+.mission-runtime-focus-feedback .mission-runtime-feedback-stage,
+.mission-runtime-focus-reward .mission-runtime-feedback-stage {
+  opacity: 1;
+  transform: translateY(-4px);
+  filter: none;
 }
 
 .mission-runtime-character {
@@ -1029,6 +1144,26 @@
   padding-top: 26px;
 }
 
+.mission-runtime-play-focus .mission-runtime-footer {
+  opacity: 0.9;
+}
+
+.mission-runtime-focus-listening .mission-runtime-footer {
+  opacity: 0.68;
+  transform: translateY(6px);
+}
+
+.mission-runtime-focus-speaking .mission-runtime-footer {
+  opacity: 0.78;
+  transform: translateY(2px);
+}
+
+.mission-runtime-focus-feedback .mission-runtime-footer,
+.mission-runtime-focus-reward .mission-runtime-footer {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .mission-runtime-secondary,
 .mission-runtime-primary,
 .mission-runtime-story-voice {
@@ -1059,6 +1194,11 @@
   opacity: 0.45;
   cursor: not-allowed;
   box-shadow: none;
+}
+
+.mission-runtime-focus-listening .mission-runtime-primary:disabled,
+.mission-runtime-focus-speaking .mission-runtime-primary:disabled {
+  opacity: 0.18;
 }
 
 .mission-runtime-reward-rail {
@@ -2036,6 +2176,36 @@
   .mission-runtime-play-focus .mission-runtime-story-grid {
     opacity: 1;
     padding-top: 16px;
+  }
+
+  .mission-runtime-play-focus .mission-runtime-topbar {
+    opacity: 0.92;
+    transform: none;
+    filter: none;
+  }
+
+  .mission-runtime-focus-listening .mission-runtime-answers {
+    opacity: 0.22;
+    filter: blur(1.8px) saturate(0.86);
+    transform: translateY(8px);
+  }
+
+  .mission-runtime-focus-feedback .mission-runtime-prompt-card,
+  .mission-runtime-focus-reward .mission-runtime-prompt-card {
+    opacity: 0.64;
+    filter: blur(0.2px) saturate(0.94);
+    transform: translateY(4px) scale(0.996);
+  }
+
+  .mission-runtime-focus-listening .mission-runtime-feedback-stage,
+  .mission-runtime-focus-speaking .mission-runtime-feedback-stage {
+    opacity: 0.24;
+    transform: translateY(12px);
+  }
+
+  .mission-runtime-focus-feedback .mission-runtime-footer,
+  .mission-runtime-focus-reward .mission-runtime-footer {
+    opacity: 1;
   }
 
   .mission-runtime-main {

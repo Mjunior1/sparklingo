@@ -1491,7 +1491,11 @@ export function MissionRuntime({
                   <span className={currentSceneStep === 'feedback' ? 'is-active' : ''} />
                 </div>
 
-                <div className="mission-runtime-answers">
+                <div
+                  className={`mission-runtime-answers mission-runtime-answers-step-${currentSceneStep}${
+                    selectedAnswer ? ' has-selection' : ''
+                  }`}
+                >
                   {isImmigrationPlayableSlice && currentSceneStep === 'listening' ? (
                     <button
                       className={`mission-runtime-listening-panel${isListeningTransitioning ? ' is-processing' : ''}${
