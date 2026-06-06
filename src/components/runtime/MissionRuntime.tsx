@@ -220,18 +220,16 @@ const buildRuntimeBackgroundImageStyle = (
 }
 
 const buildRuntimeBackgroundLayerStyle = (
-  source: string,
   scene: MissionRuntimeSceneRecord | null,
 ): CSSProperties | undefined => {
-  if (!source || !scene) return undefined
-
-  const escapedSource = source.replace(/"/g, '\\"')
+  if (!scene) return undefined
 
   return {
-    backgroundImage: `url("${escapedSource}")`,
-    backgroundPosition: `${scene.backgroundFocalX + scene.backgroundOffsetX}% ${scene.backgroundFocalY + scene.backgroundOffsetY}%`,
-    backgroundRepeat: 'no-repeat',
-    backgroundSize: `${scene.backgroundScale}%`,
+    '--runtime-background-focal-x': `${scene.backgroundFocalX}%`,
+    '--runtime-background-focal-y': `${scene.backgroundFocalY}%`,
+    '--runtime-background-offset-x': `${scene.backgroundOffsetX}%`,
+    '--runtime-background-offset-y': `${scene.backgroundOffsetY}%`,
+    '--runtime-background-scale': `${scene.backgroundScale / 100}`,
   } as CSSProperties
 }
 
@@ -405,7 +403,6 @@ export function MissionRuntimeScenePreviewCard({
           src={previewImageSrc}
           alt=""
           aria-hidden="true"
-          referrerPolicy="no-referrer"
           style={previewImageStyle}
         />
       ) : null}
@@ -702,14 +699,9 @@ export function MissionRuntime({
         ...buildRuntimeBackgroundImageStyle(currentScene),
       } as CSSProperties)
     : undefined
-  const currentBackgroundContainerStyle = currentScene
-    ? ({
-        ...buildRuntimeBackgroundLayerStyle(currentBackgroundSource, currentScene),
-      } as CSSProperties)
-    : undefined
   const currentBackgroundLayerStyle = currentScene
     ? ({
-        ...buildRuntimeBackgroundLayerStyle(currentBackgroundSource, currentScene),
+        ...buildRuntimeBackgroundLayerStyle(currentScene),
       } as CSSProperties)
     : undefined
   const previousBackgroundStyle = previousScene
@@ -719,7 +711,7 @@ export function MissionRuntime({
     : undefined
   const previousBackgroundLayerStyle = previousScene
     ? ({
-        ...buildRuntimeBackgroundLayerStyle(previousBackgroundSource, previousScene),
+        ...buildRuntimeBackgroundLayerStyle(previousScene),
       } as CSSProperties)
     : undefined
 
@@ -1033,7 +1025,7 @@ export function MissionRuntime({
       className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone} mission-runtime-phase-${phase} mission-runtime-focus-${runtimeFocusMode}${phase === 'scene' ? ' mission-runtime-play-focus' : ''}`}
     >
       <div className="mission-runtime-stage">
-        <div className="mission-runtime-background" aria-hidden="true" style={currentBackgroundContainerStyle}>
+        <div className="mission-runtime-background" aria-hidden="true">
           <div className="mission-runtime-background-layer mission-runtime-background-layer-ambient" style={currentBackgroundLayerStyle}>
             {currentBackgroundSource ? (
               <img
@@ -1041,7 +1033,7 @@ export function MissionRuntime({
                 src={currentBackgroundSource}
                 alt=""
                 aria-hidden="true"
-                referrerPolicy="no-referrer"
+                key={`ambient-${currentBackgroundSource}`}
                 style={currentBackgroundStyle}
                 onError={() =>
                   setCurrentBackgroundIndex((index) =>
@@ -1059,7 +1051,7 @@ export function MissionRuntime({
                   src={previousBackgroundSource}
                   alt=""
                   aria-hidden="true"
-                  referrerPolicy="no-referrer"
+                  key={`previous-${previousBackgroundSource}`}
                   style={previousBackgroundStyle}
                   onError={() =>
                     setPreviousBackgroundIndex((index) =>
@@ -1077,7 +1069,7 @@ export function MissionRuntime({
                 src={currentBackgroundSource}
                 alt=""
                 aria-hidden="true"
-                referrerPolicy="no-referrer"
+                key={`current-${currentBackgroundSource}`}
                 style={currentBackgroundStyle}
                 onError={() =>
                   setCurrentBackgroundIndex((index) =>
