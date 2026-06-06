@@ -627,6 +627,14 @@ export function MissionRuntime({
           : 'React to the scene and Spark will guide your next move.'
       : ''
   const feedbackXpValue = rewardVisible && selectedAnswer ? feedback?.xp ?? currentScene?.xpReward ?? 0 : 0
+  const runtimeFocusMode =
+    phase === 'scene'
+      ? currentSceneStep === 'feedback'
+        ? rewardVisible
+          ? 'reward'
+          : 'feedback'
+        : currentSceneStep
+      : phase
 
   const currentAsset = currentScene ? buildRuntimeAsset(mission, currentScene) : mission.asset
   const previousAsset = previousScene ? buildRuntimeAsset(mission, previousScene) : null
@@ -987,7 +995,9 @@ export function MissionRuntime({
   }
 
   return (
-    <div className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone}`}>
+    <div
+      className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone} mission-runtime-phase-${phase} mission-runtime-focus-${runtimeFocusMode}${phase === 'scene' ? ' mission-runtime-play-focus' : ''}`}
+    >
       <div className="mission-runtime-stage">
         <div className="mission-runtime-background" aria-hidden="true" style={currentBackgroundContainerStyle}>
           <div className="mission-runtime-background-layer mission-runtime-background-layer-ambient" style={currentBackgroundLayerStyle}>
@@ -1394,7 +1404,11 @@ export function MissionRuntime({
               <span>EXPERIÊNCIA DA MISSÃO</span>
             </div>
             <div className="mission-runtime-story-cards">
-              <article className="mission-runtime-story-card">
+              <article
+                className={`mission-runtime-story-card${
+                  runtimeFocusMode === 'listening' ? ' is-focused' : ' is-muted'
+                }`}
+              >
                 <span className="mission-runtime-story-label">Pergunta e contexto</span>
                 <div className="mission-runtime-context-scene">
                   {storyContextImageSource ? (
@@ -1447,7 +1461,11 @@ export function MissionRuntime({
                 </div>
               </article>
 
-              <article className="mission-runtime-story-card mission-runtime-story-card-response">
+              <article
+                className={`mission-runtime-story-card mission-runtime-story-card-response${
+                  runtimeFocusMode === 'speaking' ? ' is-focused' : ' is-muted'
+                }`}
+              >
                 <span className="mission-runtime-story-label">Resposta do usuário</span>
                 <div className="mission-runtime-story-response-card">
                   <small>YOU</small>
@@ -1489,7 +1507,13 @@ export function MissionRuntime({
                 </div>
               </article>
 
-              <article className="mission-runtime-story-card mission-runtime-story-card-feedback">
+              <article
+                className={`mission-runtime-story-card mission-runtime-story-card-feedback${
+                  runtimeFocusMode === 'feedback' || runtimeFocusMode === 'reward'
+                    ? ' is-focused'
+                    : ' is-muted'
+                }`}
+              >
                 <span className="mission-runtime-story-label">Feedback emocional</span>
                 <div className="mission-runtime-story-feedback-card">
                   <span className="mission-runtime-story-feedback-star">

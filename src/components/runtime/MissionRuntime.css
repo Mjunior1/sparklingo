@@ -6,6 +6,16 @@
   color: #f6f1ff;
 }
 
+.mission-runtime-play-focus .mission-runtime-stage,
+.mission-runtime-play-focus .mission-runtime-story-grid,
+.mission-runtime-play-focus .mission-runtime-system-grid {
+  transition:
+    transform 720ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    opacity 720ms ease,
+    filter 720ms ease,
+    box-shadow 720ms ease;
+}
+
 .mission-runtime-stage,
 .mission-runtime-story-grid,
 .mission-runtime-system-grid,
@@ -18,6 +28,17 @@
   box-shadow:
     0 26px 56px rgba(0, 0, 0, 0.42),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.mission-runtime-main,
+.mission-runtime-dialogue,
+.mission-runtime-companion-column,
+.mission-runtime-footer,
+.mission-runtime-section-head {
+  transition:
+    opacity 720ms ease,
+    transform 720ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    filter 720ms ease;
 }
 
 .mission-runtime-stage {
@@ -91,6 +112,10 @@
     radial-gradient(circle at 78% 22%, rgba(245, 174, 108, 0.16), transparent 30%),
     radial-gradient(circle at 74% 78%, rgba(139, 91, 255, 0.06), transparent 24%),
     linear-gradient(90deg, rgba(5, 8, 19, 0.22) 0%, rgba(5, 8, 19, 0.02) 18%, rgba(5, 8, 19, 0.02) 82%, rgba(5, 8, 19, 0.22) 100%);
+  transition:
+    opacity 820ms ease,
+    filter 820ms ease,
+    background 820ms ease;
 }
 
 .mission-runtime-stage .scene-overlay {
@@ -106,12 +131,45 @@
   mix-blend-mode: screen;
   opacity: 0.88;
   animation: runtimeAtmospherePulse 8.5s ease-in-out infinite;
+  transition:
+    opacity 820ms ease,
+    filter 820ms ease,
+    transform 820ms ease;
 }
 
 .mission-runtime-vignette {
   background:
     linear-gradient(90deg, rgba(6, 8, 18, 0.28) 0%, rgba(6, 8, 18, 0.02) 24%, rgba(6, 8, 18, 0.02) 78%, rgba(6, 8, 18, 0.24) 100%),
     linear-gradient(180deg, rgba(6, 8, 18, 0.22) 0%, rgba(6, 8, 18, 0.02) 22%, rgba(6, 8, 18, 0.02) 84%, rgba(6, 8, 18, 0.28) 100%);
+  transition:
+    opacity 820ms ease,
+    filter 820ms ease;
+}
+
+.mission-runtime-focus-listening .mission-runtime-global-overlay {
+  opacity: 1;
+  filter: saturate(0.96);
+}
+
+.mission-runtime-focus-listening .mission-runtime-atmosphere {
+  opacity: 0.78;
+  transform: scale(1.01);
+}
+
+.mission-runtime-focus-speaking .mission-runtime-global-overlay {
+  opacity: 0.92;
+}
+
+.mission-runtime-focus-feedback .mission-runtime-global-overlay,
+.mission-runtime-focus-reward .mission-runtime-global-overlay {
+  opacity: 0.84;
+  filter: saturate(1.02);
+}
+
+.mission-runtime-focus-feedback .mission-runtime-atmosphere,
+.mission-runtime-focus-reward .mission-runtime-atmosphere {
+  opacity: 0.98;
+  transform: scale(1.015);
 }
 
 .mission-runtime-topbar,
@@ -271,6 +329,39 @@
   padding-top: 58px;
 }
 
+.mission-runtime-play-focus .mission-runtime-section-head {
+  opacity: 0.52;
+  transform: translateY(6px);
+}
+
+.mission-runtime-focus-listening .mission-runtime-dialogue,
+.mission-runtime-focus-speaking .mission-runtime-dialogue {
+  transform: translateY(-2px);
+}
+
+.mission-runtime-focus-listening .mission-runtime-companion-column {
+  opacity: 0.84;
+  transform: translateY(10px);
+}
+
+.mission-runtime-focus-speaking .mission-runtime-companion-column {
+  opacity: 0.88;
+  transform: translateY(8px);
+}
+
+.mission-runtime-focus-feedback .mission-runtime-dialogue,
+.mission-runtime-focus-reward .mission-runtime-dialogue {
+  opacity: 0.82;
+  filter: saturate(0.94);
+  transform: translateY(6px);
+}
+
+.mission-runtime-focus-feedback .mission-runtime-companion-column,
+.mission-runtime-focus-reward .mission-runtime-companion-column {
+  opacity: 1;
+  transform: translateY(-4px);
+}
+
 .mission-runtime-dialogue {
   display: grid;
   align-content: start;
@@ -305,6 +396,21 @@
     radial-gradient(circle at 72% 20%, rgba(255, 184, 122, 0.1), transparent 26%);
   box-shadow:
     0 28px 42px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  transition:
+    transform 720ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 720ms ease,
+    border-color 720ms ease,
+    opacity 720ms ease;
+}
+
+.mission-runtime-focus-listening .mission-runtime-prompt-card,
+.mission-runtime-focus-speaking .mission-runtime-prompt-card {
+  transform: translateY(-4px);
+  border-color: rgba(196, 172, 255, 0.22);
+  box-shadow:
+    0 32px 48px rgba(0, 0, 0, 0.24),
+    0 0 28px rgba(167, 113, 255, 0.08),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
@@ -832,9 +938,26 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.05),
     0 20px 36px rgba(0, 0, 0, 0.22);
   transition:
+    opacity 560ms ease,
     border-color 560ms ease,
     box-shadow 560ms ease,
     transform 560ms ease;
+}
+
+.mission-runtime-focus-listening .mission-runtime-reward-rail {
+  opacity: 0.58;
+  transform: translateY(6px);
+}
+
+.mission-runtime-focus-speaking .mission-runtime-reward-rail {
+  opacity: 0.72;
+  transform: translateY(4px);
+}
+
+.mission-runtime-focus-feedback .mission-runtime-reward-rail,
+.mission-runtime-focus-reward .mission-runtime-reward-rail {
+  opacity: 0.98;
+  transform: translateY(0);
 }
 
 .mission-runtime-reward-rail.is-reward-ready {
@@ -940,6 +1063,17 @@
   gap: 16px;
 }
 
+.mission-runtime-play-focus .mission-runtime-story-grid {
+  opacity: 0.74;
+}
+
+.mission-runtime-play-focus .mission-runtime-system-grid {
+  opacity: 0.16;
+  filter: blur(4px) saturate(0.88);
+  transform: translateY(18px);
+  pointer-events: none;
+}
+
 .mission-runtime-story-cards {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -960,6 +1094,40 @@
     0 20px 36px rgba(0, 0, 0, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
   overflow: hidden;
+  transition:
+    opacity 620ms ease,
+    filter 620ms ease,
+    transform 620ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    max-height 620ms ease,
+    border-color 620ms ease,
+    box-shadow 620ms ease;
+}
+
+.mission-runtime-story-card.is-muted {
+  opacity: 0.38;
+  filter: blur(1.5px) saturate(0.92) brightness(0.92);
+  transform: translateY(10px) scale(0.992);
+}
+
+.mission-runtime-story-card.is-focused {
+  opacity: 1;
+  filter: none;
+  transform: translateY(0) scale(1);
+  border-color: rgba(197, 172, 255, 0.2);
+  box-shadow:
+    0 24px 42px rgba(0, 0, 0, 0.22),
+    0 0 24px rgba(168, 111, 255, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.mission-runtime-focus-listening .mission-runtime-story-card-response,
+.mission-runtime-focus-listening .mission-runtime-story-card-feedback {
+  opacity: 0.3;
+}
+
+.mission-runtime-focus-speaking .mission-runtime-story-card-feedback,
+.mission-runtime-focus-reward .mission-runtime-story-card-response {
+  opacity: 0.34;
 }
 
 .mission-runtime-story-label {
@@ -1187,6 +1355,27 @@
   background:
     linear-gradient(180deg, rgba(113, 71, 255, 0.28), rgba(66, 38, 138, 0.22)),
     radial-gradient(circle at 15% 50%, rgba(171, 111, 255, 0.18), transparent 28%);
+  transition:
+    opacity 560ms ease,
+    transform 560ms cubic-bezier(0.2, 0.7, 0.2, 1),
+    box-shadow 560ms ease,
+    border-color 560ms ease;
+}
+
+.mission-runtime-focus-listening .mission-runtime-story-voice {
+  opacity: 1;
+  transform: translateY(-2px);
+  box-shadow:
+    0 22px 36px rgba(91, 52, 184, 0.2),
+    0 0 24px rgba(171, 111, 255, 0.08),
+    inset 0 0 0 1px rgba(212, 191, 255, 0.14);
+}
+
+.mission-runtime-focus-speaking .mission-runtime-story-voice,
+.mission-runtime-focus-feedback .mission-runtime-story-voice,
+.mission-runtime-focus-reward .mission-runtime-story-voice {
+  opacity: 0.58;
+  transform: translateY(4px);
 }
 
 .mission-runtime-story-voice-wave {
@@ -1634,6 +1823,15 @@
     padding: 14px;
   }
 
+  .mission-runtime-play-focus .mission-runtime-system-grid {
+    display: none;
+  }
+
+  .mission-runtime-play-focus .mission-runtime-story-grid {
+    opacity: 1;
+    padding-top: 16px;
+  }
+
   .mission-runtime-topbar-button,
   .mission-runtime-topbar-pill,
   .mission-runtime-status-pill,
@@ -1768,6 +1966,18 @@
 
   .mission-runtime-story-feedback-copy {
     max-width: none;
+  }
+
+  .mission-runtime-play-focus .mission-runtime-story-card.is-muted {
+    opacity: 0.2;
+    filter: blur(2px) saturate(0.88);
+    transform: translateY(8px);
+    max-height: 118px;
+    overflow: hidden;
+  }
+
+  .mission-runtime-play-focus .mission-runtime-story-card.is-focused {
+    transform: translateY(0);
   }
 
   .mission-runtime-story-feedback-companion {
