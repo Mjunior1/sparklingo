@@ -288,6 +288,56 @@ const buildFeedback = (
     scene.emotionalFeedbackTone,
 })
 
+const buildImmigrationSparkMemory = (selectedAnswer: RuntimeAnswerViewModel | null) => {
+  if (!selectedAnswer) {
+    return {
+      holdingTitle: 'Spark is staying with you.',
+      holdingBody: 'One calm line is enough. Let the checkpoint settle before you move.',
+      completionTitle: 'You stayed with the moment.',
+      completionBody: 'That is how confidence starts here: one scene at a time, without rushing the answer.',
+      teaserBody: 'The airport is not finished with you yet. One practical problem is waiting right after this checkpoint.',
+    }
+  }
+
+  if (selectedAnswer.isCorrect) {
+    return {
+      holdingTitle: 'Spark felt that land.',
+      holdingBody: 'Short, calm and believable. That is exactly how confidence should sound at the desk.',
+      completionTitle: 'Keep that same calm voice.',
+      completionBody: 'You did not need a perfect speech. You needed one clear answer that matched the moment, and you gave it.',
+      teaserBody: 'You are through the line. Now the airport shifts the tension to your missing luggage.',
+    }
+  }
+
+  if (selectedAnswer.id === 'airport-a1') {
+    return {
+      holdingTitle: 'Spark caught the intention.',
+      holdingBody: 'Tourism makes sense in real life, but this officer needs the exact reason in the cleanest possible form.',
+      completionTitle: 'You were close for a reason.',
+      completionBody: 'Your instinct was practical. Next time, keep that instinct and tighten the wording even more.',
+      teaserBody: 'You crossed the desk, but the airport is about to test how you ask for help under pressure.',
+    }
+  }
+
+  if (selectedAnswer.id === 'airport-a2') {
+    return {
+      holdingTitle: 'Spark noticed the drift.',
+      holdingBody: 'The English was clean, but the story slipped away from this trip. Pull the answer back to the actual moment.',
+      completionTitle: 'You corrected the drift.',
+      completionBody: 'Even when your first instinct changed the story, you stayed present long enough to recover the checkpoint.',
+      teaserBody: 'You are moving again, but the next airport problem will demand clarity for a different reason.',
+    }
+  }
+
+  return {
+    holdingTitle: 'Spark is with you.',
+    holdingBody: 'Stay with the checkpoint. A clearer answer always feels simpler when the moment settles.',
+    completionTitle: 'You kept moving.',
+    completionBody: 'That recovery matters. The mission is teaching you how to stay present when the line keeps moving.',
+    teaserBody: 'The scene is over, but the airport still has another practical obstacle waiting ahead.',
+  }
+}
+
 const getLegacySceneIdFromContract = (contract: RuntimeSceneContract) =>
   contract.experiences.find((experience) => experience.meta?.legacyRuntimeSceneId)?.meta?.legacyRuntimeSceneId ||
   contract.scene.id.replace(/^scene-/, '')
@@ -632,13 +682,16 @@ export function MissionRuntime({
     currentFeedbackRevealStage !== 'idle'
   const rewardVisible =
     currentFeedbackRevealStage === 'reward' || currentFeedbackRevealStage === 'ready'
+  const sparkMemory = buildImmigrationSparkMemory(selectedAnswer)
   const feedback = currentScene ? buildFeedback(currentScene, selectedAnswer, feedbackExperience) : null
   const feedbackTitle =
     phase === 'scene'
       ? selectedAnswer
         ? feedbackVisible
           ? feedback?.title || currentScene?.emotionalFeedbackTitle || ''
-          : 'Spark is reading the moment.'
+          : isImmigrationPlayableSlice
+            ? sparkMemory.holdingTitle
+            : 'Spark is reading the moment.'
         : isImmigrationPlayableSlice
           ? currentSceneStep === 'listening'
             ? 'Listen first.'
@@ -652,7 +705,9 @@ export function MissionRuntime({
       ? selectedAnswer
         ? feedbackVisible
           ? feedback?.body || currentScene?.emotionalFeedbackBody || ''
-          : 'Hold the moment for a second. Spark will react once your answer lands.'
+          : isImmigrationPlayableSlice
+            ? sparkMemory.holdingBody
+            : 'Hold the moment for a second. Spark will react once your answer lands.'
         : isImmigrationPlayableSlice
           ? currentSceneStep === 'listening'
             ? 'Let the officer finish the question. One clear answer is all you need.'
@@ -847,14 +902,10 @@ export function MissionRuntime({
       : 'It was not perfect, but you stayed present under pressure and kept the checkpoint from stopping your journey.'
     : 'You survived the airport with more confidence, clearer English and visible progress.'
   const completionSparkTitle = isImmigrationPlayableSlice
-    ? isCheckpointCleared
-      ? 'That was enough.'
-      : 'You still moved forward.'
+    ? sparkMemory.completionTitle
     : 'Spark noticed the shift.'
   const completionSparkBody = isImmigrationPlayableSlice
-    ? isCheckpointCleared
-      ? 'You did not sound like a student solving a prompt. You sounded like a traveler who knew what to say.'
-      : 'Even without a perfect line, you stayed in the moment long enough to get through it.'
+    ? sparkMemory.completionBody
     : 'You stayed with the scene long enough to turn pressure into visible progress.'
   const completionPrimaryLabel = isImmigrationPlayableSlice ? 'Return to journey' : 'Back home'
   const completionSecondaryLabel = isImmigrationPlayableSlice ? 'Replay checkpoint' : 'Replay mission'
@@ -1296,7 +1347,7 @@ export function MissionRuntime({
                   <div className="mission-runtime-next-teaser">
                     <small>Next checkpoint</small>
                     <strong>{nextTeaserScene.title}</strong>
-                    <p>{nextTeaserScene.subtitle || 'A new problem is waiting just beyond the checkpoint.'}</p>
+                    <p>{sparkMemory.teaserBody || nextTeaserScene.subtitle || 'A new problem is waiting just beyond the checkpoint.'}</p>
                   </div>
                 ) : null}
               </section>
