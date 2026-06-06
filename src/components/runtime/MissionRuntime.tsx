@@ -504,6 +504,7 @@ export function MissionRuntime({
   const [comboCount, setComboCount] = useState(0)
   const [feedbackPulse, setFeedbackPulse] = useState(false)
   const [isListeningTransitioning, setIsListeningTransitioning] = useState(false)
+  const [isCheckpointTransitioning, setIsCheckpointTransitioning] = useState(false)
   const [previousSceneId, setPreviousSceneId] = useState<string | null>(null)
   const [isMobileViewport, setIsMobileViewport] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(max-width: 780px)').matches : false,
@@ -569,6 +570,7 @@ export function MissionRuntime({
     setFeedbackPulse(false)
     setPreviousSceneId(null)
     setIsListeningTransitioning(false)
+    setIsCheckpointTransitioning(false)
     setActiveAudioCue(null)
     clearPacingTimers()
     clearAudioCueTimer()
@@ -666,6 +668,7 @@ export function MissionRuntime({
           : 'feedback'
         : currentSceneStep
       : phase
+  const isCheckpointCleared = Boolean(selectedAnswer?.isCorrect)
 
   const currentAsset = currentScene ? buildRuntimeAsset(mission, currentScene) : mission.asset
   const previousAsset = previousScene ? buildRuntimeAsset(mission, previousScene) : null
@@ -774,7 +777,7 @@ export function MissionRuntime({
             ? !isListeningTransitioning
             : currentSceneStep === 'speaking'
               ? Boolean(selectedAnswer)
-              : currentFeedbackRevealStage === 'ready'
+              : currentFeedbackRevealStage === 'ready' && !isCheckpointTransitioning
           : answerOptions.length === 0 || Boolean(selectedAnswer)
   const rewardDots = Array.from({ length: totalSceneCount })
   const rewardLabel =
@@ -782,7 +785,9 @@ export function MissionRuntime({
       ? 'Mission ready'
       : phase === 'complete'
         ? isImmigrationPlayableSlice
-          ? 'Checkpoint complete'
+          ? isCheckpointCleared
+            ? 'Checkpoint cleared'
+            : 'Checkpoint survived'
           : 'Mission complete'
         : isImmigrationPlayableSlice && currentSceneStep === 'listening'
           ? isListeningTransitioning
@@ -791,9 +796,11 @@ export function MissionRuntime({
           : !selectedAnswer
           ? 'Checkpoint'
           : currentFeedbackRevealStage === 'idle'
-            ? 'Spark is reading the moment'
+            ? 'Let it land'
             : !rewardVisible
-              ? 'That landed'
+              ? isCheckpointCleared
+                ? 'Confidence is landing'
+                : 'Recovery is landing'
               : selectedAnswer.isCorrect
                 ? 'Excelente!'
                 : 'Boa tentativa!'
@@ -828,10 +835,45 @@ export function MissionRuntime({
         sceneFlow[sceneIndex + 1]?.scene ??
         null
       : sceneFlow[sceneIndex + 1]?.scene ?? null
-  const completionTitle = isImmigrationPlayableSlice ? 'You made it through immigration.' : `${mission.title} complete.`
+  const completionTitle = isImmigrationPlayableSlice
+    ? isCheckpointCleared
+      ? 'You cleared immigration.'
+      : 'You made it through immigration.'
+    : `${mission.title} complete.`
   const completionBody = isImmigrationPlayableSlice
-    ? 'You stayed calm, answered clearly and got past the first airport checkpoint without losing the moment.'
+    ? isCheckpointCleared
+      ? 'One calm answer was enough. You gave the officer exactly what the moment needed and the checkpoint opened.'
+      : 'It was not perfect, but you stayed present under pressure and kept the checkpoint from stopping your journey.'
     : 'You survived the airport with more confidence, clearer English and visible progress.'
+  const completionSparkTitle = isImmigrationPlayableSlice
+    ? isCheckpointCleared
+      ? 'That was enough.'
+      : 'You still moved forward.'
+    : 'Spark noticed the shift.'
+  const completionSparkBody = isImmigrationPlayableSlice
+    ? isCheckpointCleared
+      ? 'You did not sound like a student solving a prompt. You sounded like a traveler who knew what to say.'
+      : 'Even without a perfect line, you stayed in the moment long enough to get through it.'
+    : 'You stayed with the scene long enough to turn pressure into visible progress.'
+  const completionPrimaryLabel = isImmigrationPlayableSlice ? 'Return to journey' : 'Back home'
+  const completionSecondaryLabel = isImmigrationPlayableSlice ? 'Replay checkpoint' : 'Replay mission'
+  const scenePrimaryLabel = isImmigrationPlayableSlice
+    ? currentSceneStep === 'listening'
+      ? isListeningTransitioning
+        ? 'Listening...'
+        : 'I understood'
+      : currentSceneStep === 'feedback'
+        ? rewardVisible
+          ? isCheckpointTransitioning
+            ? 'Crossing checkpoint...'
+            : isCheckpointCleared
+              ? 'Cross checkpoint'
+              : 'Move through checkpoint'
+          : 'Let it land'
+        : 'Continue'
+    : sceneIndex >= totalSceneCount - 1
+      ? 'Complete mission'
+      : 'Próxima'
 
   const handleSelectAnswer = (answer: RuntimeAnswerViewModel) => {
     if (!currentScene || phase !== 'scene') return
@@ -937,7 +979,13 @@ export function MissionRuntime({
       }
 
       if (currentFeedbackRevealStage !== 'ready') return
-      setPhase('complete')
+      if (isCheckpointTransitioning) return
+      setIsCheckpointTransitioning(true)
+      clearPacingTimers()
+      schedulePacingTimer(() => {
+        setIsCheckpointTransitioning(false)
+        setPhase('complete')
+      }, 480)
       return
     }
 
@@ -993,6 +1041,7 @@ export function MissionRuntime({
     setFeedbackPulse(false)
     setPreviousSceneId(null)
     setIsListeningTransitioning(false)
+    setIsCheckpointTransitioning(false)
     clearPacingTimers()
     activeSceneRef.current = null
   }
@@ -1022,7 +1071,7 @@ export function MissionRuntime({
 
   return (
     <div
-      className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone} mission-runtime-phase-${phase} mission-runtime-focus-${runtimeFocusMode}${phase === 'scene' ? ' mission-runtime-play-focus' : ''}`}
+      className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone} mission-runtime-phase-${phase} mission-runtime-focus-${runtimeFocusMode}${phase === 'scene' ? ' mission-runtime-play-focus' : ''}${isCheckpointTransitioning ? ' mission-runtime-is-closing' : ''}`}
     >
       <div className="mission-runtime-stage">
         <div className="mission-runtime-background" aria-hidden="true">
@@ -1197,6 +1246,10 @@ export function MissionRuntime({
                 <p className="mission-runtime-phase-kicker">{introWorldTitle}</p>
                 <h1>{completionTitle}</h1>
                 <p>{completionBody}</p>
+                <div className="mission-runtime-phase-note mission-runtime-phase-note-complete">
+                  <strong>{completionSparkTitle}</strong>
+                  <p>{completionSparkBody}</p>
+                </div>
                 <div className="mission-runtime-phase-stats">
                   <div>
                     <small>XP earned</small>
@@ -1213,7 +1266,7 @@ export function MissionRuntime({
                 </div>
                 {isImmigrationPlayableSlice && nextTeaserScene ? (
                   <div className="mission-runtime-next-teaser">
-                    <small>Next scene teaser</small>
+                    <small>Next checkpoint</small>
                     <strong>{nextTeaserScene.title}</strong>
                     <p>{nextTeaserScene.subtitle || 'A new problem is waiting just beyond the checkpoint.'}</p>
                   </div>
@@ -1230,7 +1283,7 @@ export function MissionRuntime({
             <div className="mission-runtime-footer">
               <button className="mission-runtime-secondary" type="button" onClick={restartMission}>
                 <Play size={16} />
-                Replay mission
+                {completionSecondaryLabel}
               </button>
               <div className="mission-runtime-reward-rail">
                 <div className="mission-runtime-reward-core">
@@ -1240,7 +1293,7 @@ export function MissionRuntime({
                     </RuntimeIcon>
                   </span>
                   <div>
-                    <small>Mission complete</small>
+                    <small>{rewardLabel}</small>
                     <strong>+{earnedXp} XP</strong>
                   </div>
                 </div>
@@ -1256,7 +1309,7 @@ export function MissionRuntime({
                 </div>
               </div>
               <button className="mission-runtime-primary" type="button" onClick={onBack}>
-                {isImmigrationPlayableSlice ? 'Back home' : 'Back home'}
+                {completionPrimaryLabel}
                 <ArrowRight size={18} />
               </button>
             </div>
@@ -1416,19 +1469,7 @@ export function MissionRuntime({
               </div>
 
               <button className="mission-runtime-primary" type="button" disabled={!canAdvance} onClick={goToNextScene}>
-                {isImmigrationPlayableSlice
-                  ? currentSceneStep === 'listening'
-                    ? isListeningTransitioning
-                      ? 'Listening...'
-                      : 'I understood'
-                    : currentSceneStep === 'feedback'
-                      ? rewardVisible
-                        ? 'See what happens next'
-                        : 'Let it land'
-                      : 'Continue'
-                  : sceneIndex >= totalSceneCount - 1
-                    ? 'Complete mission'
-                    : 'Próxima'}
+                {scenePrimaryLabel}
                 <ArrowRight size={18} />
               </button>
             </div>
