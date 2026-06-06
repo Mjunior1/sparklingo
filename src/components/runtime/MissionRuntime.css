@@ -453,6 +453,15 @@
     0 10px 24px rgba(88, 61, 161, 0.18);
 }
 
+.mission-runtime-prompt-head button.is-audio-active,
+.mission-runtime-mini-audio.is-audio-active {
+  border-color: rgba(206, 184, 255, 0.26);
+  box-shadow:
+    inset 0 0 0 1px rgba(214, 194, 255, 0.22),
+    0 14px 28px rgba(88, 61, 161, 0.22),
+    0 0 22px rgba(176, 126, 255, 0.1);
+}
+
 .mission-runtime-prompt-card h1 {
   margin: 0;
   color: #fff8ff;
@@ -534,6 +543,14 @@
   box-shadow:
     0 18px 28px rgba(0, 0, 0, 0.18),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.mission-runtime-listening-panel.is-audio-active {
+  border-color: rgba(194, 171, 255, 0.26);
+  box-shadow:
+    0 24px 40px rgba(0, 0, 0, 0.22),
+    0 0 22px rgba(126, 178, 255, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .mission-runtime-listening-audio {
@@ -1386,6 +1403,13 @@
     inset 0 0 0 1px rgba(212, 191, 255, 0.12);
 }
 
+.mission-runtime-story-voice.is-audio-active {
+  box-shadow:
+    0 22px 36px rgba(91, 52, 184, 0.22),
+    0 0 26px rgba(171, 111, 255, 0.1),
+    inset 0 0 0 1px rgba(212, 191, 255, 0.16);
+}
+
 .mission-runtime-story-voice-orb {
   width: 42px;
   height: 42px;
@@ -1487,6 +1511,11 @@
   background: linear-gradient(180deg, rgba(112, 255, 211, 0.96), rgba(56, 198, 176, 0.22));
   transform-origin: center;
   animation: runtimeWavePulse 1.9s ease-in-out infinite;
+}
+
+.mission-runtime-waveform.is-audio-active span {
+  box-shadow: 0 0 12px rgba(112, 255, 211, 0.12);
+  animation-duration: 1.28s;
 }
 
 .mission-runtime-waveform-check {
@@ -1832,6 +1861,16 @@
     padding-top: 16px;
   }
 
+  .mission-runtime-main {
+    gap: 14px;
+    padding-top: 14px;
+  }
+
+  .mission-runtime-dialogue {
+    gap: 14px;
+    padding-top: 6px;
+  }
+
   .mission-runtime-topbar-button,
   .mission-runtime-topbar-pill,
   .mission-runtime-status-pill,
@@ -1863,6 +1902,8 @@
   }
 
   .mission-runtime-prompt-card {
+    width: 100%;
+    min-height: 0;
     padding: 20px;
     border-radius: 24px;
   }
@@ -1881,6 +1922,10 @@
     grid-template-columns: 1fr;
   }
 
+  .mission-runtime-answers {
+    width: 100%;
+  }
+
   .mission-runtime-answer {
     padding: 16px;
     border-radius: 20px;
@@ -1897,7 +1942,17 @@
 
   .mission-runtime-feedback-stage {
     width: 100%;
-    min-height: 292px;
+    min-height: 0;
+  }
+
+  .mission-runtime-focus-listening .mission-runtime-feedback-stage,
+  .mission-runtime-focus-speaking .mission-runtime-feedback-stage {
+    min-height: 168px;
+  }
+
+  .mission-runtime-focus-feedback .mission-runtime-feedback-stage,
+  .mission-runtime-focus-reward .mission-runtime-feedback-stage {
+    min-height: 264px;
   }
 
   .mission-runtime-character {
@@ -1910,6 +1965,13 @@
     padding: 20px;
     border-radius: 22px;
   }
+
+  .mission-runtime-focus-listening .mission-runtime-feedback-card,
+  .mission-runtime-focus-speaking .mission-runtime-feedback-card {
+    min-height: 146px;
+    padding: 18px 18px 20px;
+  }
+
   .mission-runtime-feedback-card strong {
     font-size: 1.55rem;
   }
