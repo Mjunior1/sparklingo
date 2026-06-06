@@ -669,6 +669,7 @@ export function MissionRuntime({
         : currentSceneStep
       : phase
   const isCheckpointCleared = Boolean(selectedAnswer?.isCorrect)
+  const activeAudioModeClass = activeAudioCue ? ` mission-runtime-audio-${activeAudioCue}` : ''
 
   const currentAsset = currentScene ? buildRuntimeAsset(mission, currentScene) : mission.asset
   const previousAsset = previousScene ? buildRuntimeAsset(mission, previousScene) : null
@@ -874,6 +875,33 @@ export function MissionRuntime({
     : sceneIndex >= totalSceneCount - 1
       ? 'Complete mission'
       : 'Próxima'
+  const listeningPanelTitle = isListeningTransitioning ? 'Officer speaking' : 'Immigration audio'
+  const listeningPanelBody = isListeningTransitioning
+    ? 'Stay with the line. You only need the purpose of the trip.'
+    : 'Hear the officer once, then answer like the line is moving behind you.'
+  const storyVoiceLabel =
+    currentSceneStep === 'listening'
+      ? 'Hear the officer'
+      : currentSceneStep === 'speaking'
+        ? 'Hear the question again'
+        : 'Replay the line'
+  const responseCardTitle =
+    selectedAnswer?.text ||
+    (currentSceneStep === 'listening'
+      ? 'You are still taking in the question.'
+      : 'Choose the line you would say without stopping the queue.')
+  const responseCardBody =
+    selectedAnswer?.translation ||
+    (currentSceneStep === 'listening'
+      ? 'Let the officer finish. A calm answer comes next.'
+      : 'Pick the reply that sounds steady, simple and believable at the desk.')
+  const responseWaveLabel = selectedAnswer
+    ? activeAudioCue === 'answer'
+      ? 'Your answer is landing'
+      : 'Your answer will sound like this'
+    : currentSceneStep === 'speaking'
+      ? 'Your spoken reply will settle here'
+      : 'Your reply opens after the officer finishes'
 
   const handleSelectAnswer = (answer: RuntimeAnswerViewModel) => {
     if (!currentScene || phase !== 'scene') return
@@ -1071,7 +1099,7 @@ export function MissionRuntime({
 
   return (
     <div
-      className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone} mission-runtime-phase-${phase} mission-runtime-focus-${runtimeFocusMode}${phase === 'scene' ? ' mission-runtime-play-focus' : ''}${isCheckpointTransitioning ? ' mission-runtime-is-closing' : ''}`}
+      className={`mission-runtime-shell mission-runtime-tone-${currentScene.emotionalFeedbackTone} mission-runtime-phase-${phase} mission-runtime-focus-${runtimeFocusMode}${phase === 'scene' ? ' mission-runtime-play-focus' : ''}${isCheckpointTransitioning ? ' mission-runtime-is-closing' : ''}${activeAudioModeClass}`}
     >
       <div className="mission-runtime-stage">
         <div className="mission-runtime-background" aria-hidden="true">
@@ -1364,12 +1392,8 @@ export function MissionRuntime({
                         </RuntimeIcon>
                       </span>
                       <span className="mission-runtime-listening-copy">
-                        <strong>{prompt?.helperLabel || 'Listening moment'}</strong>
-                        <small>
-                          {isListeningTransitioning
-                            ? 'Take the question in. Your answer comes next.'
-                            : 'Hear the officer first, then answer like someone who just landed.'}
-                        </small>
+                        <strong>{listeningPanelTitle}</strong>
+                        <small>{listeningPanelBody}</small>
                       </span>
                       <span className="mission-runtime-answer-check">
                         {isListeningTransitioning ? <Volume2 size={18} /> : <ArrowRight size={18} />}
@@ -1551,7 +1575,7 @@ export function MissionRuntime({
                         />
                       ))}
                     </span>
-                    <span className="mission-runtime-story-voice-text">{prompt?.helperActionLabel || 'Toque para falar'}</span>
+                    <span className="mission-runtime-story-voice-text">{storyVoiceLabel}</span>
                   </button>
                 </div>
               </article>
@@ -1564,18 +1588,8 @@ export function MissionRuntime({
                 <span className="mission-runtime-story-label">Resposta do usuário</span>
                 <div className="mission-runtime-story-response-card">
                   <small>YOU</small>
-                  <strong>
-                    {selectedAnswer?.text ||
-                      (currentSceneStep === 'listening'
-                        ? 'Listen before you answer.'
-                        : 'Choose the line you would actually say to the officer.')}
-                  </strong>
-                  <p>
-                    {selectedAnswer?.translation ||
-                      (currentSceneStep === 'listening'
-                        ? 'Take in the officer’s question first. You only need one calm answer.'
-                        : 'Pick the line that would sound calm and believable at the desk.')}
-                  </p>
+                  <strong>{responseCardTitle}</strong>
+                  <p>{responseCardBody}</p>
                   <button
                     type="button"
                     className={`mission-runtime-mini-audio${activeAudioCue === 'answer' ? ' is-audio-active' : ''}`}
@@ -1588,6 +1602,7 @@ export function MissionRuntime({
                   </button>
                 </div>
                 <div className="mission-runtime-waveform-card">
+                  <small className="mission-runtime-waveform-label">{responseWaveLabel}</small>
                   <div className={`mission-runtime-waveform${activeAudioCue === 'answer' ? ' is-audio-active' : ''}`}>
                     {waveformBars.map((height, index) => (
                       <span

@@ -471,6 +471,22 @@
   box-shadow:
     inset 0 0 0 1px rgba(201, 176, 255, 0.18),
     0 10px 24px rgba(88, 61, 161, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.mission-runtime-prompt-head button::after,
+.mission-runtime-mini-audio::after,
+.mission-runtime-story-voice-orb::after,
+.mission-runtime-listening-audio::after {
+  content: '';
+  position: absolute;
+  inset: 16%;
+  border-radius: 999px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.2), transparent 72%);
+  opacity: 0;
+  transform: scale(0.88);
+  transition: opacity 320ms ease, transform 520ms ease;
 }
 
 .mission-runtime-prompt-head button.is-audio-active,
@@ -480,6 +496,14 @@
     inset 0 0 0 1px rgba(214, 194, 255, 0.22),
     0 14px 28px rgba(88, 61, 161, 0.22),
     0 0 22px rgba(176, 126, 255, 0.1);
+}
+
+.mission-runtime-prompt-head button.is-audio-active::after,
+.mission-runtime-mini-audio.is-audio-active::after,
+.mission-runtime-story-voice.is-audio-active .mission-runtime-story-voice-orb::after,
+.mission-runtime-listening-panel.is-audio-active .mission-runtime-listening-audio::after {
+  opacity: 1;
+  transform: scale(1.14);
 }
 
 .mission-runtime-prompt-card h1 {
@@ -571,6 +595,20 @@
     0 24px 40px rgba(0, 0, 0, 0.22),
     0 0 22px rgba(126, 178, 255, 0.1),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.mission-runtime-audio-prompt .mission-runtime-prompt-card,
+.mission-runtime-audio-listening .mission-runtime-listening-panel {
+  border-color: rgba(196, 174, 255, 0.24);
+  box-shadow:
+    0 28px 42px rgba(0, 0, 0, 0.22),
+    0 0 20px rgba(133, 182, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.mission-runtime-audio-prompt .mission-runtime-dialogue,
+.mission-runtime-audio-listening .mission-runtime-dialogue {
+  transform: translateY(-2px);
 }
 
 .mission-runtime-listening-audio {
@@ -1479,6 +1517,10 @@
     inset 0 0 0 1px rgba(212, 191, 255, 0.16);
 }
 
+.mission-runtime-audio-prompt .mission-runtime-story-voice.is-audio-active {
+  transform: translateY(-2px);
+}
+
 .mission-runtime-story-voice-orb {
   width: 42px;
   height: 42px;
@@ -1532,6 +1574,13 @@
     radial-gradient(circle at 88% 18%, rgba(112, 255, 211, 0.08), transparent 22%);
 }
 
+.mission-runtime-audio-answer .mission-runtime-story-response-card {
+  box-shadow:
+    0 20px 34px rgba(0, 0, 0, 0.18),
+    0 0 18px rgba(112, 255, 211, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
 .mission-runtime-story-response-card small {
   color: #74ffc8;
   font-size: 0.85rem;
@@ -1559,11 +1608,19 @@
   margin-top: 14px;
   padding: 16px 18px;
   border-radius: 22px;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
   background: linear-gradient(180deg, rgba(16, 71, 66, 0.54), rgba(10, 37, 46, 0.88));
+}
+
+.mission-runtime-waveform-label {
+  grid-column: 1 / -1;
+  color: rgba(214, 239, 232, 0.64);
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .mission-runtime-waveform {
@@ -1585,6 +1642,13 @@
 .mission-runtime-waveform.is-audio-active span {
   box-shadow: 0 0 12px rgba(112, 255, 211, 0.12);
   animation-duration: 1.28s;
+}
+
+.mission-runtime-audio-answer .mission-runtime-waveform-card {
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.18),
+    0 0 20px rgba(112, 255, 211, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .mission-runtime-waveform-check {
