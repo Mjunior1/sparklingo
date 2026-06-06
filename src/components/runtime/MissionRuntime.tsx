@@ -291,8 +291,15 @@ const buildFeedback = (
 const buildImmigrationSparkMemory = (selectedAnswer: RuntimeAnswerViewModel | null) => {
   if (!selectedAnswer) {
     return {
+      listeningTitle: 'Spark is staying quiet.',
+      listeningBody: 'Let the officer finish. One calm answer will do more for you than a rushed one.',
+      speakingTitle: 'Spark is giving you a beat.',
+      speakingBody: 'You do not need a speech here. Choose the line that would keep the queue moving.',
       holdingTitle: 'Spark is staying with you.',
       holdingBody: 'One calm line is enough. Let the checkpoint settle before you move.',
+      responseBody: 'Spark is waiting for the line that sounds believable at the desk and simple enough to trust.',
+      waveLabel: 'Your reply will settle here once you commit to it',
+      rewardLabel: 'Checkpoint is settling',
       completionTitle: 'You stayed with the moment.',
       completionBody: 'That is how confidence starts here: one scene at a time, without rushing the answer.',
       teaserBody: 'The airport is not finished with you yet. One practical problem is waiting right after this checkpoint.',
@@ -301,8 +308,15 @@ const buildImmigrationSparkMemory = (selectedAnswer: RuntimeAnswerViewModel | nu
 
   if (selectedAnswer.isCorrect) {
     return {
+      listeningTitle: 'Spark stayed calm.',
+      listeningBody: 'You heard the checkpoint clearly. Now keep the same calm energy in your answer.',
+      speakingTitle: 'Spark is backing this line.',
+      speakingBody: 'This answer sounds grounded, direct and right for the desk in front of you.',
       holdingTitle: 'Spark felt that land.',
       holdingBody: 'Short, calm and believable. That is exactly how confidence should sound at the desk.',
+      responseBody: 'Spark heard a line that keeps the officer moving and leaves no doubt about the purpose of your trip.',
+      waveLabel: 'Spark heard a calm, travel-ready answer',
+      rewardLabel: 'Confidence landed',
       completionTitle: 'Keep that same calm voice.',
       completionBody: 'You did not need a perfect speech. You needed one clear answer that matched the moment, and you gave it.',
       teaserBody: 'You are through the line. Now the airport shifts the tension to your missing luggage.',
@@ -311,8 +325,15 @@ const buildImmigrationSparkMemory = (selectedAnswer: RuntimeAnswerViewModel | nu
 
   if (selectedAnswer.id === 'airport-a1') {
     return {
+      listeningTitle: 'Spark heard the instinct.',
+      listeningBody: 'The intention is practical. The checkpoint just wants the tighter version of it.',
+      speakingTitle: 'Spark is nudging the line.',
+      speakingBody: 'Tourism makes sense, but the officer wants the clearest possible version of why you are here.',
       holdingTitle: 'Spark caught the intention.',
       holdingBody: 'Tourism makes sense in real life, but this officer needs the exact reason in the cleanest possible form.',
+      responseBody: 'Spark heard the right travel instinct first. Now the checkpoint is asking for a cleaner, more exact answer.',
+      waveLabel: 'Spark heard intention before precision',
+      rewardLabel: 'Instinct landed',
       completionTitle: 'You were close for a reason.',
       completionBody: 'Your instinct was practical. Next time, keep that instinct and tighten the wording even more.',
       teaserBody: 'You crossed the desk, but the airport is about to test how you ask for help under pressure.',
@@ -321,8 +342,15 @@ const buildImmigrationSparkMemory = (selectedAnswer: RuntimeAnswerViewModel | nu
 
   if (selectedAnswer.id === 'airport-a2') {
     return {
+      listeningTitle: 'Spark noticed the fluency.',
+      listeningBody: 'The English is there. The checkpoint just needs the story to stay inside this exact trip.',
+      speakingTitle: 'Spark is pulling it back.',
+      speakingBody: 'Your English sounds clean, but the scene still needs the answer to point back to this journey.',
       holdingTitle: 'Spark noticed the drift.',
       holdingBody: 'The English was clean, but the story slipped away from this trip. Pull the answer back to the actual moment.',
+      responseBody: 'Spark heard fluent English, but the checkpoint drifted off the real reason for this trip.',
+      waveLabel: 'Spark heard fluency drift off the desk',
+      rewardLabel: 'Drift noticed',
       completionTitle: 'You corrected the drift.',
       completionBody: 'Even when your first instinct changed the story, you stayed present long enough to recover the checkpoint.',
       teaserBody: 'You are moving again, but the next airport problem will demand clarity for a different reason.',
@@ -330,8 +358,15 @@ const buildImmigrationSparkMemory = (selectedAnswer: RuntimeAnswerViewModel | nu
   }
 
   return {
+    listeningTitle: 'Spark is with you.',
+    listeningBody: 'Take the checkpoint one line at a time. The scene will feel simpler once you let it settle.',
+    speakingTitle: 'Spark is holding the space.',
+    speakingBody: 'Stay with the desk. The answer will feel cleaner when you keep it tied to the real moment.',
     holdingTitle: 'Spark is with you.',
     holdingBody: 'Stay with the checkpoint. A clearer answer always feels simpler when the moment settles.',
+    responseBody: 'Spark is helping you pull the scene back into focus before the checkpoint moves on.',
+    waveLabel: 'Spark is listening for the cleanest version of this answer',
+    rewardLabel: 'Checkpoint held',
     completionTitle: 'You kept moving.',
     completionBody: 'That recovery matters. The mission is teaching you how to stay present when the line keeps moving.',
     teaserBody: 'The scene is over, but the airport still has another practical obstacle waiting ahead.',
@@ -699,8 +734,8 @@ export function MissionRuntime({
             : 'Spark is reading the moment.'
         : isImmigrationPlayableSlice
           ? currentSceneStep === 'listening'
-            ? 'Listen first.'
-            : 'Your turn.'
+            ? sparkMemory.listeningTitle
+            : sparkMemory.speakingTitle
           : interactiveExperience?.type === 'listening'
             ? 'Listen first.'
             : 'Choose your response.'
@@ -715,8 +750,8 @@ export function MissionRuntime({
             : 'Hold the moment for a second. Spark will react once your answer lands.'
         : isImmigrationPlayableSlice
           ? currentSceneStep === 'listening'
-            ? 'Let the officer finish the question. One clear answer is all you need.'
-            : 'Choose the line you would actually say at the desk and keep your voice calm.'
+            ? sparkMemory.listeningBody
+            : sparkMemory.speakingBody
           : 'React to the scene and Spark will guide your next move.'
       : ''
   const feedbackXpValue = rewardVisible && selectedAnswer ? feedback?.xp ?? currentScene?.xpReward ?? 0 : 0
@@ -862,9 +897,11 @@ export function MissionRuntime({
               ? isCheckpointCleared
                 ? 'Confidence is landing'
                 : 'Recovery is landing'
-              : selectedAnswer.isCorrect
-                ? 'Excelente!'
-                : 'Boa tentativa!'
+              : isImmigrationPlayableSlice
+                ? sparkMemory.rewardLabel
+                : selectedAnswer.isCorrect
+                  ? 'Excelente!'
+                  : 'Boa tentativa!'
   const companionStyle = currentScene
     ? ({
         '--runtime-companion-scale': `${currentScene.companionScale / 100}`,
@@ -947,14 +984,18 @@ export function MissionRuntime({
       ? 'You are still taking in the question.'
       : 'Choose the line you would say without stopping the queue.')
   const responseCardBody =
-    selectedAnswer?.translation ||
+    (selectedAnswer && isImmigrationPlayableSlice
+      ? sparkMemory.responseBody
+      : selectedAnswer?.translation) ||
     (currentSceneStep === 'listening'
       ? 'Let the officer finish. A calm answer comes next.'
       : 'Pick the reply that sounds steady, simple and believable at the desk.')
   const responseWaveLabel = selectedAnswer
     ? activeAudioCue === 'answer'
       ? 'Your answer is landing'
-      : 'Your answer will sound like this'
+      : isImmigrationPlayableSlice
+        ? sparkMemory.waveLabel
+        : 'Your answer will sound like this'
     : currentSceneStep === 'speaking'
       ? 'Your spoken reply will settle here'
       : 'Your reply opens after the officer finishes'
