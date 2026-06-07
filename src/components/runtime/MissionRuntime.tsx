@@ -27,6 +27,7 @@ import type {
 } from '../../services/learning'
 import type { SceneAssetRecord } from '../../services/sceneAssets'
 import type { MissionRuntimeAnswerRecord, MissionRuntimeSceneRecord } from '../../services/missionRuntime'
+import { getRuntimeSpeechAudioUrl } from '../../services/runtimeSpeech'
 
 export type MissionRuntimeMission = {
   id: string
@@ -251,9 +252,11 @@ function RuntimeIcon({
   return <>{children}</>
 }
 
-const playSpeech = (text: string, audioUrl?: string) => {
-  if (audioUrl) {
-    const audio = new Audio(audioUrl)
+const playSpeech = async (text: string, audioUrl?: string) => {
+  const resolvedAudioUrl = audioUrl || await getRuntimeSpeechAudioUrl(text)
+
+  if (resolvedAudioUrl) {
+    const audio = new Audio(resolvedAudioUrl)
     void audio.play().catch(() => undefined)
     return
   }
@@ -641,7 +644,7 @@ export function MissionRuntime({
     const trimmed = text.trim()
     if (!trimmed && !audioUrl) return
     activateAudioCue(cue, audioUrl ? 2400 : Math.min(3200, Math.max(1500, trimmed.length * 42)))
-    playSpeech(text, audioUrl)
+    void playSpeech(text, audioUrl)
   }
 
   const schedulePacingTimer = (callback: () => void, delay: number) => {

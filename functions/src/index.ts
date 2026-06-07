@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { initializeApp } from 'firebase-admin/app'
 import { getFirestore } from 'firebase-admin/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
@@ -107,6 +108,21 @@ type TestAiProviderConnectionRequest = {
   apiKey?: string
 }
 
+type SynthesizeRuntimeSpeechRequest = {
+  text: string
+  voiceId?: string
+  modelId?: string
+}
+
+type SynthesizeRuntimeSpeechResponse = {
+  ok: true
+  audioBase64: string
+  contentType: string
+  voiceId: string
+  modelId: string
+  cacheKey: string
+}
+
 type GeneratedQuestionDraft = {
   type: DraftQuestionType
   tag: string
@@ -191,6 +207,11 @@ const providerDefaults: Record<AIProvider, string> = {
   anthropic: 'ANTHROPIC_API_KEY',
 }
 
+const defaultElevenLabsVoiceId = process.env.ELEVENLABS_VOICE_ID?.trim() || 'Gfpl8Yo74Is0W6cPUWWT'
+const defaultElevenLabsModelId = process.env.ELEVENLABS_MODEL_ID?.trim() || 'eleven_multilingual_v2'
+const elevenLabsCacheTtlMs = 1000 * 60 * 60 * 12
+const runtimeSpeechCache = new Map<string, { audioBase64: string; contentType: string; expiresAt: number }>()
+
 const questionTypeOrder: DraftQuestionType[] = ['multiple-choice', 'speaking', 'drag-fill', 'matching', 'fill-blank', 'listening']
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
@@ -274,12 +295,22 @@ const maskKey = (value: string) => {
   return `${trimmed.slice(0, 4)}••••${trimmed.slice(-4)}`
 }
 
+const buildRuntimeSpeechCacheKey = (text: string, voiceId: string, modelId: string) =>
+  createHash('sha256')
+    .update(`${voiceId}::${modelId}::${text.trim().toLowerCase()}`)
+    .digest('hex')
+
 const ensureAdmin = async (uid: string | undefined) => {
   if (!uid) throw new HttpsError('unauthenticated', 'Faça login para acessar o controle de IA.')
   const snapshot = await db.collection('users').doc(uid).get()
   if (!snapshot.exists || snapshot.data()?.role !== 'admin') {
     throw new HttpsError('permission-denied', 'Somente admins podem operar a engine Spark AI.')
   }
+  return uid
+}
+
+const ensureAuthenticated = (uid: string | undefined) => {
+  if (!uid) throw new HttpsError('unauthenticated', 'Faça login para reproduzir o áudio da missão.')
   return uid
 }
 
@@ -305,6 +336,29 @@ const getStoredSecret = async (provider: AIProvider, apiKeyReference?: string) =
   }
 
   return null
+}
+
+const getStoredTtsSecret = async () => {
+  const stored = await db.collection('platformSecure').doc('ttsProvider').get()
+  const data = stored.data() as
+    | {
+        apiKey?: string
+        voiceId?: string
+        modelId?: string
+      }
+    | undefined
+
+  const apiKey = safeString(data?.apiKey) || safeString(process.env.ELEVENLABS_API_KEY)
+  const voiceId = safeString(data?.voiceId, defaultElevenLabsVoiceId)
+  const modelId = safeString(data?.modelId, defaultElevenLabsModelId)
+
+  if (!apiKey) return null
+
+  return {
+    apiKey,
+    voiceId,
+    modelId,
+  }
 }
 
 const fetchWithTimeout = async (url: string, init: RequestInit, timeoutMs = 12000) => {
@@ -882,6 +936,88 @@ export const testAiProviderConnection = onCall<TestAiProviderConnectionRequest>(
     usingStoredSecret: secret.usingStoredSecret,
     latencyMs,
   } satisfies ProviderConnectionResult
+})
+
+export const synthesizeRuntimeSpeech = onCall<SynthesizeRuntimeSpeechRequest>(async (request) => {
+  ensureAuthenticated(request.auth?.uid)
+
+  const text = safeString(request.data?.text)
+  if (!text) {
+    throw new HttpsError('invalid-argument', 'Informe um texto para sintetizar o áudio.')
+  }
+
+  if (text.length > 420) {
+    throw new HttpsError('invalid-argument', 'O texto do runtime precisa ter no máximo 420 caracteres.')
+  }
+
+  const secret = await getStoredTtsSecret()
+  if (!secret) {
+    throw new HttpsError(
+      'failed-precondition',
+      'ElevenLabs não está configurado no backend. Defina ELEVENLABS_API_KEY nas Functions.',
+    )
+  }
+
+  const voiceId = safeString(request.data?.voiceId, secret.voiceId)
+  const modelId = safeString(request.data?.modelId, secret.modelId)
+  const cacheKey = buildRuntimeSpeechCacheKey(text, voiceId, modelId)
+  const cached = runtimeSpeechCache.get(cacheKey)
+
+  if (cached && cached.expiresAt > Date.now()) {
+    return {
+      ok: true,
+      audioBase64: cached.audioBase64,
+      contentType: cached.contentType,
+      voiceId,
+      modelId,
+      cacheKey,
+    } satisfies SynthesizeRuntimeSpeechResponse
+  }
+
+  const response = await fetchWithTimeout(
+    `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}`,
+    {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        accept: 'audio/mpeg',
+        'xi-api-key': secret.apiKey,
+      },
+      body: JSON.stringify({
+        text,
+        model_id: modelId,
+        output_format: 'mp3_44100_128',
+        voice_settings: {
+          stability: 0.42,
+          similarity_boost: 0.78,
+          use_speaker_boost: true,
+        },
+      }),
+    },
+    30000,
+  )
+
+  if (!response.ok) {
+    throw new HttpsError('unknown', await parseProviderMessage(response))
+  }
+
+  const contentType = response.headers.get('content-type') || 'audio/mpeg'
+  const audioBase64 = Buffer.from(await response.arrayBuffer()).toString('base64')
+
+  runtimeSpeechCache.set(cacheKey, {
+    audioBase64,
+    contentType,
+    expiresAt: Date.now() + elevenLabsCacheTtlMs,
+  })
+
+  return {
+    ok: true,
+    audioBase64,
+    contentType,
+    voiceId,
+    modelId,
+    cacheKey,
+  } satisfies SynthesizeRuntimeSpeechResponse
 })
 
 export const generateMissionDraft = onCall<GenerateMissionDraftRequest>(async (request) => {
