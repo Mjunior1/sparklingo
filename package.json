@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
+    "start": "node server.mjs",
     "preview": "vite preview",
     "generate:art": "node scripts/generate-pollinations-assets.mjs",
     "generate:mascot": "node scripts/generate-mascot-concepts.mjs"

@@ -1,6 +1,3 @@
-import { httpsCallable } from 'firebase/functions'
-import { requireFirebase } from '../lib/firebase'
-
 type SynthesizeRuntimeSpeechRequest = {
   text: string
   voiceId?: string
@@ -17,14 +14,18 @@ type SynthesizeRuntimeSpeechResponse = {
 }
 
 const speechUrlCache = new Map<string, string>()
-
-const runtimeSpeechCall = () => {
-  const { functions } = requireFirebase()
-  return httpsCallable<SynthesizeRuntimeSpeechRequest, SynthesizeRuntimeSpeechResponse>(functions, 'synthesizeRuntimeSpeech')
-}
+const runtimeSpeechBaseUrl = (import.meta.env.VITE_RUNTIME_SPEECH_BASE_URL || '').trim()
 
 const buildCacheKey = (text: string, voiceId?: string, modelId?: string) =>
   `${voiceId || 'default'}::${modelId || 'default'}::${text.trim().toLowerCase()}`
+
+const buildRuntimeSpeechEndpoint = () => {
+  if (runtimeSpeechBaseUrl) {
+    return `${runtimeSpeechBaseUrl.replace(/\/+$/, '')}/api/runtime-speech`
+  }
+
+  return '/api/runtime-speech'
+}
 
 export const getRuntimeSpeechAudioUrl = async (
   text: string,
@@ -41,14 +42,22 @@ export const getRuntimeSpeechAudioUrl = async (
   if (cachedUrl) return cachedUrl
 
   try {
-    const callable = runtimeSpeechCall()
-    const result = await callable({
-      text: trimmed,
-      voiceId: options?.voiceId,
-      modelId: options?.modelId,
+    const response = await fetch(buildRuntimeSpeechEndpoint(), {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        text: trimmed,
+        voiceId: options?.voiceId,
+        modelId: options?.modelId,
+      } satisfies SynthesizeRuntimeSpeechRequest),
     })
 
-    const audioUrl = `data:${result.data.contentType};base64,${result.data.audioBase64}`
+    if (!response.ok) return ''
+
+    const result = await response.json() as SynthesizeRuntimeSpeechResponse
+    const audioUrl = `data:${result.contentType};base64,${result.audioBase64}`
     speechUrlCache.set(cacheKey, audioUrl)
     return audioUrl
   } catch {
