@@ -263,27 +263,51 @@ const getSharedRuntimeAudio = () => {
   return sharedRuntimeAudio
 }
 
-const playSpeech = async (text: string, audioUrl?: string) => {
-  const resolvedAudioUrl = audioUrl || await getRuntimeSpeechAudioUrl(text)
+const playResolvedAudioUrl = async (audioUrl: string) => {
+  const audio = getSharedRuntimeAudio()
+  if (!audio) return false
 
-  if (resolvedAudioUrl) {
-    const audio = getSharedRuntimeAudio()
-    if (!audio) return
+  try {
     audio.pause()
-    audio.currentTime = 0
-    audio.src = resolvedAudioUrl
-    audio.defaultPlaybackRate = 0.88
-    audio.playbackRate = 0.88
+
+    if (audio.src === audioUrl) {
+      audio.currentTime = 0
+    } else {
+      audio.src = audioUrl
+      audio.load()
+    }
+
+    audio.defaultPlaybackRate = 0.84
+    audio.playbackRate = 0.84
     if ('preservesPitch' in audio) {
       (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = true
     }
-    void audio.play().catch(() => undefined)
-    return
+
+    await audio.play()
+    return true
+  } catch {
+    return false
+  }
+}
+
+const playSpeech = async (text: string, audioUrl?: string) => {
+  const trimmedText = text.trim()
+
+  if (audioUrl) {
+    const playedDirectAudio = await playResolvedAudioUrl(audioUrl)
+    if (playedDirectAudio) return
   }
 
-  if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text.trim()) return
+  const resolvedAudioUrl = trimmedText ? await getRuntimeSpeechAudioUrl(trimmedText) : ''
+
+  if (resolvedAudioUrl) {
+    const playedGeneratedAudio = await playResolvedAudioUrl(resolvedAudioUrl)
+    if (playedGeneratedAudio) return
+  }
+
+  if (typeof window === 'undefined' || !('speechSynthesis' in window) || !trimmedText) return
   const utterance = new SpeechSynthesisUtterance(text)
-  utterance.rate = 0.88
+  utterance.rate = 0.84
   utterance.pitch = 1
   window.speechSynthesis.cancel()
   window.speechSynthesis.speak(utterance)
@@ -972,7 +996,10 @@ export function MissionRuntime({
   const introCompanionImage = currentScene?.companionImageUrl || ''
   const introWorldTitle = currentContract?.world.title || 'Airport Survival'
   const introSceneTitles = sceneFlow.map((item) => item.scene.title)
-  const introNarration = `${introWorldTitle}. ${mission.title}. You landed inside a noisy terminal. Answer clearly, recover when pressure rises and let Spark guide you through the first checkpoint without breaking the scene.`
+  const introDescription = currentScene
+    ? `${currentScene.subtitle || 'You landed inside a noisy terminal.'} At immigration, the officer wants one clear answer about the purpose of your trip before the line moves on.`
+    : 'You landed inside a noisy terminal. Answer clearly, recover when pressure rises and let Spark guide you through the first checkpoint without breaking the scene.'
+  const introNarration = `${introWorldTitle}. ${mission.title}. ${introDescription}`
   const topbarXpValue = phase === 'complete' ? earnedXp || currentScene?.xpReward || 0 : currentScene?.xpReward || 0
   const nextTeaserScene =
     currentScene?.nextSceneId
@@ -1094,7 +1121,7 @@ export function MissionRuntime({
     let narrationKey = ''
     let narrationText = ''
     let narrationAudioUrl = ''
-    let narrationDelay = 320
+    let narrationDelay = 360
 
     if (phase === 'intro') {
       narrationKey = `intro:${mission.id}`
@@ -1105,10 +1132,12 @@ export function MissionRuntime({
         narrationKey = `${currentScene.id}:listening`
         narrationText = prompt?.question || currentScene.question
         narrationAudioUrl = prompt?.audioUrl || currentScene.audioUrl || ''
+        narrationDelay = 420
       } else if (currentSceneStep === 'speaking') {
         narrationKey = `${currentScene.id}:speaking`
         narrationText = prompt?.question || 'How would you answer the officer?'
         narrationAudioUrl = prompt?.audioUrl || ''
+        narrationDelay = 520
       }
     }
 
@@ -1452,10 +1481,7 @@ export function MissionRuntime({
                   </button>
                 </div>
                 <h1>{mission.title}</h1>
-                <p>
-                  You landed inside a noisy terminal. Answer clearly, recover when pressure rises and let Spark guide
-                  you through the first checkpoint without breaking the scene.
-                </p>
+                <p>{introDescription}</p>
                 <div className="mission-runtime-phase-route">
                   {introSceneTitles.map((title) => (
                     <span key={title}>{title}</span>
