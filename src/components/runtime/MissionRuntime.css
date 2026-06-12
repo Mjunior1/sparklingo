@@ -221,7 +221,7 @@
 
 .mission-runtime-topbar {
   display: grid;
-  grid-template-columns: auto auto 1fr auto auto;
+  grid-template-columns: auto auto 1fr auto auto auto;
   align-items: center;
   gap: 14px;
   padding-inline: 2px;
@@ -320,6 +320,7 @@
   display: inline-flex;
   align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
   justify-self: end;
 }
 
@@ -328,6 +329,52 @@
   align-items: center;
   gap: 10px;
   padding: 14px 16px;
+}
+
+.mission-runtime-translation-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  transition:
+    border-color 240ms ease,
+    background 240ms ease,
+    box-shadow 240ms ease,
+    transform 240ms ease;
+}
+
+.mission-runtime-translation-toggle:hover {
+  transform: translateY(-1px);
+  border-color: rgba(196, 172, 255, 0.28);
+}
+
+.mission-runtime-translation-toggle div {
+  display: grid;
+  gap: 2px;
+}
+
+.mission-runtime-translation-toggle strong {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.mission-runtime-translation-toggle span {
+  color: rgba(233, 225, 247, 0.68);
+  font-size: 0.8rem;
+}
+
+.mission-runtime-translation-toggle.is-active {
+  border-color: rgba(182, 159, 255, 0.32);
+  background:
+    linear-gradient(180deg, rgba(19, 18, 42, 0.82), rgba(12, 13, 30, 0.78)),
+    radial-gradient(circle at 18% 50%, rgba(147, 103, 255, 0.12), transparent 30%);
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.2),
+    0 0 0 1px rgba(181, 155, 255, 0.05),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .mission-runtime-status-pill div {

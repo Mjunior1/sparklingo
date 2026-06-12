@@ -580,6 +580,7 @@ function App() {
         mission={runtimeMissionCard}
         scenes={runtimeScenes}
         sceneContracts={runtimeContracts}
+        learnerLevel={profile?.level ?? null}
         streakDays={streakDays}
         totalXp={totalXp}
         avatarUrl={profile?.avatarUrl}

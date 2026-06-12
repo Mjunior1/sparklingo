@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Flame,
   Gift,
+  Languages,
   Medal,
   Mic,
   Play,
@@ -27,7 +28,11 @@ import type {
 } from '../../services/learning'
 import type { SceneAssetRecord } from '../../services/sceneAssets'
 import type { MissionRuntimeAnswerRecord, MissionRuntimeSceneRecord } from '../../services/missionRuntime'
-import { getRuntimeSpeechAudioUrl, prefetchRuntimeSpeechAudio } from '../../services/runtimeSpeech'
+import {
+  getRuntimeSpeechAudioUrl,
+  prefetchRuntimeSpeechAudio,
+  type RuntimeSpeechVoiceRole,
+} from '../../services/runtimeSpeech'
 
 export type MissionRuntimeMission = {
   id: string
@@ -44,6 +49,7 @@ type MissionRuntimeProps = {
   mission: MissionRuntimeMission
   scenes: MissionRuntimeSceneRecord[]
   sceneContracts?: RuntimeSceneContract[]
+  learnerLevel?: number | null
   streakDays: number
   totalXp: number
   avatarUrl?: string | null
@@ -88,6 +94,23 @@ type RuntimePromptViewModel = {
 }
 
 const waveformBars = Array.from({ length: 24 }, (_, index) => 20 + ((index * 17) % 65))
+const runtimeSubtitleStorageKey = 'sparklingo.runtime.showTranslations'
+
+const resolveDefaultSubtitleVisibility = (learnerLevel?: number | null) =>
+  learnerLevel == null || learnerLevel <= 3
+
+const readStoredSubtitlePreference = () => {
+  if (typeof window === 'undefined') return null
+  const stored = window.localStorage.getItem(runtimeSubtitleStorageKey)
+  if (stored === 'on') return true
+  if (stored === 'off') return false
+  return null
+}
+
+const writeStoredSubtitlePreference = (showTranslations: boolean) => {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(runtimeSubtitleStorageKey, showTranslations ? 'on' : 'off')
+}
 
 const buildRuntimeAsset = (mission: MissionRuntimeMission, scene: MissionRuntimeSceneRecord): SceneAssetRecord => ({
   ...mission.asset,
@@ -290,22 +313,63 @@ const playResolvedAudioUrl = async (audioUrl: string) => {
   }
 }
 
-const playSpeech = async (text: string, audioUrl?: string) => {
+const playSpeech = async (
+  text: string,
+  options?: {
+    audioUrl?: string
+    voiceRole?: RuntimeSpeechVoiceRole
+  },
+) => {
   const trimmedText = text.trim()
+  const audioUrl = options?.audioUrl
 
   if (audioUrl) {
+    console.log('[runtime-speech] runtime manual audio attempt', {
+      voiceRole: options?.voiceRole || 'default',
+      audioUrlPreview: audioUrl.slice(0, 80),
+      textPreview: trimmedText.slice(0, 80),
+    })
     const playedDirectAudio = await playResolvedAudioUrl(audioUrl)
-    if (playedDirectAudio) return
+    if (playedDirectAudio) {
+      console.log('[runtime-speech] runtime manual audio playing', {
+        voiceRole: options?.voiceRole || 'default',
+        audioUrlPreview: audioUrl.slice(0, 80),
+      })
+      return
+    }
+
+    console.log('[runtime-speech] runtime manual audio failed, falling back to TTS', {
+      voiceRole: options?.voiceRole || 'default',
+      audioUrlPreview: audioUrl.slice(0, 80),
+    })
   }
 
-  const resolvedAudioUrl = trimmedText ? await getRuntimeSpeechAudioUrl(trimmedText) : ''
+  const resolvedAudioUrl = trimmedText
+    ? await getRuntimeSpeechAudioUrl(trimmedText, {
+        voiceRole: options?.voiceRole,
+      })
+    : ''
 
   if (resolvedAudioUrl) {
+    console.log('[runtime-speech] runtime generated audio attempt', {
+      voiceRole: options?.voiceRole || 'default',
+      textPreview: trimmedText.slice(0, 80),
+    })
     const playedGeneratedAudio = await playResolvedAudioUrl(resolvedAudioUrl)
-    if (playedGeneratedAudio) return
+    if (playedGeneratedAudio) {
+      console.log('[runtime-speech] runtime generated audio playing', {
+        voiceRole: options?.voiceRole || 'default',
+        textPreview: trimmedText.slice(0, 80),
+      })
+      return
+    }
   }
 
   if (typeof window === 'undefined' || !('speechSynthesis' in window) || !trimmedText) return
+  console.log('[runtime-speech] runtime browser fallback', {
+    voiceRole: options?.voiceRole || 'default',
+    textPreview: trimmedText.slice(0, 80),
+  })
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.rate = 0.84
   utterance.pitch = 1
@@ -574,6 +638,7 @@ export function MissionRuntime({
   mission,
   scenes,
   sceneContracts = [],
+  learnerLevel,
   streakDays,
   totalXp,
   avatarUrl,
@@ -659,8 +724,14 @@ export function MissionRuntime({
   const [currentBackgroundIndex, setCurrentBackgroundIndex] = useState(0)
   const [previousBackgroundIndex, setPreviousBackgroundIndex] = useState(0)
   const [activeAudioCue, setActiveAudioCue] = useState<RuntimeAudioCue>(null)
+  const [showTranslations, setShowTranslations] = useState(() => {
+    const storedPreference = readStoredSubtitlePreference()
+    if (storedPreference !== null) return storedPreference
+    return resolveDefaultSubtitleVisibility(learnerLevel)
+  })
   const activeSceneRef = useRef<string | null>(null)
   const autoNarrationKeyRef = useRef<string>('')
+  const hoverPreviewRef = useRef<Record<string, number>>({})
   const pacingTimersRef = useRef<number[]>([])
   const audioCueTimerRef = useRef<number | null>(null)
 
@@ -685,12 +756,31 @@ export function MissionRuntime({
     }, duration)
   }, [clearAudioCueTimer])
 
-  const triggerSpeech = useCallback((text: string, audioUrl?: string, cue: Exclude<RuntimeAudioCue, null> = 'prompt') => {
+  const triggerSpeech = useCallback((
+    text: string,
+    audioUrl?: string,
+    cue: Exclude<RuntimeAudioCue, null> = 'prompt',
+    voiceRole: RuntimeSpeechVoiceRole = 'narration',
+  ) => {
     const trimmed = text.trim()
     if (!trimmed && !audioUrl) return
     activateAudioCue(cue, audioUrl ? 2400 : Math.min(3200, Math.max(1500, trimmed.length * 42)))
-    void playSpeech(text, audioUrl)
+    void playSpeech(text, { audioUrl, voiceRole })
   }, [activateAudioCue])
+
+  const previewSpeechOnHover = useCallback((
+    previewKey: string,
+    text: string,
+    audioUrl: string | undefined,
+    cue: Exclude<RuntimeAudioCue, null>,
+    voiceRole: RuntimeSpeechVoiceRole,
+  ) => {
+    const now = Date.now()
+    const lastRun = hoverPreviewRef.current[previewKey] ?? 0
+    if (now - lastRun < 1400) return
+    hoverPreviewRef.current[previewKey] = now
+    triggerSpeech(text, audioUrl, cue, voiceRole)
+  }, [triggerSpeech])
 
   const schedulePacingTimer = (callback: () => void, delay: number) => {
     const timer = window.setTimeout(callback, delay)
@@ -706,6 +796,16 @@ export function MissionRuntime({
     media.addEventListener('change', handleChange)
     return () => media.removeEventListener('change', handleChange)
   }, [])
+
+  useEffect(() => {
+    const storedPreference = readStoredSubtitlePreference()
+    if (storedPreference !== null) {
+      setShowTranslations(storedPreference)
+      return
+    }
+
+    setShowTranslations(resolveDefaultSubtitleVisibility(learnerLevel))
+  }, [learnerLevel])
 
   useEffect(() => {
     setPhase('intro')
@@ -1001,6 +1101,8 @@ export function MissionRuntime({
     : 'You landed inside a noisy terminal. Answer clearly, recover when pressure rises and let Spark guide you through the first checkpoint without breaking the scene.'
   const introNarration = `${introWorldTitle}. ${mission.title}. ${introDescription}`
   const topbarXpValue = phase === 'complete' ? earnedXp || currentScene?.xpReward || 0 : currentScene?.xpReward || 0
+  const currentPromptVoiceRole: RuntimeSpeechVoiceRole =
+    currentSceneStep === 'listening' ? 'npc' : 'narration'
   const nextTeaserScene =
     currentScene?.nextSceneId
       ? sceneFlow.find((item) => item.scene.id === currentScene.nextSceneId)?.scene ??
@@ -1071,7 +1173,9 @@ export function MissionRuntime({
   const responseCardBody =
     (selectedAnswer && isImmigrationPlayableSlice
       ? sparkMemory.responseBody
-      : selectedAnswer?.translation) ||
+      : showTranslations
+        ? selectedAnswer?.translation
+        : '') ||
     (currentSceneStep === 'listening'
       ? 'Let the officer finish. A calm answer comes next.'
       : 'Pick the reply that sounds steady, simple and believable at the desk.')
@@ -1102,10 +1206,22 @@ export function MissionRuntime({
     }
 
     speechTexts.forEach((text) => {
-      void prefetchRuntimeSpeechAudio(text)
+      let voiceRole: RuntimeSpeechVoiceRole = 'learner-guide'
+      if (text === introNarration) {
+        voiceRole = 'narration'
+      } else if (text === (currentScene?.question || '')) {
+        voiceRole = 'npc'
+      } else if (text === (prompt?.question || '')) {
+        voiceRole = currentPromptVoiceRole
+      } else if (text === (speakingPromptPreview?.question || '')) {
+        voiceRole = 'narration'
+      }
+
+      void prefetchRuntimeSpeechAudio(text, { voiceRole })
     })
   }, [
     answerOptions,
+    currentPromptVoiceRole,
     currentScene,
     currentScene?.id,
     currentScene?.question,
@@ -1146,7 +1262,12 @@ export function MissionRuntime({
 
     autoNarrationKeyRef.current = narrationKey
     const timer = window.setTimeout(() => {
-      triggerSpeech(narrationText, narrationAudioUrl, 'prompt')
+      triggerSpeech(
+        narrationText,
+        narrationAudioUrl,
+        'prompt',
+        phase === 'intro' ? 'narration' : currentSceneStep === 'listening' ? 'npc' : 'narration',
+      )
     }, narrationDelay)
 
     return () => window.clearTimeout(timer)
@@ -1170,7 +1291,7 @@ export function MissionRuntime({
     if (isImmigrationPlayableSlice && currentSceneStep === 'feedback') return
 
     if (wasSelected === answer.id) {
-      triggerSpeech(answer.text, answer.audioUrl, 'answer')
+      triggerSpeech(answer.text, answer.audioUrl, 'answer', 'learner-guide')
       return
     }
 
@@ -1200,7 +1321,7 @@ export function MissionRuntime({
         [currentScene.id]: 'feedback',
       }))
     }
-    triggerSpeech(answer.text, answer.audioUrl, 'answer')
+    triggerSpeech(answer.text, answer.audioUrl, 'answer', 'learner-guide')
 
     schedulePacingTimer(() => {
       setFeedbackRevealStages((current) => ({
@@ -1334,6 +1455,14 @@ export function MissionRuntime({
     autoNarrationKeyRef.current = ''
   }
 
+  const handleToggleTranslations = useCallback(() => {
+    setShowTranslations((current) => {
+      const nextValue = !current
+      writeStoredSubtitlePreference(nextValue)
+      return nextValue
+    })
+  }, [])
+
   if (!currentScene) {
     return (
       <div className="mission-runtime-shell">
@@ -1438,6 +1567,21 @@ export function MissionRuntime({
               {Math.min(displaySceneNumber, totalSceneCount)}/{totalSceneCount}
             </strong>
           </div>
+          <button
+            type="button"
+            className={`mission-runtime-topbar-pill mission-runtime-translation-toggle${
+              showTranslations ? ' is-active' : ''
+            }`}
+            onClick={handleToggleTranslations}
+            aria-pressed={showTranslations}
+            aria-label={showTranslations ? 'Hide Portuguese translation support' : 'Show Portuguese translation support'}
+          >
+            <Languages size={15} />
+            <div>
+              <strong>Legenda</strong>
+              <span>{showTranslations ? 'Português visível' : 'Português oculto'}</span>
+            </div>
+          </button>
           <div className="mission-runtime-topbar-pill mission-runtime-topbar-pill-xp">
             <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="XP reward icon">
               <Star size={15} />
@@ -1474,7 +1618,9 @@ export function MissionRuntime({
                   <button
                     type="button"
                     className={`mission-runtime-phase-audio${activeAudioCue === 'prompt' ? ' is-audio-active' : ''}`}
-                    onClick={() => triggerSpeech(introNarration, '', 'prompt')}
+                    onClick={() => triggerSpeech(introNarration, '', 'prompt', 'narration')}
+                    onMouseEnter={() => previewSpeechOnHover(`intro:${mission.id}`, introNarration, '', 'prompt', 'narration')}
+                    onFocus={() => previewSpeechOnHover(`intro:${mission.id}`, introNarration, '', 'prompt', 'narration')}
                     aria-label="Play intro audio"
                   >
                     <Volume2 size={18} />
@@ -1618,6 +1764,25 @@ export function MissionRuntime({
                           prompt?.question || currentScene.question,
                           prompt?.audioUrl || currentScene.audioUrl,
                           'prompt',
+                          currentPromptVoiceRole,
+                        )
+                      }
+                      onMouseEnter={() =>
+                        previewSpeechOnHover(
+                          `prompt:${currentScene.id}:${currentSceneStep}`,
+                          prompt?.question || currentScene.question,
+                          prompt?.audioUrl || currentScene.audioUrl,
+                          'prompt',
+                          currentPromptVoiceRole,
+                        )
+                      }
+                      onFocus={() =>
+                        previewSpeechOnHover(
+                          `prompt:${currentScene.id}:${currentSceneStep}`,
+                          prompt?.question || currentScene.question,
+                          prompt?.audioUrl || currentScene.audioUrl,
+                          'prompt',
+                          currentPromptVoiceRole,
                         )
                       }
                       aria-label="Play prompt audio"
@@ -1628,7 +1793,9 @@ export function MissionRuntime({
                     </button>
                   </div>
                   <h1>{prompt?.question || currentScene.question}</h1>
-                  <p>{prompt?.translation || currentScene.questionTranslation}</p>
+                  {showTranslations && (prompt?.translation || currentScene.questionTranslation) ? (
+                    <p>{prompt?.translation || currentScene.questionTranslation}</p>
+                  ) : null}
                 </article>
 
                 <div className="mission-runtime-dots" aria-hidden="true">
@@ -1678,14 +1845,16 @@ export function MissionRuntime({
                           onClick={(event) => {
                             event.preventDefault()
                             event.stopPropagation()
-                            triggerSpeech(answer.text, answer.audioUrl, 'answer')
+                            triggerSpeech(answer.text, answer.audioUrl, 'answer', 'learner-guide')
                           }}
                           onKeyDown={(event) => {
                             if (event.key !== 'Enter' && event.key !== ' ') return
                             event.preventDefault()
                             event.stopPropagation()
-                            triggerSpeech(answer.text, answer.audioUrl, 'answer')
+                            triggerSpeech(answer.text, answer.audioUrl, 'answer', 'learner-guide')
                           }}
+                          onMouseEnter={() => previewSpeechOnHover(`answer:${currentScene.id}:${answer.id}`, answer.text, answer.audioUrl, 'answer', 'learner-guide')}
+                          onFocus={() => previewSpeechOnHover(`answer:${currentScene.id}:${answer.id}`, answer.text, answer.audioUrl, 'answer', 'learner-guide')}
                           role="button"
                           tabIndex={0}
                           aria-label={`Hear answer: ${answer.text}`}
@@ -1696,7 +1865,7 @@ export function MissionRuntime({
                         </span>
                         <span className="mission-runtime-answer-copy">
                           <strong>{answer.text}</strong>
-                          <small>{answer.translation}</small>
+                          {showTranslations && answer.translation ? <small>{answer.translation}</small> : null}
                         </span>
                         {selectedAnswer?.id === answer.id ? (
                           <span className="mission-runtime-answer-check">
@@ -1819,6 +1988,25 @@ export function MissionRuntime({
                               prompt?.question || currentScene.question,
                               prompt?.audioUrl || currentScene.audioUrl,
                               'prompt',
+                              currentPromptVoiceRole,
+                            )
+                          }
+                          onMouseEnter={() =>
+                            previewSpeechOnHover(
+                              `story-prompt:${currentScene.id}:${currentSceneStep}`,
+                              prompt?.question || currentScene.question,
+                              prompt?.audioUrl || currentScene.audioUrl,
+                              'prompt',
+                              currentPromptVoiceRole,
+                            )
+                          }
+                          onFocus={() =>
+                            previewSpeechOnHover(
+                              `story-prompt:${currentScene.id}:${currentSceneStep}`,
+                              prompt?.question || currentScene.question,
+                              prompt?.audioUrl || currentScene.audioUrl,
+                              'prompt',
+                              currentPromptVoiceRole,
                             )
                           }
                           aria-label="Play prompt audio"
@@ -1829,7 +2017,9 @@ export function MissionRuntime({
                         </button>
                       </div>
                       <strong>{prompt?.question || currentScene.question}</strong>
-                      <p>{prompt?.translation || currentScene.questionTranslation}</p>
+                      {showTranslations && (prompt?.translation || currentScene.questionTranslation) ? (
+                        <p>{prompt?.translation || currentScene.questionTranslation}</p>
+                      ) : null}
                     </div>
                     <button
                       className={`mission-runtime-story-voice mission-runtime-story-voice-wave${
@@ -1841,6 +2031,25 @@ export function MissionRuntime({
                           prompt?.question || currentScene.question,
                           prompt?.audioUrl || currentScene.audioUrl,
                           'prompt',
+                          currentPromptVoiceRole,
+                        )
+                      }
+                      onMouseEnter={() =>
+                        previewSpeechOnHover(
+                          `story-voice:${currentScene.id}:${currentSceneStep}`,
+                          prompt?.question || currentScene.question,
+                          prompt?.audioUrl || currentScene.audioUrl,
+                          'prompt',
+                          currentPromptVoiceRole,
+                        )
+                      }
+                      onFocus={() =>
+                        previewSpeechOnHover(
+                          `story-voice:${currentScene.id}:${currentSceneStep}`,
+                          prompt?.question || currentScene.question,
+                          prompt?.audioUrl || currentScene.audioUrl,
+                          'prompt',
+                          currentPromptVoiceRole,
                         )
                       }
                     >
@@ -1871,11 +2080,31 @@ export function MissionRuntime({
                   <div className="mission-runtime-story-response-card">
                     <small>YOU</small>
                     <strong>{responseCardTitle}</strong>
-                    <p>{responseCardBody}</p>
+                    {responseCardBody ? <p>{responseCardBody}</p> : null}
                     <button
                       type="button"
                       className={`mission-runtime-mini-audio${activeAudioCue === 'answer' ? ' is-audio-active' : ''}`}
-                      onClick={() => selectedAnswer && triggerSpeech(selectedAnswer.text, selectedAnswer.audioUrl, 'answer')}
+                      onClick={() => selectedAnswer && triggerSpeech(selectedAnswer.text, selectedAnswer.audioUrl, 'answer', 'learner-guide')}
+                      onMouseEnter={() =>
+                        selectedAnswer &&
+                        previewSpeechOnHover(
+                          `selected-answer:${currentScene.id}:${selectedAnswer.id}`,
+                          selectedAnswer.text,
+                          selectedAnswer.audioUrl,
+                          'answer',
+                          'learner-guide',
+                        )
+                      }
+                      onFocus={() =>
+                        selectedAnswer &&
+                        previewSpeechOnHover(
+                          `selected-answer:${currentScene.id}:${selectedAnswer.id}`,
+                          selectedAnswer.text,
+                          selectedAnswer.audioUrl,
+                          'answer',
+                          'learner-guide',
+                        )
+                      }
                       disabled={!selectedAnswer}
                     >
                       <RuntimeIcon iconUrl={currentScene.answerAudioIconUrl} alt="Selected answer audio icon">
