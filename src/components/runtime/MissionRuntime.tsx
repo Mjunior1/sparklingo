@@ -1,5 +1,5 @@
 import './MissionRuntime.css'
-import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   ArrowLeft,
   ArrowRight,
@@ -27,7 +27,7 @@ import type {
 } from '../../services/learning'
 import type { SceneAssetRecord } from '../../services/sceneAssets'
 import type { MissionRuntimeAnswerRecord, MissionRuntimeSceneRecord } from '../../services/missionRuntime'
-import { getRuntimeSpeechAudioUrl } from '../../services/runtimeSpeech'
+import { getRuntimeSpeechAudioUrl, prefetchRuntimeSpeechAudio } from '../../services/runtimeSpeech'
 
 export type MissionRuntimeMission = {
   id: string
@@ -252,18 +252,38 @@ function RuntimeIcon({
   return <>{children}</>
 }
 
+let sharedRuntimeAudio: HTMLAudioElement | null = null
+
+const getSharedRuntimeAudio = () => {
+  if (typeof window === 'undefined') return null
+  if (sharedRuntimeAudio) return sharedRuntimeAudio
+
+  sharedRuntimeAudio = new Audio()
+  sharedRuntimeAudio.preload = 'auto'
+  return sharedRuntimeAudio
+}
+
 const playSpeech = async (text: string, audioUrl?: string) => {
   const resolvedAudioUrl = audioUrl || await getRuntimeSpeechAudioUrl(text)
 
   if (resolvedAudioUrl) {
-    const audio = new Audio(resolvedAudioUrl)
+    const audio = getSharedRuntimeAudio()
+    if (!audio) return
+    audio.pause()
+    audio.currentTime = 0
+    audio.src = resolvedAudioUrl
+    audio.defaultPlaybackRate = 0.88
+    audio.playbackRate = 0.88
+    if ('preservesPitch' in audio) {
+      (audio as HTMLAudioElement & { preservesPitch?: boolean }).preservesPitch = true
+    }
     void audio.play().catch(() => undefined)
     return
   }
 
   if (typeof window === 'undefined' || !('speechSynthesis' in window) || !text.trim()) return
   const utterance = new SpeechSynthesisUtterance(text)
-  utterance.rate = 0.94
+  utterance.rate = 0.88
   utterance.pitch = 1
   window.speechSynthesis.cancel()
   window.speechSynthesis.speak(utterance)
@@ -465,7 +485,7 @@ const buildSpeakingPrompt = (
       question: 'How would you answer the officer?',
       translation: 'Escolha a resposta que soe clara e natural para continuar a conversa.',
       answers: scene.answers.map(buildRuntimeAnswerViewModel),
-      audioUrl: scene.audioUrl,
+      audioUrl: '',
       helperLabel: 'Your reply',
       helperActionLabel: 'Answer calmly',
     }
@@ -479,7 +499,7 @@ const buildSpeakingPrompt = (
     question: payload.prompt,
     translation: payload.translation || '',
     answers: scene.answers.map(buildRuntimeAnswerViewModel),
-    audioUrl: payload.audio?.url || scene.audioUrl,
+    audioUrl: payload.audio?.url || '',
     helperLabel: 'Your reply',
     helperActionLabel: 'Answer naturally',
   }
@@ -616,6 +636,7 @@ export function MissionRuntime({
   const [previousBackgroundIndex, setPreviousBackgroundIndex] = useState(0)
   const [activeAudioCue, setActiveAudioCue] = useState<RuntimeAudioCue>(null)
   const activeSceneRef = useRef<string | null>(null)
+  const autoNarrationKeyRef = useRef<string>('')
   const pacingTimersRef = useRef<number[]>([])
   const audioCueTimerRef = useRef<number | null>(null)
 
@@ -624,28 +645,28 @@ export function MissionRuntime({
     pacingTimersRef.current = []
   }
 
-  const clearAudioCueTimer = () => {
+  const clearAudioCueTimer = useCallback(() => {
     if (audioCueTimerRef.current !== null) {
       window.clearTimeout(audioCueTimerRef.current)
       audioCueTimerRef.current = null
     }
-  }
+  }, [])
 
-  const activateAudioCue = (cue: Exclude<RuntimeAudioCue, null>, duration = 1800) => {
+  const activateAudioCue = useCallback((cue: Exclude<RuntimeAudioCue, null>, duration = 1800) => {
     clearAudioCueTimer()
     setActiveAudioCue(cue)
     audioCueTimerRef.current = window.setTimeout(() => {
       setActiveAudioCue(null)
       audioCueTimerRef.current = null
     }, duration)
-  }
+  }, [clearAudioCueTimer])
 
-  const triggerSpeech = (text: string, audioUrl?: string, cue: Exclude<RuntimeAudioCue, null> = 'prompt') => {
+  const triggerSpeech = useCallback((text: string, audioUrl?: string, cue: Exclude<RuntimeAudioCue, null> = 'prompt') => {
     const trimmed = text.trim()
     if (!trimmed && !audioUrl) return
     activateAudioCue(cue, audioUrl ? 2400 : Math.min(3200, Math.max(1500, trimmed.length * 42)))
     void playSpeech(text, audioUrl)
-  }
+  }, [activateAudioCue])
 
   const schedulePacingTimer = (callback: () => void, delay: number) => {
     const timer = window.setTimeout(callback, delay)
@@ -678,14 +699,15 @@ export function MissionRuntime({
     clearPacingTimers()
     clearAudioCueTimer()
     activeSceneRef.current = null
-  }, [mission.id])
+    autoNarrationKeyRef.current = ''
+  }, [clearAudioCueTimer, mission.id])
 
   useEffect(
     () => () => {
       clearPacingTimers()
       clearAudioCueTimer()
     },
-    [],
+    [clearAudioCueTimer],
   )
 
   const currentFlow = sceneFlow[sceneIndex] ?? null
@@ -718,12 +740,20 @@ export function MissionRuntime({
   const currentSceneStep = currentScene
     ? sceneSteps[currentScene.id] ?? (isImmigrationPlayableSlice ? 'listening' : 'speaking')
     : 'speaking'
-  const prompt = currentScene
-    ? currentSceneStep === 'speaking' || currentSceneStep === 'feedback'
-      ? buildSpeakingPrompt(currentScene, speakingExperience)
-      : buildInteractivePrompt(currentScene, interactiveExperience)
-    : null
-  const answerOptions = prompt?.answers ?? []
+  const prompt = useMemo(
+    () =>
+      currentScene
+        ? currentSceneStep === 'speaking' || currentSceneStep === 'feedback'
+          ? buildSpeakingPrompt(currentScene, speakingExperience)
+          : buildInteractivePrompt(currentScene, interactiveExperience)
+        : null,
+    [currentScene, currentSceneStep, interactiveExperience, speakingExperience],
+  )
+  const speakingPromptPreview = useMemo(
+    () => (currentScene ? buildSpeakingPrompt(currentScene, speakingExperience) : null),
+    [currentScene, speakingExperience],
+  )
+  const answerOptions = useMemo(() => prompt?.answers ?? [], [prompt])
   const selectedAnswerId = currentScene ? selectedAnswers[currentScene.id] ?? '' : ''
   const selectedAnswer = answerOptions.find((answer) => answer.id === selectedAnswerId) ?? null
   const currentFeedbackRevealStage = currentScene
@@ -942,6 +972,7 @@ export function MissionRuntime({
   const introCompanionImage = currentScene?.companionImageUrl || ''
   const introWorldTitle = currentContract?.world.title || 'Airport Survival'
   const introSceneTitles = sceneFlow.map((item) => item.scene.title)
+  const introNarration = `${introWorldTitle}. ${mission.title}. You landed inside a noisy terminal. Answer clearly, recover when pressure rises and let Spark guide you through the first checkpoint without breaking the scene.`
   const topbarXpValue = phase === 'complete' ? earnedXp || currentScene?.xpReward || 0 : currentScene?.xpReward || 0
   const nextTeaserScene =
     currentScene?.nextSceneId
@@ -1026,6 +1057,82 @@ export function MissionRuntime({
     : currentSceneStep === 'speaking'
       ? 'Your spoken reply will settle here'
       : 'Your reply opens after the officer finishes'
+
+  useEffect(() => {
+    const speechTexts = new Set<string>()
+
+    if (phase === 'intro') {
+      speechTexts.add(introNarration)
+    }
+
+    if (currentScene) {
+      if (currentScene.question) speechTexts.add(currentScene.question)
+      if (prompt?.question) speechTexts.add(prompt.question)
+      if (speakingPromptPreview?.question) speechTexts.add(speakingPromptPreview.question)
+      answerOptions.forEach((answer) => {
+        if (answer.text) speechTexts.add(answer.text)
+      })
+    }
+
+    speechTexts.forEach((text) => {
+      void prefetchRuntimeSpeechAudio(text)
+    })
+  }, [
+    answerOptions,
+    currentScene,
+    currentScene?.id,
+    currentScene?.question,
+    introNarration,
+    phase,
+    prompt?.question,
+    speakingPromptPreview?.question,
+  ])
+
+  useEffect(() => {
+    if (phase === 'complete') return
+
+    let narrationKey = ''
+    let narrationText = ''
+    let narrationAudioUrl = ''
+    let narrationDelay = 320
+
+    if (phase === 'intro') {
+      narrationKey = `intro:${mission.id}`
+      narrationText = introNarration
+      narrationDelay = 420
+    } else if (currentScene) {
+      if (currentSceneStep === 'listening') {
+        narrationKey = `${currentScene.id}:listening`
+        narrationText = prompt?.question || currentScene.question
+        narrationAudioUrl = prompt?.audioUrl || currentScene.audioUrl || ''
+      } else if (currentSceneStep === 'speaking') {
+        narrationKey = `${currentScene.id}:speaking`
+        narrationText = prompt?.question || 'How would you answer the officer?'
+        narrationAudioUrl = prompt?.audioUrl || ''
+      }
+    }
+
+    if (!narrationKey || (!narrationText.trim() && !narrationAudioUrl)) return
+    if (autoNarrationKeyRef.current === narrationKey) return
+
+    autoNarrationKeyRef.current = narrationKey
+    const timer = window.setTimeout(() => {
+      triggerSpeech(narrationText, narrationAudioUrl, 'prompt')
+    }, narrationDelay)
+
+    return () => window.clearTimeout(timer)
+  }, [
+    currentScene?.audioUrl,
+    currentScene,
+    currentScene?.id,
+    currentSceneStep,
+    introNarration,
+    mission.id,
+    phase,
+    prompt?.audioUrl,
+    prompt?.question,
+    triggerSpeech,
+  ])
 
   const handleSelectAnswer = (answer: RuntimeAnswerViewModel) => {
     if (!currentScene || phase !== 'scene') return
@@ -1113,7 +1220,6 @@ export function MissionRuntime({
       if (currentSceneStep === 'listening') {
         if (isListeningTransitioning) return
         setIsListeningTransitioning(true)
-        triggerSpeech(prompt?.question || currentScene.question, prompt?.audioUrl || currentScene.audioUrl, 'listening')
         clearPacingTimers()
         schedulePacingTimer(() => {
           setSceneSteps((current) => ({
@@ -1196,6 +1302,7 @@ export function MissionRuntime({
     setIsCheckpointTransitioning(false)
     clearPacingTimers()
     activeSceneRef.current = null
+    autoNarrationKeyRef.current = ''
   }
 
   if (!currentScene) {
@@ -1333,7 +1440,17 @@ export function MissionRuntime({
           <>
             <div className="mission-runtime-main mission-runtime-main-phase">
               <section className="mission-runtime-phase-panel">
-                <p className="mission-runtime-phase-kicker">{introWorldTitle}</p>
+                <div className="mission-runtime-phase-head">
+                  <p className="mission-runtime-phase-kicker">{introWorldTitle}</p>
+                  <button
+                    type="button"
+                    className={`mission-runtime-phase-audio${activeAudioCue === 'prompt' ? ' is-audio-active' : ''}`}
+                    onClick={() => triggerSpeech(introNarration, '', 'prompt')}
+                    aria-label="Play intro audio"
+                  >
+                    <Volume2 size={18} />
+                  </button>
+                </div>
                 <h1>{mission.title}</h1>
                 <p>
                   You landed inside a noisy terminal. Answer clearly, recover when pressure rises and let Spark guide
@@ -1530,7 +1647,23 @@ export function MissionRuntime({
                         disabled={isImmigrationPlayableSlice && currentSceneStep === 'feedback'}
                         onClick={() => handleSelectAnswer(answer)}
                       >
-                        <span className="mission-runtime-answer-audio">
+                        <span
+                          className="mission-runtime-answer-audio"
+                          onClick={(event) => {
+                            event.preventDefault()
+                            event.stopPropagation()
+                            triggerSpeech(answer.text, answer.audioUrl, 'answer')
+                          }}
+                          onKeyDown={(event) => {
+                            if (event.key !== 'Enter' && event.key !== ' ') return
+                            event.preventDefault()
+                            event.stopPropagation()
+                            triggerSpeech(answer.text, answer.audioUrl, 'answer')
+                          }}
+                          role="button"
+                          tabIndex={0}
+                          aria-label={`Hear answer: ${answer.text}`}
+                        >
                           <RuntimeIcon iconUrl={currentScene.answerAudioIconUrl} alt="Answer audio icon">
                             {prompt?.type === 'listening' ? <Volume2 size={18} /> : <AudioLines size={18} />}
                           </RuntimeIcon>

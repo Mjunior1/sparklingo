@@ -14,6 +14,7 @@ type SynthesizeRuntimeSpeechResponse = {
 }
 
 const speechUrlCache = new Map<string, string>()
+const speechRequestCache = new Map<string, Promise<string>>()
 const runtimeSpeechBaseUrl = (import.meta.env.VITE_RUNTIME_SPEECH_BASE_URL || '').trim()
 
 const buildCacheKey = (text: string, voiceId?: string, modelId?: string) =>
@@ -41,26 +42,46 @@ export const getRuntimeSpeechAudioUrl = async (
   const cachedUrl = speechUrlCache.get(cacheKey)
   if (cachedUrl) return cachedUrl
 
-  try {
-    const response = await fetch(buildRuntimeSpeechEndpoint(), {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-      },
-      body: JSON.stringify({
-        text: trimmed,
-        voiceId: options?.voiceId,
-        modelId: options?.modelId,
-      } satisfies SynthesizeRuntimeSpeechRequest),
-    })
+  const inFlightRequest = speechRequestCache.get(cacheKey)
+  if (inFlightRequest) return inFlightRequest
 
-    if (!response.ok) return ''
+  const request = (async () => {
+    try {
+      const response = await fetch(buildRuntimeSpeechEndpoint(), {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+        },
+        body: JSON.stringify({
+          text: trimmed,
+          voiceId: options?.voiceId,
+          modelId: options?.modelId,
+        } satisfies SynthesizeRuntimeSpeechRequest),
+      })
 
-    const result = await response.json() as SynthesizeRuntimeSpeechResponse
-    const audioUrl = `data:${result.contentType};base64,${result.audioBase64}`
-    speechUrlCache.set(cacheKey, audioUrl)
-    return audioUrl
-  } catch {
-    return ''
-  }
+      if (!response.ok) return ''
+
+      const result = await response.json() as SynthesizeRuntimeSpeechResponse
+      const audioUrl = `data:${result.contentType};base64,${result.audioBase64}`
+      speechUrlCache.set(cacheKey, audioUrl)
+      return audioUrl
+    } catch {
+      return ''
+    } finally {
+      speechRequestCache.delete(cacheKey)
+    }
+  })()
+
+  speechRequestCache.set(cacheKey, request)
+  return request
+}
+
+export const prefetchRuntimeSpeechAudio = async (
+  text: string,
+  options?: {
+    voiceId?: string
+    modelId?: string
+  },
+) => {
+  void (await getRuntimeSpeechAudioUrl(text, options))
 }

@@ -73,8 +73,10 @@ const synthesizeRuntimeSpeech = async (text, voiceId = defaultVoiceId, modelId =
       model_id: modelId,
       output_format: 'mp3_44100_128',
       voice_settings: {
-        stability: 0.42,
+        stability: 0.5,
         similarity_boost: 0.78,
+        style: 0.08,
+        speed: 0.86,
         use_speaker_boost: true,
       },
     }),

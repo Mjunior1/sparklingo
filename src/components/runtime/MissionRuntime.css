@@ -782,6 +782,22 @@
   box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
 }
 
+.mission-runtime-answer-audio {
+  cursor: pointer;
+  transition:
+    transform 220ms ease,
+    box-shadow 220ms ease,
+    background-color 220ms ease;
+}
+
+.mission-runtime-answer-audio:hover,
+.mission-runtime-answer-audio:focus-visible {
+  transform: scale(1.04);
+  box-shadow:
+    inset 0 0 0 1px rgba(214, 194, 255, 0.16),
+    0 0 18px rgba(158, 120, 255, 0.12);
+}
+
 .mission-runtime-answer-check {
   background: rgba(170, 106, 255, 0.16);
   color: #f4e4ff;
@@ -833,6 +849,50 @@
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+.mission-runtime-phase-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.mission-runtime-phase-head .mission-runtime-phase-kicker {
+  margin-bottom: 0;
+}
+
+.mission-runtime-phase-audio {
+  width: 44px;
+  height: 44px;
+  flex: 0 0 auto;
+  border: none;
+  border-radius: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #f6edff;
+  background:
+    linear-gradient(180deg, rgba(149, 103, 255, 0.22), rgba(90, 53, 170, 0.18)),
+    radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.12), transparent 24%);
+  box-shadow:
+    inset 0 0 0 1px rgba(201, 176, 255, 0.18),
+    0 10px 24px rgba(88, 61, 161, 0.18);
+  transition:
+    transform 240ms ease,
+    box-shadow 240ms ease,
+    border-color 240ms ease;
+}
+
+.mission-runtime-phase-audio:hover,
+.mission-runtime-phase-audio:focus-visible,
+.mission-runtime-phase-audio.is-audio-active {
+  transform: translateY(-2px);
+  box-shadow:
+    inset 0 0 0 1px rgba(214, 194, 255, 0.22),
+    0 14px 28px rgba(88, 61, 161, 0.22),
+    0 0 22px rgba(176, 126, 255, 0.1);
 }
 
 .mission-runtime-phase-panel h1 {

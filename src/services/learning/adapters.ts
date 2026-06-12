@@ -212,12 +212,6 @@ export const adaptMissionRuntimeSceneToExperiences = (
           prompt: 'How would you answer the officer?',
           translation: 'Escolha a resposta que soe mais natural para continuar a cena.',
           expectedPhrases: runtimeScene.answers.filter((answer) => answer.isCorrect).map((answer) => answer.text),
-          audio: runtimeScene.audioUrl
-            ? {
-                url: runtimeScene.audioUrl,
-                transcript: runtimeScene.question,
-              }
-            : undefined,
         } satisfies SpeakingExperiencePayload,
         aiGenerated: false,
         adaptiveEnabled: true,
