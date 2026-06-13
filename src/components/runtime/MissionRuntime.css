@@ -46,6 +46,34 @@
   padding: 24px 28px 26px;
 }
 
+.mission-runtime-phase-intro .mission-runtime-background-layer-current {
+  animation: none;
+  filter: blur(3px) saturate(0.82) brightness(0.42);
+  transform: scale(1.018);
+}
+
+.mission-runtime-phase-intro .mission-runtime-global-overlay {
+  opacity: 1;
+  background:
+    radial-gradient(ellipse 38% 34% at 25% 42%, rgba(255, 230, 180, 0.08), transparent 64%),
+    radial-gradient(ellipse 42% 38% at 25% 42%, rgba(134, 95, 255, 0.12), transparent 68%),
+    linear-gradient(90deg, rgba(3, 4, 13, 0.76) 0%, rgba(4, 5, 15, 0.56) 42%, rgba(4, 5, 15, 0.74) 100%),
+    linear-gradient(180deg, rgba(3, 4, 12, 0.7) 0%, rgba(6, 7, 18, 0.42) 36%, rgba(3, 4, 12, 0.72) 100%);
+}
+
+.mission-runtime-phase-intro .mission-runtime-atmosphere {
+  opacity: 0.42;
+  filter: blur(2px) saturate(0.78);
+}
+
+.mission-runtime-phase-intro .mission-runtime-vignette {
+  opacity: 1;
+  background:
+    radial-gradient(ellipse 42% 40% at 25% 42%, transparent 0%, transparent 48%, rgba(2, 3, 10, 0.56) 92%),
+    linear-gradient(90deg, rgba(2, 3, 10, 0.68) 0%, rgba(2, 3, 10, 0.12) 26%, rgba(2, 3, 10, 0.58) 100%),
+    linear-gradient(180deg, rgba(2, 3, 10, 0.68) 0%, rgba(2, 3, 10, 0.06) 32%, rgba(2, 3, 10, 0.66) 100%);
+}
+
 .mission-runtime-background,
 .mission-runtime-background-layer,
 .mission-runtime-background-image {
@@ -201,6 +229,11 @@
 .mission-runtime-footer {
   position: relative;
   z-index: 1;
+}
+
+.mission-runtime-phase-intro .mission-runtime-main,
+.mission-runtime-phase-intro .mission-runtime-footer {
+  z-index: 2;
 }
 
 .mission-runtime-play-focus .mission-runtime-topbar {
@@ -527,6 +560,45 @@
     0 24px 38px rgba(0, 0, 0, 0.18),
     0 0 16px rgba(167, 113, 255, 0.05),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.mission-runtime-phase-scene .mission-runtime-prompt-card,
+.mission-runtime-phase-scene .mission-runtime-feedback-card,
+.mission-runtime-phase-scene .mission-runtime-context-prompt,
+.mission-runtime-phase-scene .mission-runtime-story-response-card,
+.mission-runtime-phase-scene .mission-runtime-story-feedback-card {
+  position: relative;
+}
+
+.mission-runtime-phase-scene .mission-runtime-prompt-card::after,
+.mission-runtime-phase-scene .mission-runtime-feedback-card::after,
+.mission-runtime-phase-scene .mission-runtime-context-prompt::after,
+.mission-runtime-phase-scene .mission-runtime-story-response-card::after,
+.mission-runtime-phase-scene .mission-runtime-story-feedback-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 54% 44% at 28% 18%, rgba(255, 246, 218, 0.07), transparent 62%),
+    radial-gradient(ellipse 62% 52% at 76% 18%, rgba(181, 137, 255, 0.08), transparent 64%);
+  opacity: 0.38;
+  mix-blend-mode: screen;
+  transition:
+    opacity 720ms ease,
+    filter 720ms ease;
+}
+
+.mission-runtime-focus-listening .mission-runtime-prompt-card::after,
+.mission-runtime-focus-speaking .mission-runtime-prompt-card::after,
+.mission-runtime-focus-feedback .mission-runtime-feedback-card::after,
+.mission-runtime-focus-reward .mission-runtime-feedback-card::after,
+.mission-runtime-play-focus .mission-runtime-story-card.is-focused .mission-runtime-context-prompt::after,
+.mission-runtime-play-focus .mission-runtime-story-card.is-focused .mission-runtime-story-response-card::after,
+.mission-runtime-play-focus .mission-runtime-story-card.is-focused .mission-runtime-story-feedback-card::after {
+  opacity: 0.72;
+  filter: saturate(1.06);
 }
 
 .mission-runtime-focus-feedback .mission-runtime-prompt-card,
@@ -866,6 +938,7 @@
 }
 
 .mission-runtime-phase-panel {
+  position: relative;
   width: min(100%, 620px);
   padding: 34px;
   border-radius: 32px;
@@ -876,6 +949,49 @@
   box-shadow:
     0 28px 46px rgba(0, 0, 0, 0.24),
     inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.mission-runtime-phase-intro .mission-runtime-phase-panel {
+  border-color: rgba(222, 205, 255, 0.26);
+  background:
+    linear-gradient(180deg, rgba(24, 22, 45, 0.9), rgba(12, 13, 30, 0.92)),
+    radial-gradient(ellipse 68% 52% at 24% 12%, rgba(255, 237, 197, 0.12), transparent 64%),
+    radial-gradient(ellipse 70% 58% at 82% 22%, rgba(169, 104, 255, 0.14), transparent 66%);
+  box-shadow:
+    0 42px 74px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 244, 218, 0.04),
+    0 0 46px rgba(181, 137, 255, 0.1),
+    0 0 96px rgba(255, 224, 169, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    inset 0 0 54px rgba(255, 241, 214, 0.025);
+}
+
+.mission-runtime-phase-intro .mission-runtime-phase-panel::before,
+.mission-runtime-phase-intro .mission-runtime-phase-panel::after {
+  content: "";
+  position: absolute;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.mission-runtime-phase-intro .mission-runtime-phase-panel::before {
+  inset: -32px;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 76% 62% at 34% 28%, rgba(255, 239, 194, 0.16), transparent 68%),
+    radial-gradient(ellipse 74% 62% at 66% 78%, rgba(160, 110, 255, 0.13), transparent 70%);
+  filter: blur(16px);
+  opacity: 0.82;
+  animation: runtimeIntroSpotlight 5.8s ease-in-out infinite alternate;
+}
+
+.mission-runtime-phase-intro .mission-runtime-phase-panel::after {
+  inset: 0;
+  background:
+    linear-gradient(120deg, rgba(255, 255, 255, 0.08), transparent 18%, transparent 78%, rgba(181, 137, 255, 0.06)),
+    radial-gradient(ellipse 60% 42% at 28% 4%, rgba(255, 246, 222, 0.1), transparent 68%);
+  mix-blend-mode: screen;
+  opacity: 0.6;
 }
 
 .mission-runtime-phase-panel-complete {
@@ -2147,6 +2263,17 @@
   50% {
     opacity: 1;
     filter: blur(3px);
+  }
+}
+
+@keyframes runtimeIntroSpotlight {
+  0% {
+    opacity: 0.68;
+    transform: translate3d(-4px, 2px, 0) scale(0.99);
+  }
+  100% {
+    opacity: 0.9;
+    transform: translate3d(5px, -3px, 0) scale(1.015);
   }
 }
 
