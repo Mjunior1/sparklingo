@@ -1128,6 +1128,13 @@ export function MissionRuntime({
         sceneFlow[sceneIndex + 1]?.scene ??
         null
       : sceneFlow[sceneIndex + 1]?.scene ?? null
+  const resolveNextSceneIndex = () => {
+    if (!currentScene) return -1
+    const linkedIndex = currentScene.nextSceneId
+      ? sceneFlow.findIndex((item) => item.scene.id === currentScene.nextSceneId)
+      : -1
+    return linkedIndex >= 0 ? linkedIndex : sceneIndex + 1
+  }
   const completionTitle = isImmigrationPlayableSlice
     ? isCheckpointCleared
       ? 'Immigration is behind you.'
@@ -1411,15 +1418,17 @@ export function MissionRuntime({
       clearPacingTimers()
       schedulePacingTimer(() => {
         setIsCheckpointTransitioning(false)
-        setPhase('complete')
+        const nextIndex = resolveNextSceneIndex()
+        if (nextIndex >= sceneFlow.length) {
+          setPhase('complete')
+          return
+        }
+        setSceneIndex(nextIndex)
       }, 480)
       return
     }
 
-    const linkedIndex = currentScene.nextSceneId
-      ? sceneFlow.findIndex((item) => item.scene.id === currentScene.nextSceneId)
-      : -1
-    const nextIndex = linkedIndex >= 0 ? linkedIndex : sceneIndex + 1
+    const nextIndex = resolveNextSceneIndex()
 
     if (nextIndex >= sceneFlow.length) {
       setPhase('complete')
@@ -1444,7 +1453,12 @@ export function MissionRuntime({
     }
 
     if (isImmigrationPlayableSlice) {
-      setPhase('complete')
+      const nextIndex = resolveNextSceneIndex()
+      if (nextIndex >= sceneFlow.length) {
+        setPhase('complete')
+        return
+      }
+      setSceneIndex(nextIndex)
       return
     }
 
@@ -1679,7 +1693,7 @@ export function MissionRuntime({
                   </span>
                   <div>
                     <small>Mission ready</small>
-                    <strong>3 scenes</strong>
+                    <strong>{totalSceneCount} scenes</strong>
                   </div>
                 </div>
                 <div className="mission-runtime-reward-dots">
