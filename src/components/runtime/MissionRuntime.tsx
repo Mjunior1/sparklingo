@@ -694,7 +694,26 @@ export function MissionRuntime({
           })
       })
 
-      return flows
+      const representedSceneIds = new Set(flows.map((flow) => flow.scene.id))
+      sortedScenes.forEach((scene) => {
+        if (representedSceneIds.has(scene.id)) return
+
+        flows.push({
+          scene,
+          contract: null,
+          interactiveExperience: null,
+          listeningExperience: null,
+          speakingExperience: null,
+          feedbackExperience: null,
+        })
+      })
+
+      return flows.sort(
+        (a, b) =>
+          a.scene.order - b.scene.order ||
+          a.scene.sceneNumber - b.scene.sceneNumber ||
+          a.scene.id.localeCompare(b.scene.id),
+      )
     }
 
     return sortedScenes.map((scene) => ({

@@ -501,9 +501,11 @@ function App() {
 
   const runtimeScenes = useMemo(() => {
     if (!runtimeMission) return [] as MissionRuntimeSceneRecord[]
+    const directAssetScenes = runtimeSceneSourceCatalog.filter((scene) => scene.sceneAssetId === runtimeMission.asset.id)
+
     if (runtimeBundle?.scenes.length) {
       const sourceMap = new Map(runtimeSceneSourceCatalog.map((scene) => [scene.id, scene]))
-      return runtimeBundle.scenes
+      const bundledScenes = runtimeBundle.scenes
         .map((bundleScene) => {
           const legacyId =
             bundleScene.scene.legacyRuntimeSceneId ??
@@ -512,9 +514,16 @@ function App() {
           return legacyId ? sourceMap.get(legacyId) ?? null : null
         })
         .filter((scene): scene is MissionRuntimeSceneRecord => Boolean(scene))
+
+      const seenSceneIds = new Set(bundledScenes.map((scene) => scene.id))
+      const nativeAssetScenes = directAssetScenes.filter((scene) => !seenSceneIds.has(scene.id))
+
+      return [...bundledScenes, ...nativeAssetScenes].sort(
+        (a, b) => a.order - b.order || a.sceneNumber - b.sceneNumber || a.id.localeCompare(b.id),
+      )
     }
 
-    return runtimeSceneSourceCatalog.filter((scene) => scene.sceneAssetId === runtimeMission.asset.id)
+    return directAssetScenes
   }, [runtimeBundle, runtimeMission, runtimeSceneSourceCatalog])
 
   if (status === 'loading' || (user && catalogLoading && !activeSceneAssets.length)) {
