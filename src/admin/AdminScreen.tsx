@@ -38,7 +38,7 @@ import {
   X,
 } from 'lucide-react'
 import { QuickWinCard, QuickWinsSection } from '../components/quickwins/QuickWinsSection'
-import { MissionRuntimeScenePreviewCard } from '../components/runtime/MissionRuntime'
+import { MissionRuntime, MissionRuntimeScenePreviewCard, type MissionRuntimeMission } from '../components/runtime/MissionRuntime'
 import {
   defaultAchievementCatalog,
   deleteAchievement,
@@ -150,6 +150,15 @@ import {
   type MissionRuntimeFeedbackTone,
   type MissionRuntimeSceneRecord,
 } from '../services/missionRuntime'
+import {
+  defaultAiMissionStudioBrief,
+  generateAiMissionStudioDraft,
+  type AiMissionStudioBrief,
+  type AiMissionStudioDraft,
+  type AiMissionStudioImpactLevel,
+  type AiMissionStudioLevel,
+  type AiMissionStudioSkill,
+} from '../services/aiMissionStudio'
 
 type AdminScreenProps = {
   lessons: LessonCatalogItem[]
@@ -164,6 +173,7 @@ type AdminScreenProps = {
 type SectionKey =
   | 'dashboard'
   | 'ai-control'
+  | 'ai-mission-studio'
   | 'quick-wins'
   | 'scene-assets'
   | 'mission-runtime'
@@ -219,10 +229,14 @@ type StatusFilter = 'all' | 'active' | 'inactive'
 type QuickWinStatusFilter = 'all' | 'active' | 'inactive'
 
 const questionKinds: Array<QuizQuestionItem['kind']> = ['multiple-choice', 'drag-fill', 'ordering', 'listening', 'speaking']
+const aiMissionStudioLevels: AiMissionStudioLevel[] = ['A1', 'A2', 'B1', 'B2']
+const aiMissionStudioSkills: AiMissionStudioSkill[] = ['Speaking', 'Listening', 'Reading', 'Writing', 'Mixed']
+const aiMissionStudioImpactLevels: AiMissionStudioImpactLevel[] = ['Low', 'Medium', 'High']
 
 const navItems: Array<{ key: SectionKey; label: string; icon: typeof LayoutDashboard }> = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'ai-control', label: 'AI Control Center', icon: BrainCircuit },
+  { key: 'ai-mission-studio', label: 'AI Mission Studio', icon: Sparkles },
   { key: 'quick-wins', label: 'Quick Wins', icon: Zap },
   { key: 'scene-assets', label: 'Scene Assets', icon: Image },
   { key: 'mission-runtime', label: 'Mission Runtime', icon: Clapperboard },
@@ -413,6 +427,7 @@ const nextNumericId = (existingIds: string[], prefix: string) => {
 const sectionTitle: Record<SectionKey, string> = {
   dashboard: 'Dashboard operacional',
   'ai-control': 'AI Control Center',
+  'ai-mission-studio': 'AI Mission Studio',
   'quick-wins': 'Quick Wins',
   'scene-assets': 'Scene Assets',
   'mission-runtime': 'Mission Runtime',
@@ -428,6 +443,7 @@ const sectionTitle: Record<SectionKey, string> = {
 
 const sectionCopy: Record<SectionKey, string> = {
   dashboard: 'Acompanhe o catálogo, veja o volume de conteúdo e acesse ações rápidas sem abrir formulários gigantes.',
+  'ai-mission-studio': 'Gere uma Scene completa a partir de intenção pedagógica, valide qualidade, visualize no Runtime real e aprove para produção.',
   'quick-wins': 'Configure o momentum system da home com cards premium, timers, badges de XP e previews cinematográficos em tempo real.',
   'ai-control': 'Configure providers, guardrails, drafts e geração contextual sem quebrar a hierarquia atual de lições, quizzes e questões.',
   'scene-assets': 'Cadastre, organize e ajuste os assets narrativos cinematográficos que alimentam hero, missões e cenas do SparkLingo.',
@@ -537,6 +553,9 @@ export function AdminScreen({
   const [aiPreviewDraft, setAiPreviewDraft] = useState<AIDraftRecord | null>(null)
   const [aiSelectedDraftId, setAiSelectedDraftId] = useState('')
   const [aiComposerLoading, setAiComposerLoading] = useState(false)
+  const [aiMissionBrief, setAiMissionBrief] = useState<AiMissionStudioBrief>(defaultAiMissionStudioBrief)
+  const [aiMissionDraft, setAiMissionDraft] = useState<AiMissionStudioDraft | null>(null)
+  const [aiMissionGenerating, setAiMissionGenerating] = useState(false)
 
   const debouncedLessonSearch = useDebouncedValue(lessonSearch)
   const debouncedQuizSearch = useDebouncedValue(quizSearch)
@@ -585,6 +604,12 @@ export function AdminScreen({
   }, [toast])
 
   useEffect(() => {
+    if (aiMissionBrief.sceneAssetId || !sceneAssets.length) return
+    const defaultAsset = sceneAssets.find((asset) => asset.category === 'Airport') ?? sceneAssets[0]
+    setAiMissionBrief((current) => ({ ...current, sceneAssetId: defaultAsset.id }))
+  }, [aiMissionBrief.sceneAssetId, sceneAssets])
+
+  useEffect(() => {
     if (!questionDraft.quizId) return
     const linkedQuiz = quizzes.find((quiz) => quiz.id === questionDraft.quizId)
     if (!linkedQuiz) return
@@ -631,6 +656,10 @@ export function AdminScreen({
   const missionRuntimeIdPreview = useMemo(
     () => missionRuntimeDraft.id || nextNumericId(missionRuntimeScenes.map((item) => item.id), 'RT'),
     [missionRuntimeDraft.id, missionRuntimeScenes],
+  )
+  const aiMissionStudioIdPreview = useMemo(
+    () => nextNumericId(missionRuntimeScenes.map((item) => item.id), 'RT'),
+    [missionRuntimeScenes],
   )
 
   const lessonDisplayIds = useMemo(() => buildDisplayIdMap(lessons.map((item) => item.id), 'LS'), [lessons])
@@ -788,6 +817,21 @@ export function AdminScreen({
       : questions.map((question) => ({ id: question.id, label: question.title }))
   const selectedMediaTarget = mediaTargetOptions.find((item) => item.id === mediaAiTargetId)
   const currentMissionRuntimeAsset = sceneAssets.find((asset) => asset.id === missionRuntimeDraft.sceneAssetId) ?? null
+  const selectedAiMissionAsset =
+    sceneAssets.find((asset) => asset.id === aiMissionBrief.sceneAssetId) ??
+    sceneAssets.find((asset) => asset.category === 'Airport') ??
+    sceneAssets[0] ??
+    null
+  const aiMissionPreviewMission: MissionRuntimeMission | null = aiMissionDraft ? {
+    id: aiMissionDraft.runtimeScene.missionTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+    title: aiMissionDraft.runtimeScene.missionTitle,
+    chapterLabel: aiMissionDraft.runtimeScene.chapter,
+    sceneCount: aiMissionDraft.runtimeScene.sceneTotal,
+    posterImage: aiMissionDraft.runtimeScene.backgroundImageUrl,
+    backgroundDesktop: aiMissionDraft.runtimeScene.backgroundImageUrl,
+    backgroundMobile: aiMissionDraft.runtimeScene.backgroundImageUrlMobile || aiMissionDraft.runtimeScene.backgroundImageUrl,
+    asset: selectedAiMissionAsset ?? defaultSceneAssetDraft,
+  } : null
 
   const questionPreview = useMemo(() => {
     if (questionDraft.kind === 'drag-fill') {
@@ -1143,6 +1187,51 @@ export function AdminScreen({
       closeDrawer()
     },
   )
+
+  const updateAiMissionBrief = <Key extends keyof AiMissionStudioBrief>(field: Key, value: AiMissionStudioBrief[Key]) => {
+    setAiMissionBrief((current) => ({ ...current, [field]: value }))
+  }
+
+  const generateAiMissionDraft = async () => {
+    setAiMissionGenerating(true)
+    setStatus('Gerando Scene Draft com base no Learning Intent...')
+    try {
+      const draft = await generateAiMissionStudioDraft(aiMissionBrief, {
+        sceneAsset: selectedAiMissionAsset,
+        nextId: aiMissionStudioIdPreview,
+        order: missionRuntimeScenes.length + 1,
+        lessonId: lessons.find((lesson) => lesson.title.toLowerCase().includes('airport'))?.id ?? lessons[0]?.id ?? '',
+      })
+      setAiMissionDraft(draft)
+      setStatus(draft.source === 'ai' ? 'Scene Draft gerada pela IA e validada.' : 'Scene Draft gerada em fallback local e validada.')
+      setToast({
+        tone: draft.validation.valid ? 'success' : 'info',
+        message: draft.validation.valid ? 'Scene Draft pronta para preview.' : 'Draft gerado com pontos de validação para revisar.',
+      })
+    } catch (error) {
+      setToast({
+        tone: 'error',
+        message: error instanceof Error ? error.message : 'Não foi possível gerar a Scene Draft.',
+      })
+    } finally {
+      setAiMissionGenerating(false)
+    }
+  }
+
+  const approveAiMissionDraft = () => {
+    if (!aiMissionDraft) return
+
+    runAdminTask(
+      'Aprovando Scene Draft...',
+      `Scene "${aiMissionDraft.runtimeScene.title}" salva no Mission Runtime.`,
+      async () => {
+        await upsertMissionRuntimeScene(aiMissionDraft.runtimeScene)
+        await refreshMissionRuntime()
+        if (onRefresh) await onRefresh()
+        setAiMissionDraft(null)
+      },
+    )
+  }
 
   const removeCatalogItem = async (label: string, task: () => Promise<void>) => {
     if (!window.confirm(`Excluir "${label}" do catálogo?`)) return
@@ -2791,6 +2880,11 @@ export function AdminScreen({
                   <strong>AI Control Center</strong>
                   <span>Providers, drafts, templates e guardrails pedagógicos.</span>
                 </button>
+                <button className="cms-quick-card" type="button" onClick={() => setActiveSection('ai-mission-studio')}>
+                  <Sparkles size={18} />
+                  <strong>AI Mission Studio</strong>
+                  <span>Gere uma cena por Learning Intent e valide no Runtime real.</span>
+                </button>
                 <button className="cms-quick-card" type="button" onClick={() => setActiveSection('lessons')}>
                   <BookOpen size={18} />
                   <strong>Nova lição</strong>
@@ -2813,6 +2907,222 @@ export function AdminScreen({
                 </button>
               </div>
             </section>
+          </section>
+        )}
+
+        {activeSection === 'ai-mission-studio' && (
+          <section className="cms-panel-stack ai-mission-studio">
+            <section className="cms-summary-grid">
+              <article className="cms-stat-card">
+                <span>Unidade de geração</span>
+                <strong>1 Scene</strong>
+                <small>sem gerar missão completa</small>
+              </article>
+              <article className="cms-stat-card">
+                <span>Orientação</span>
+                <strong>Intent</strong>
+                <small>pedagogia + confiança</small>
+              </article>
+              <article className="cms-stat-card">
+                <span>Preview</span>
+                <strong>Runtime real</strong>
+                <small>sem mockup de JSON</small>
+              </article>
+              <article className="cms-stat-card">
+                <span>Destino</span>
+                <strong>Mission Runtime</strong>
+                <small>Approve & Save controlado</small>
+              </article>
+            </section>
+
+            <section className="cms-panel ai-studio-brief-panel">
+              <div className="cms-panel-head">
+                <div>
+                  <h2>Brief pedagógico + emocional</h2>
+                  <p className="admin-helper">Gere apenas uma Scene completa. O objetivo é validar Learning Intent → Draft → Preview → Runtime.</p>
+                </div>
+                <div className="cms-content-actions">
+                  <button className="admin-secondary" type="button" onClick={() => setAiMissionBrief(defaultAiMissionStudioBrief)}>
+                    <RefreshCw size={14} />
+                    Resetar brief
+                  </button>
+                  <button className="admin-primary" type="button" disabled={aiMissionGenerating} onClick={generateAiMissionDraft}>
+                    <Sparkles size={16} />
+                    {aiMissionGenerating ? 'Gerando...' : 'Gerar Scene Draft'}
+                  </button>
+                </div>
+              </div>
+
+              <div className="ai-studio-grid">
+                <article className="ai-studio-card">
+                  <p className="admin-kicker">Contexto</p>
+                  <div className="drawer-form">
+                    <label>World
+                      <input value={aiMissionBrief.world} onChange={(event) => updateAiMissionBrief('world', event.target.value)} />
+                    </label>
+                    <label>Mission
+                      <input value={aiMissionBrief.mission} onChange={(event) => updateAiMissionBrief('mission', event.target.value)} />
+                    </label>
+                    <label>Scene Asset
+                      <select value={aiMissionBrief.sceneAssetId} onChange={(event) => updateAiMissionBrief('sceneAssetId', event.target.value)}>
+                        <option value="">Selecionar asset visual</option>
+                        {missionRuntimeAssetOptions.map((asset) => (
+                          <option key={asset.id} value={asset.id}>{asset.title} • {asset.category}</option>
+                        ))}
+                      </select>
+                    </label>
+                  </div>
+                </article>
+
+                <article className="ai-studio-card">
+                  <p className="admin-kicker">Pedagogical Core</p>
+                  <div className="drawer-form">
+                    <div className="drawer-grid-two">
+                      <label>Level
+                        <select value={aiMissionBrief.level} onChange={(event) => updateAiMissionBrief('level', event.target.value as AiMissionStudioLevel)}>
+                          {aiMissionStudioLevels.map((level) => <option key={level} value={level}>{level}</option>)}
+                        </select>
+                      </label>
+                      <label>Skill
+                        <select value={aiMissionBrief.skill} onChange={(event) => updateAiMissionBrief('skill', event.target.value as AiMissionStudioSkill)}>
+                          {aiMissionStudioSkills.map((skill) => <option key={skill} value={skill}>{skill}</option>)}
+                        </select>
+                      </label>
+                    </div>
+                    <label>Grammar Target
+                      <input value={aiMissionBrief.grammarTarget} onChange={(event) => updateAiMissionBrief('grammarTarget', event.target.value)} />
+                    </label>
+                    <label>Learning Outcome
+                      <textarea value={aiMissionBrief.learningOutcome} onChange={(event) => updateAiMissionBrief('learningOutcome', event.target.value)} />
+                    </label>
+                    <label>Learning Intent
+                      <textarea value={aiMissionBrief.learningIntent} onChange={(event) => updateAiMissionBrief('learningIntent', event.target.value)} />
+                    </label>
+                  </div>
+                </article>
+
+                <article className="ai-studio-card">
+                  <p className="admin-kicker">Emotional Design</p>
+                  <div className="drawer-form">
+                    <label>Confidence Goal
+                      <textarea value={aiMissionBrief.confidenceGoal} onChange={(event) => updateAiMissionBrief('confidenceGoal', event.target.value)} />
+                    </label>
+                    <div className="drawer-grid-two">
+                      <label>Pressure Level
+                        <select value={aiMissionBrief.pressureLevel} onChange={(event) => updateAiMissionBrief('pressureLevel', event.target.value as AiMissionStudioImpactLevel)}>
+                          {aiMissionStudioImpactLevels.map((level) => <option key={level} value={level}>{level}</option>)}
+                        </select>
+                      </label>
+                      <label>Emotional Tone
+                        <input value={aiMissionBrief.emotionalTone} onChange={(event) => updateAiMissionBrief('emotionalTone', event.target.value)} />
+                      </label>
+                    </div>
+                    <label>Failure Mode
+                      <textarea value={aiMissionBrief.failureMode} onChange={(event) => updateAiMissionBrief('failureMode', event.target.value)} />
+                    </label>
+                    <label>Recovery Style
+                      <input value={aiMissionBrief.recoveryStyle} onChange={(event) => updateAiMissionBrief('recoveryStyle', event.target.value)} />
+                    </label>
+                  </div>
+                </article>
+
+                <article className="ai-studio-card">
+                  <p className="admin-kicker">Real World</p>
+                  <div className="drawer-form">
+                    <label>Scenario
+                      <input value={aiMissionBrief.scenario} onChange={(event) => updateAiMissionBrief('scenario', event.target.value)} />
+                    </label>
+                    <label>Real Life Transfer
+                      <textarea value={aiMissionBrief.realLifeTransfer} onChange={(event) => updateAiMissionBrief('realLifeTransfer', event.target.value)} />
+                    </label>
+                  </div>
+                </article>
+              </div>
+            </section>
+
+            {aiMissionDraft && (
+              <>
+                <section className="cms-panel ai-quality-panel">
+                  <div className="cms-panel-head">
+                    <div>
+                      <h2>Quality Panel</h2>
+                      <p className="admin-helper">Métricas linguísticas e impacto de confiança antes da aprovação editorial.</p>
+                    </div>
+                    <div className={`cms-header-pill ${aiMissionDraft.validation.valid ? 'is-success' : 'is-warning'}`}>
+                      <CheckCircle2 size={16} />
+                      {aiMissionDraft.validation.valid ? 'Schema válido' : 'Revisão necessária'}
+                    </div>
+                  </div>
+
+                  <div className="ai-quality-columns">
+                    <article className="ai-quality-column">
+                      <p className="admin-kicker">Linguistic Quality</p>
+                      <div className="ai-quality-grid">
+                        {Object.values(aiMissionDraft.quality.linguisticQuality).map((metric) => (
+                          <div key={metric.label} className="ai-quality-metric">
+                            <span>{metric.label}</span>
+                            <strong>{metric.value}</strong>
+                            <p>{metric.why}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </article>
+                    <article className="ai-quality-column">
+                      <p className="admin-kicker">Confidence Impact</p>
+                      <div className="ai-quality-grid">
+                        {Object.values(aiMissionDraft.quality.confidenceImpact).map((metric) => (
+                          <div key={metric.label} className="ai-quality-metric">
+                            <span>{metric.label}</span>
+                            <strong>{metric.value}</strong>
+                            <p>{metric.why}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </article>
+                  </div>
+
+                  <div className="ai-validation-strip">
+                    <strong>{aiMissionDraft.source === 'ai' ? 'IA provider' : 'Fallback local'}</strong>
+                    {aiMissionDraft.validation.issues.length
+                      ? aiMissionDraft.validation.issues.map((issue) => <span key={issue}>{issue}</span>)
+                      : <span>Scene Draft compatível com o Mission Runtime atual.</span>}
+                  </div>
+                </section>
+
+                <section className="cms-panel ai-runtime-preview-panel">
+                  <div className="cms-panel-head">
+                    <div>
+                      <h2>Runtime Preview</h2>
+                      <p className="admin-helper">Preview renderizado com o mesmo MissionRuntime usado em produção.</p>
+                    </div>
+                    <div className="cms-content-actions">
+                      <button className="admin-secondary" type="button" onClick={() => openMissionRuntimeEditor(aiMissionDraft.runtimeScene)}>
+                        <Pencil size={14} />
+                        Ajustar no editor
+                      </button>
+                      <button className="admin-primary" type="button" disabled={!aiMissionDraft.validation.valid || saving} onClick={approveAiMissionDraft}>
+                        <Save size={16} />
+                        Approve & Save
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="ai-runtime-preview-shell">
+                    {aiMissionPreviewMission && (
+                      <MissionRuntime
+                        mission={aiMissionPreviewMission}
+                        scenes={[aiMissionDraft.runtimeScene]}
+                        learnerLevel={1}
+                        streakDays={1}
+                        totalXp={130}
+                        avatarUrl={null}
+                        onBack={() => undefined}
+                      />
+                    )}
+                  </div>
+                </section>
+              </>
+            )}
           </section>
         )}
 
