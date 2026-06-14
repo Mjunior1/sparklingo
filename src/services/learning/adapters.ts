@@ -42,6 +42,30 @@ const normalize = (value: string) =>
 const includesNormalized = (source: string, query: string) =>
   normalize(source).includes(normalize(query))
 
+const overlapsNormalized = (left: string, right: string) => {
+  const normalizedLeft = normalize(left)
+  const normalizedRight = normalize(right)
+  return Boolean(
+    normalizedLeft &&
+    normalizedRight &&
+    (normalizedLeft.includes(normalizedRight) || normalizedRight.includes(normalizedLeft)),
+  )
+}
+
+const sceneAssetMatchesLesson = (asset: SceneAssetRecord, lesson: LessonCatalogItem) => {
+  const lessonMission = lesson.missionTitle ?? ''
+  const lessonText = [lesson.title, lessonMission, lesson.category, lesson.emotionalContext ?? ''].join(' ')
+  const category = normalize(asset.category)
+
+  return (
+    overlapsNormalized(asset.mission, lessonMission || lesson.title) ||
+    overlapsNormalized(asset.title, lessonMission || lesson.title) ||
+    (category === 'airport' && normalize(lessonText).includes('airport')) ||
+    (category === 'coffeeshop' && (normalize(lessonText).includes('coffee') || normalize(lessonText).includes('daily routine'))) ||
+    (category === 'park' && normalize(lessonText).includes('park'))
+  )
+}
+
 const mapLegacyDifficulty = (value: string): DifficultyLevel => {
   if (value === 'Médio') return 'A2'
   return 'A1'
@@ -366,16 +390,19 @@ export const buildLegacyMissionBundle = (params: {
 }): MissionExperienceBundle => {
   const world = resolveLegacyWorld(params.lesson, params.runtimeScenes, params.sceneAssets)
 
-  const matchingSceneAsset =
-    params.sceneAssets.find((asset) =>
-      includesNormalized(asset.mission, params.lesson.missionTitle ?? params.lesson.title),
-    ) ?? null
+  const matchingSceneAssets = params.sceneAssets.filter((asset) => sceneAssetMatchesLesson(asset, params.lesson))
+  const matchingSceneAsset = matchingSceneAssets[0] ?? null
+  const matchingSceneAssetIds = new Set(matchingSceneAssets.map((asset) => asset.id))
 
   const matchingRuntimeScenes = params.runtimeScenes
     .filter(
       (scene) =>
-        scene.lessonId === params.lesson.id ||
-        includesNormalized(scene.missionTitle, params.lesson.missionTitle ?? params.lesson.title),
+        scene.active &&
+        (
+          scene.lessonId === params.lesson.id ||
+          includesNormalized(scene.missionTitle, params.lesson.missionTitle ?? params.lesson.title) ||
+          matchingSceneAssetIds.has(scene.sceneAssetId)
+        ),
     )
     .sort((a, b) => a.order - b.order || a.sceneNumber - b.sceneNumber)
 

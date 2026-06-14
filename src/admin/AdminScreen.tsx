@@ -232,6 +232,35 @@ const questionKinds: Array<QuizQuestionItem['kind']> = ['multiple-choice', 'drag
 const aiMissionStudioLevels: AiMissionStudioLevel[] = ['A1', 'A2', 'B1', 'B2']
 const aiMissionStudioSkills: AiMissionStudioSkill[] = ['Speaking', 'Listening', 'Reading', 'Writing', 'Mixed']
 const aiMissionStudioImpactLevels: AiMissionStudioImpactLevel[] = ['Low', 'Medium', 'High']
+const normalizeAdminText = (value?: string) =>
+  (value ?? '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+
+const resolveAdminLessonForSceneAsset = (asset: SceneAssetRecord | null, lessons: LessonCatalogItem[]) => {
+  if (!asset || !lessons.length) return lessons[0] ?? null
+  const assetMission = normalizeAdminText(asset.mission)
+  const assetTitle = normalizeAdminText(asset.title)
+  const category = normalizeAdminText(asset.category)
+
+  return (
+    lessons.find((lesson) => {
+      const lessonText = normalizeAdminText([lesson.title, lesson.missionTitle ?? '', lesson.category, lesson.emotionalContext ?? ''].join(' '))
+      const lessonMission = normalizeAdminText(lesson.missionTitle)
+      return (
+        (assetMission && lessonMission && (assetMission.includes(lessonMission) || lessonMission.includes(assetMission))) ||
+        (assetTitle && lessonMission && (assetTitle.includes(lessonMission) || lessonMission.includes(assetTitle))) ||
+        (category === 'airport' && lessonText.includes('airport')) ||
+        (category === 'coffeeshop' && (lessonText.includes('coffee') || lessonText.includes('daily routine'))) ||
+        (category === 'park' && lessonText.includes('park'))
+      )
+    }) ??
+    lessons[0] ??
+    null
+  )
+}
 
 const navItems: Array<{ key: SectionKey; label: string; icon: typeof LayoutDashboard }> = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -822,6 +851,7 @@ export function AdminScreen({
     sceneAssets.find((asset) => asset.category === 'Airport') ??
     sceneAssets[0] ??
     null
+  const selectedAiMissionLesson = resolveAdminLessonForSceneAsset(selectedAiMissionAsset, lessons)
   const aiMissionPreviewMission: MissionRuntimeMission | null = aiMissionDraft ? {
     id: aiMissionDraft.runtimeScene.missionTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     title: aiMissionDraft.runtimeScene.missionTitle,
@@ -1200,7 +1230,8 @@ export function AdminScreen({
         sceneAsset: selectedAiMissionAsset,
         nextId: aiMissionStudioIdPreview,
         order: missionRuntimeScenes.length + 1,
-        lessonId: lessons.find((lesson) => lesson.title.toLowerCase().includes('airport'))?.id ?? lessons[0]?.id ?? '',
+        lessonId: selectedAiMissionLesson?.id ?? '',
+        parentMissionTitle: selectedAiMissionLesson?.missionTitle || selectedAiMissionLesson?.title || '',
       })
       setAiMissionDraft(draft)
       setStatus(draft.source === 'ai' ? 'Scene Draft gerada pela IA e validada.' : 'Scene Draft gerada em fallback local e validada.')

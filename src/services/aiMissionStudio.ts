@@ -63,6 +63,7 @@ type DraftOptions = {
   nextId: string
   order: number
   lessonId?: string
+  parentMissionTitle?: string
 }
 
 const fallbackBackground = '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png'
@@ -143,7 +144,7 @@ export const createLocalAiMissionDraft = (
     id: options.nextId,
     sceneAssetId: brief.sceneAssetId || asset?.id || '',
     lessonId: options.lessonId || '',
-    missionTitle: compact(brief.mission, 'Airport Arrival'),
+    missionTitle: compact(options.parentMissionTitle, compact(brief.mission, 'Airport Arrival')),
     chapter: 'Chapter 1',
     sceneNumber: 1,
     sceneTotal: 1,
@@ -248,6 +249,8 @@ const normalizeDraft = (
         ...payload.runtimeScene,
         id: options.nextId,
         sceneAssetId: brief.sceneAssetId || payload.runtimeScene.sceneAssetId || fallback.runtimeScene.sceneAssetId,
+        lessonId: options.lessonId || payload.runtimeScene.lessonId || fallback.runtimeScene.lessonId,
+        missionTitle: compact(options.parentMissionTitle, payload.runtimeScene.missionTitle || fallback.runtimeScene.missionTitle),
         active: true,
         order: options.order,
         answers: Array.isArray(payload.runtimeScene.answers) && payload.runtimeScene.answers.length
