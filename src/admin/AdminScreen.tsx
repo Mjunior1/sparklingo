@@ -2113,6 +2113,34 @@ export function AdminScreen({
                   placeholder="Pedir ajuda e entender o próximo passo no aeroporto."
                 />
               </label>
+              <label>Contexto geral da missão
+                <input
+                  value={sceneAssetDraft.missionContextTitle}
+                  onChange={(event) => setSceneAssetDraft((current) => ({ ...current, missionContextTitle: event.target.value }))}
+                  placeholder="Airport Survival"
+                />
+              </label>
+              <label>Texto contextual da missão
+                <textarea
+                  value={sceneAssetDraft.missionContextBody}
+                  onChange={(event) => setSceneAssetDraft((current) => ({ ...current, missionContextBody: event.target.value }))}
+                  placeholder="Explique o contexto que sustenta todas as cenas desta missão."
+                />
+              </label>
+              <label>Objetivo emocional do Spark
+                <input
+                  value={sceneAssetDraft.missionObjectiveTitle}
+                  onChange={(event) => setSceneAssetDraft((current) => ({ ...current, missionObjectiveTitle: event.target.value }))}
+                  placeholder="Spark steps in when pressure rises."
+                />
+              </label>
+              <label>Lembrete / expectativa da missão
+                <textarea
+                  value={sceneAssetDraft.missionObjectiveBody}
+                  onChange={(event) => setSceneAssetDraft((current) => ({ ...current, missionObjectiveBody: event.target.value }))}
+                  placeholder="Descreva o que se espera emocionalmente e pedagogicamente do aluno."
+                />
+              </label>
               <label>URL desktop
                 <input value={sceneAssetDraft.imageUrl} onChange={(event) => setSceneAssetDraft((current) => ({ ...current, imageUrl: event.target.value, imageUrlDesktop: event.target.value }))} placeholder="/Images/Airport/..." />
               </label>

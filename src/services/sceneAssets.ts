@@ -30,6 +30,10 @@ export type SceneAssetRecord = {
   mission: string
   emotionalTone: string
   missionCardDescription: string
+  missionContextTitle: string
+  missionContextBody: string
+  missionObjectiveTitle: string
+  missionObjectiveBody: string
   heroBackgroundImageUrl: string
   backgroundImageUrl: string
   imageUrl: string
@@ -113,6 +117,10 @@ export const defaultSceneAssetDraft: SceneAssetRecord = {
   mission: '',
   emotionalTone: 'urgent wonder',
   missionCardDescription: 'Follow the next scene and keep moving through your journey.',
+  missionContextTitle: 'Mission context',
+  missionContextBody: '',
+  missionObjectiveTitle: 'Spark steps in when pressure rises.',
+  missionObjectiveBody: 'Stay clear, recover calmly and keep the moment feeling human.',
   heroBackgroundImageUrl: '',
   backgroundImageUrl: '',
   imageUrl: '',
@@ -149,6 +157,12 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     mission: 'Airport Arrival',
     emotionalTone: 'hopeful urgency',
     missionCardDescription: 'Pedir ajuda e entender o próximo passo no aeroporto.',
+    missionContextTitle: 'Airport Survival',
+    missionContextBody:
+      'You just landed. The airport feels bigger than expected. At immigration, the officer wants one clear answer about the purpose of your trip before the line moves on.',
+    missionObjectiveTitle: 'Spark steps in when pressure rises.',
+    missionObjectiveBody:
+      'Your goal is to answer clearly, recover if pressure rises and keep the checkpoint moving without breaking the scene.',
     heroBackgroundImageUrl: '/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png',
     backgroundImageUrl: '/Images/Airport/HERO_MISSION_AIRPORT_MOBILE_V2.png',
     imageUrl: '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png',
@@ -182,6 +196,10 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     mission: 'Coffee Shop Confidence',
     emotionalTone: 'warm social courage',
     missionCardDescription: 'Peça seu café e converse como um nativo.',
+    missionContextTitle: 'Coffee Confidence',
+    missionContextBody: 'Enter the cafe, keep the order simple and make the interaction feel natural.',
+    missionObjectiveTitle: 'Spark keeps the exchange warm.',
+    missionObjectiveBody: 'Use short, polite phrases and stay comfortable even when the counter moves fast.',
     heroBackgroundImageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
     backgroundImageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
     imageUrl: '/Images/CoffeeShop/sparklingo_scene_coffee_ordering_mobile_v1.png',
@@ -215,6 +233,10 @@ export const defaultSceneAssetsCatalog: SceneAssetRecord[] = [
     mission: 'Park Reflection',
     emotionalTone: 'calm confidence',
     missionCardDescription: 'Peça seu sorvete favorito e aproveite o passeio no parque.',
+    missionContextTitle: 'Park Reflection',
+    missionContextBody: 'Take a calmer moment outside and turn everyday choices into confident English.',
+    missionObjectiveTitle: 'Spark helps you slow down.',
+    missionObjectiveBody: 'Notice the situation, choose a simple phrase and let the conversation stay light.',
     heroBackgroundImageUrl: '/Images/Park/fox_in_the_park_draw.png',
     backgroundImageUrl: '/Images/Park/fox_in_the_park_draw.png',
     imageUrl: '/Images/Park/fox_in_the_park_draw.png',
@@ -273,6 +295,10 @@ const sanitizeSceneAsset = (asset: SceneAssetRecord | (Partial<SceneAssetRecord>
     mission: cleanString(asset.mission),
     emotionalTone: cleanString(asset.emotionalTone),
     missionCardDescription: cleanString(asset.missionCardDescription),
+    missionContextTitle: cleanString(asset.missionContextTitle),
+    missionContextBody: cleanString(asset.missionContextBody),
+    missionObjectiveTitle: cleanString(asset.missionObjectiveTitle),
+    missionObjectiveBody: cleanString(asset.missionObjectiveBody),
     heroBackgroundImageUrl,
     backgroundImageUrl: heroBackgroundImageUrl,
     imageUrl,
@@ -310,6 +336,10 @@ const fromSceneDoc = (docData: DocumentData): SceneAssetRecord =>
     mission: cleanString(docData.mission),
     emotionalTone: cleanString(docData.emotionalTone),
     missionCardDescription: cleanString(docData.missionCardDescription),
+    missionContextTitle: cleanString(docData.missionContextTitle),
+    missionContextBody: cleanString(docData.missionContextBody),
+    missionObjectiveTitle: cleanString(docData.missionObjectiveTitle),
+    missionObjectiveBody: cleanString(docData.missionObjectiveBody),
     heroBackgroundImageUrl: cleanString(docData.heroBackgroundImageUrl),
     backgroundImageUrl: cleanString(docData.backgroundImageUrl),
     imageUrl: cleanString(docData.imageUrl),

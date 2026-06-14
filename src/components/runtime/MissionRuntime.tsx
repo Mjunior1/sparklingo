@@ -286,12 +286,23 @@ const getSharedRuntimeAudio = () => {
   return sharedRuntimeAudio
 }
 
+const stopRuntimeSpeech = () => {
+  if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+    window.speechSynthesis.cancel()
+  }
+
+  if (sharedRuntimeAudio) {
+    sharedRuntimeAudio.pause()
+    sharedRuntimeAudio.currentTime = 0
+  }
+}
+
 const playResolvedAudioUrl = async (audioUrl: string) => {
   const audio = getSharedRuntimeAudio()
   if (!audio) return false
 
   try {
-    audio.pause()
+    stopRuntimeSpeech()
 
     if (audio.src === audioUrl) {
       audio.currentTime = 0
@@ -373,7 +384,7 @@ const playSpeech = async (
   const utterance = new SpeechSynthesisUtterance(text)
   utterance.rate = 0.84
   utterance.pitch = 1
-  window.speechSynthesis.cancel()
+  stopRuntimeSpeech()
   window.speechSynthesis.speak(utterance)
 }
 
@@ -849,6 +860,7 @@ export function MissionRuntime({
     () => () => {
       clearPacingTimers()
       clearAudioCueTimer()
+      stopRuntimeSpeech()
     },
     [clearAudioCueTimer],
   )
@@ -865,6 +877,8 @@ export function MissionRuntime({
     if (!currentScene) return
     const previousId = activeSceneRef.current
     if (previousId && previousId !== currentScene.id) {
+      stopRuntimeSpeech()
+      setActiveAudioCue(null)
       setPreviousSceneId(previousId)
       const timeout = window.setTimeout(() => setPreviousSceneId(null), 920)
       activeSceneRef.current = currentScene.id
@@ -1013,6 +1027,24 @@ export function MissionRuntime({
     setPreviousBackgroundIndex(0)
   }, [previousScene?.id, previousBackgroundCandidatesKey, isMobileViewport])
 
+  useEffect(() => {
+    if (!currentScene || phase !== 'scene' || !isImmigrationPlayableSlice || currentSceneStep !== 'listening') return
+
+    setIsListeningTransitioning(true)
+    const timer = window.setTimeout(() => {
+      setSceneSteps((current) => ({
+        ...current,
+        [currentScene.id]: 'speaking',
+      }))
+      setIsListeningTransitioning(false)
+    }, 1800)
+
+    return () => {
+      window.clearTimeout(timer)
+      setIsListeningTransitioning(false)
+    }
+  }, [currentScene?.id, currentScene, currentSceneStep, isImmigrationPlayableSlice, phase])
+
   const rewardBadgeIconUrl = currentScene?.rewardIconUrl
   const rewardChestIconUrl = currentScene?.rewardChestIconUrl || currentScene?.rewardIconUrl
   const totalSceneCount = Math.max(1, sceneFlow.length || currentScene?.sceneTotal || mission.sceneCount || 1)
@@ -1061,9 +1093,9 @@ export function MissionRuntime({
         ? true
         : isImmigrationPlayableSlice
           ? currentSceneStep === 'listening'
-            ? !isListeningTransitioning
+            ? false
             : currentSceneStep === 'speaking'
-              ? Boolean(selectedAnswer)
+              ? false
               : currentFeedbackRevealStage === 'ready' && !isCheckpointTransitioning
           : answerOptions.length === 0 || Boolean(selectedAnswer)
   const rewardDots = Array.from({ length: totalSceneCount })
@@ -1113,11 +1145,17 @@ export function MissionRuntime({
       } as CSSProperties)
     : undefined
   const introCompanionImage = currentScene?.companionImageUrl || ''
-  const introWorldTitle = currentContract?.world.title || 'Airport Survival'
+  const introWorldTitle = mission.asset.missionContextTitle || currentContract?.world.title || 'Airport Survival'
   const introSceneTitles = sceneFlow.map((item) => item.scene.title)
-  const introDescription = currentScene
-    ? `${currentScene.subtitle || 'You landed inside a noisy terminal.'} At immigration, the officer wants one clear answer about the purpose of your trip before the line moves on.`
-    : 'You landed inside a noisy terminal. Answer clearly, recover when pressure rises and let Spark guide you through the first checkpoint without breaking the scene.'
+  const introDescription =
+    mission.asset.missionContextBody ||
+    (currentScene
+      ? `${currentScene.subtitle || 'You landed inside a noisy terminal.'} At immigration, the officer wants one clear answer about the purpose of your trip before the line moves on.`
+      : 'You landed inside a noisy terminal. Answer clearly, recover when pressure rises and let Spark guide you through the first checkpoint without breaking the scene.')
+  const introObjectiveTitle = mission.asset.missionObjectiveTitle || 'Spark steps in when pressure rises.'
+  const introObjectiveBody =
+    mission.asset.missionObjectiveBody ||
+    'Just enough to steady your confidence and keep the moment feeling human.'
   const introNarration = `${introWorldTitle}. ${mission.title}. ${introDescription}`
   const topbarXpValue = phase === 'complete' ? earnedXp || currentScene?.xpReward || 0 : currentScene?.xpReward || 0
   const currentPromptVoiceRole: RuntimeSpeechVoiceRole =
@@ -1151,7 +1189,7 @@ export function MissionRuntime({
   const completionSparkBody = isImmigrationPlayableSlice
     ? sparkMemory.completionBody
     : 'You stayed with the scene long enough to turn pressure into visible progress.'
-  const completionPrimaryLabel = isImmigrationPlayableSlice ? 'Back to airport journey' : 'Back home'
+  const completionPrimaryLabel = isImmigrationPlayableSlice ? 'Continue airport journey' : 'Continue journey'
   const completionSecondaryLabel = isImmigrationPlayableSlice ? 'Replay immigration' : 'Replay mission'
   const completionStats = isImmigrationPlayableSlice
     ? [
@@ -1166,18 +1204,20 @@ export function MissionRuntime({
       ]
   const scenePrimaryLabel = isImmigrationPlayableSlice
     ? currentSceneStep === 'listening'
-      ? isListeningTransitioning
-        ? 'Listening...'
-        : 'I understood'
+      ? 'Listening...'
       : currentSceneStep === 'feedback'
         ? rewardVisible
           ? isCheckpointTransitioning
             ? 'Crossing checkpoint...'
             : isCheckpointCleared
-              ? 'Cross checkpoint'
-              : 'Move through checkpoint'
+              ? nextTeaserScene
+                ? 'Next scene'
+                : 'Finish checkpoint'
+              : nextTeaserScene
+                ? 'Recover and continue'
+                : 'Finish checkpoint'
           : 'Let it land'
-        : 'Continue'
+        : 'Choose an answer'
     : sceneIndex >= totalSceneCount - 1
       ? 'Complete mission'
       : 'Próxima'
@@ -1316,7 +1356,8 @@ export function MissionRuntime({
     const wasSelected = selectedAnswers[currentScene.id]
     if (isImmigrationPlayableSlice && currentSceneStep === 'feedback') return
 
-    if (wasSelected === answer.id) {
+    if (wasSelected) {
+      if (wasSelected !== answer.id) return
       triggerSpeech(answer.text, answer.audioUrl, 'answer', 'learner-guide')
       return
     }
@@ -1333,10 +1374,6 @@ export function MissionRuntime({
     }))
 
     setEarnedXp((current) => {
-      if (wasSelected) {
-        const previousAnswer = answerOptions.find((item) => item.id === wasSelected)
-        return current - (previousAnswer?.xpReward ?? 0) + answer.xpReward
-      }
       return current + answer.xpReward
     })
 
@@ -1393,20 +1430,6 @@ export function MissionRuntime({
     if (!currentScene) return
 
     if (isImmigrationPlayableSlice) {
-      if (currentSceneStep === 'listening') {
-        if (isListeningTransitioning) return
-        setIsListeningTransitioning(true)
-        clearPacingTimers()
-        schedulePacingTimer(() => {
-          setSceneSteps((current) => ({
-            ...current,
-            [currentScene.id]: 'speaking',
-          }))
-          setIsListeningTransitioning(false)
-        }, 760)
-        return
-      }
-
       if (currentSceneStep === 'speaking') {
         if (!selectedAnswer) return
         return
@@ -1645,7 +1668,7 @@ export function MissionRuntime({
         {phase === 'intro' ? (
           <>
             <div className="mission-runtime-main mission-runtime-main-phase">
-              <section className="mission-runtime-phase-panel">
+              <section className="mission-runtime-phase-panel mission-runtime-phase-panel-context">
                 <div className="mission-runtime-phase-head">
                   <p className="mission-runtime-phase-kicker">{introWorldTitle}</p>
                   <button
@@ -1667,8 +1690,8 @@ export function MissionRuntime({
                   ))}
                 </div>
                 <div className="mission-runtime-phase-note">
-                  <strong>Spark only steps in when the tension rises.</strong>
-                  <p>Just enough to steady your confidence and keep the moment feeling human.</p>
+                  <strong>{introObjectiveTitle}</strong>
+                  <p>{introObjectiveBody}</p>
                 </div>
               </section>
               <aside className="mission-runtime-phase-side">
@@ -1848,8 +1871,7 @@ export function MissionRuntime({
                         activeAudioCue === 'listening' ? ' is-audio-active' : ''
                       }`}
                       type="button"
-                      disabled={isListeningTransitioning}
-                      onClick={() => goToNextScene()}
+                      disabled
                     >
                       <span className="mission-runtime-listening-audio">
                         <RuntimeIcon iconUrl={currentScene.promptAudioIconUrl} alt="Listening audio icon">
@@ -1861,16 +1883,15 @@ export function MissionRuntime({
                         <small>{listeningPanelBody}</small>
                       </span>
                       <span className="mission-runtime-answer-check">
-                        {isListeningTransitioning ? <Volume2 size={18} /> : <ArrowRight size={18} />}
+                        <Volume2 size={18} />
                       </span>
                     </button>
                   ) : (
                     answerOptions.map((answer) => (
                       <button
                         key={answer.id}
-                        className={`mission-runtime-answer${selectedAnswer?.id === answer.id ? ' is-selected' : ''}${isImmigrationPlayableSlice && currentSceneStep === 'feedback' ? ' is-locked' : ''}`}
+                        className={`mission-runtime-answer${selectedAnswer?.id === answer.id ? ' is-selected' : ''}${selectedAnswer ? ' is-locked' : ''}`}
                         type="button"
-                        disabled={isImmigrationPlayableSlice && currentSceneStep === 'feedback'}
                         onClick={() => handleSelectAnswer(answer)}
                       >
                         <span
