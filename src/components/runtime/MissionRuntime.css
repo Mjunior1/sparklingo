@@ -48,30 +48,30 @@
 
 .mission-runtime-phase-intro .mission-runtime-background-layer-current {
   animation: none;
-  filter: blur(3px) saturate(0.82) brightness(0.42);
-  transform: scale(1.018);
+  filter: blur(1.2px) saturate(0.92) brightness(0.78);
+  transform: scale(1.01);
 }
 
 .mission-runtime-phase-intro .mission-runtime-global-overlay {
   opacity: 1;
   background:
-    radial-gradient(ellipse 38% 34% at 25% 42%, rgba(255, 230, 180, 0.08), transparent 64%),
-    radial-gradient(ellipse 42% 38% at 25% 42%, rgba(134, 95, 255, 0.12), transparent 68%),
-    linear-gradient(90deg, rgba(3, 4, 13, 0.76) 0%, rgba(4, 5, 15, 0.56) 42%, rgba(4, 5, 15, 0.74) 100%),
-    linear-gradient(180deg, rgba(3, 4, 12, 0.7) 0%, rgba(6, 7, 18, 0.42) 36%, rgba(3, 4, 12, 0.72) 100%);
+    radial-gradient(ellipse 36% 34% at 25% 42%, rgba(255, 236, 197, 0.12), transparent 62%),
+    radial-gradient(ellipse 48% 42% at 25% 42%, rgba(146, 103, 255, 0.14), transparent 70%),
+    linear-gradient(90deg, rgba(3, 4, 13, 0.42) 0%, rgba(4, 5, 15, 0.22) 40%, rgba(4, 5, 15, 0.52) 100%),
+    linear-gradient(180deg, rgba(3, 4, 12, 0.38) 0%, rgba(6, 7, 18, 0.12) 36%, rgba(3, 4, 12, 0.5) 100%);
 }
 
 .mission-runtime-phase-intro .mission-runtime-atmosphere {
-  opacity: 0.42;
-  filter: blur(2px) saturate(0.78);
+  opacity: 0.62;
+  filter: blur(1px) saturate(0.92);
 }
 
 .mission-runtime-phase-intro .mission-runtime-vignette {
   opacity: 1;
   background:
-    radial-gradient(ellipse 42% 40% at 25% 42%, transparent 0%, transparent 48%, rgba(2, 3, 10, 0.56) 92%),
-    linear-gradient(90deg, rgba(2, 3, 10, 0.68) 0%, rgba(2, 3, 10, 0.12) 26%, rgba(2, 3, 10, 0.58) 100%),
-    linear-gradient(180deg, rgba(2, 3, 10, 0.68) 0%, rgba(2, 3, 10, 0.06) 32%, rgba(2, 3, 10, 0.66) 100%);
+    radial-gradient(ellipse 44% 42% at 25% 42%, transparent 0%, transparent 52%, rgba(2, 3, 10, 0.36) 92%),
+    linear-gradient(90deg, rgba(2, 3, 10, 0.46) 0%, rgba(2, 3, 10, 0.04) 28%, rgba(2, 3, 10, 0.42) 100%),
+    linear-gradient(180deg, rgba(2, 3, 10, 0.44) 0%, rgba(2, 3, 10, 0.02) 34%, rgba(2, 3, 10, 0.46) 100%);
 }
 
 .mission-runtime-background,

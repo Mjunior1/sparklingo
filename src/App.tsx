@@ -576,17 +576,19 @@ function App() {
     }
 
     return (
-      <MissionRuntime
-        mission={runtimeMissionCard}
-        scenes={runtimeScenes}
-        sceneContracts={runtimeContracts}
-        learnerLevel={profile?.level ?? null}
-        streakDays={streakDays}
-        totalXp={totalXp}
-        avatarUrl={profile?.avatarUrl}
-        onBack={() => setView('home')}
-        onOpenAdmin={isAdmin ? () => setView('admin') : undefined}
-      />
+      <div className="runtime-app-shell">
+        <MissionRuntime
+          mission={runtimeMissionCard}
+          scenes={runtimeScenes}
+          sceneContracts={runtimeContracts}
+          learnerLevel={profile?.level ?? null}
+          streakDays={streakDays}
+          totalXp={totalXp}
+          avatarUrl={profile?.avatarUrl}
+          onBack={() => setView('home')}
+          onOpenAdmin={isAdmin ? () => setView('admin') : undefined}
+        />
+      </div>
     )
   }
 
