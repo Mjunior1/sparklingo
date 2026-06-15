@@ -552,10 +552,10 @@ const server = createServer(async (req, res) => {
         return
       }
 
-      if (text.length > 420) {
+      if (text.length > 1600) {
         sendJson(res, 400, {
           ok: false,
-          error: 'O texto do runtime precisa ter no máximo 420 caracteres.',
+          error: 'O texto do runtime precisa ter no máximo 1600 caracteres.',
         })
         return
       }

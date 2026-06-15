@@ -581,10 +581,10 @@ const buildSpeakingPrompt = (
     return {
       type: 'speaking' as const,
       npc: scene.character || scene.dialogue,
-      question: 'How would you answer the officer?',
-      translation: 'Escolha a resposta que soe clara e natural para continuar a conversa.',
+      question: scene.question,
+      translation: scene.questionTranslation,
       answers: scene.answers.map(buildRuntimeAnswerViewModel),
-      audioUrl: '',
+      audioUrl: scene.audioUrl,
       helperLabel: 'Your reply',
       helperActionLabel: 'Answer calmly',
     }
@@ -1030,6 +1030,8 @@ export function MissionRuntime({
   useEffect(() => {
     if (!currentScene || phase !== 'scene' || !isImmigrationPlayableSlice || currentSceneStep !== 'listening') return
 
+    const listeningText = prompt?.question || currentScene.question || ''
+    const revealDelay = Math.min(7200, Math.max(3600, listeningText.length * 55))
     setIsListeningTransitioning(true)
     const timer = window.setTimeout(() => {
       setSceneSteps((current) => ({
@@ -1037,13 +1039,13 @@ export function MissionRuntime({
         [currentScene.id]: 'speaking',
       }))
       setIsListeningTransitioning(false)
-    }, 1800)
+    }, revealDelay)
 
     return () => {
       window.clearTimeout(timer)
       setIsListeningTransitioning(false)
     }
-  }, [currentScene?.id, currentScene, currentSceneStep, isImmigrationPlayableSlice, phase])
+  }, [currentScene?.id, currentScene, currentSceneStep, isImmigrationPlayableSlice, phase, prompt?.question])
 
   const rewardBadgeIconUrl = currentScene?.rewardIconUrl
   const rewardChestIconUrl = currentScene?.rewardChestIconUrl || currentScene?.rewardIconUrl
@@ -1146,7 +1148,6 @@ export function MissionRuntime({
     : undefined
   const introCompanionImage = currentScene?.companionImageUrl || ''
   const introWorldTitle = mission.asset.missionContextTitle || currentContract?.world.title || 'Airport Survival'
-  const introSceneTitles = sceneFlow.map((item) => item.scene.title)
   const introDescription =
     mission.asset.missionContextBody ||
     (currentScene
@@ -1317,7 +1318,7 @@ export function MissionRuntime({
         narrationDelay = 420
       } else if (currentSceneStep === 'speaking') {
         narrationKey = `${currentScene.id}:speaking`
-        narrationText = prompt?.question || 'How would you answer the officer?'
+        narrationText = prompt?.question || currentScene.question
         narrationAudioUrl = prompt?.audioUrl || ''
         narrationDelay = 520
       }
@@ -1684,11 +1685,6 @@ export function MissionRuntime({
                 </div>
                 <h1>{mission.title}</h1>
                 <p>{introDescription}</p>
-                <div className="mission-runtime-phase-route">
-                  {introSceneTitles.map((title) => (
-                    <span key={title}>{title}</span>
-                  ))}
-                </div>
                 <div className="mission-runtime-phase-note">
                   <strong>{introObjectiveTitle}</strong>
                   <p>{introObjectiveBody}</p>

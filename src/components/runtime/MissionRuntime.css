@@ -952,14 +952,15 @@
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel {
-  width: min(100%, 760px);
-  min-height: 520px;
-  padding: clamp(34px, 4vw, 48px);
+  width: min(100%, 560px);
+  min-height: 690px;
+  padding: clamp(34px, 4vw, 52px) clamp(30px, 3.4vw, 44px);
   border-color: rgba(222, 205, 255, 0.26);
   background:
-    linear-gradient(180deg, rgba(24, 22, 45, 0.9), rgba(12, 13, 30, 0.92)),
-    radial-gradient(ellipse 68% 52% at 24% 12%, rgba(255, 237, 197, 0.12), transparent 64%),
-    radial-gradient(ellipse 70% 58% at 82% 22%, rgba(169, 104, 255, 0.14), transparent 66%);
+    linear-gradient(180deg, rgba(27, 25, 48, 0.9), rgba(12, 13, 30, 0.94)),
+    radial-gradient(ellipse 58% 44% at 26% 10%, rgba(255, 237, 197, 0.14), transparent 68%),
+    radial-gradient(ellipse 80% 70% at 94% 44%, rgba(169, 104, 255, 0.16), transparent 70%),
+    linear-gradient(90deg, rgba(188, 145, 255, 0.09), transparent 16%);
   box-shadow:
     0 42px 74px rgba(0, 0, 0, 0.4),
     0 0 0 1px rgba(255, 244, 218, 0.04),
@@ -970,9 +971,34 @@
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel-context > p {
-  max-width: 64ch;
+  max-width: 42ch;
   font-size: clamp(1.06rem, 1.35vw, 1.22rem);
   line-height: 1.72;
+}
+
+.mission-runtime-phase-intro .mission-runtime-phase-panel-context {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.mission-runtime-phase-intro .mission-runtime-phase-panel.mission-runtime-phase-panel-context::before {
+  inset: 28px auto 28px 20px;
+  width: 2px;
+  z-index: 0;
+  background:
+    linear-gradient(180deg, transparent, rgba(187, 144, 255, 0.5) 18%, rgba(255, 207, 117, 0.38) 52%, transparent);
+  filter: blur(0);
+  opacity: 0.72;
+  animation: none;
+}
+
+.mission-runtime-phase-intro .mission-runtime-phase-head,
+.mission-runtime-phase-intro .mission-runtime-phase-panel h1,
+.mission-runtime-phase-intro .mission-runtime-phase-panel > p,
+.mission-runtime-phase-intro .mission-runtime-phase-note {
+  position: relative;
+  z-index: 1;
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel::before,
