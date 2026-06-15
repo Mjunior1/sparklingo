@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Flame,
   Gift,
+  Hourglass,
   Languages,
   Medal,
   Mic,
@@ -17,6 +18,7 @@ import {
   Star,
   UserRound,
   Volume2,
+  VolumeX,
 } from 'lucide-react'
 import type {
   ListeningExperiencePayload,
@@ -50,6 +52,7 @@ type MissionRuntimeProps = {
   scenes: MissionRuntimeSceneRecord[]
   sceneContracts?: RuntimeSceneContract[]
   learnerLevel?: number | null
+  questionTimeLimitSeconds?: number | null
   streakDays: number
   totalXp: number
   avatarUrl?: string | null
@@ -95,6 +98,7 @@ type RuntimePromptViewModel = {
 
 const waveformBars = Array.from({ length: 24 }, (_, index) => 20 + ((index * 17) % 65))
 const runtimeSubtitleStorageKey = 'sparklingo.runtime.showTranslations'
+const runtimeSoundStorageKey = 'sparklingo.runtime.soundEnabled'
 
 const resolveDefaultSubtitleVisibility = (learnerLevel?: number | null) =>
   learnerLevel == null || learnerLevel <= 3
@@ -110,6 +114,18 @@ const readStoredSubtitlePreference = () => {
 const writeStoredSubtitlePreference = (showTranslations: boolean) => {
   if (typeof window === 'undefined') return
   window.localStorage.setItem(runtimeSubtitleStorageKey, showTranslations ? 'on' : 'off')
+}
+
+const readStoredSoundPreference = () => {
+  if (typeof window === 'undefined') return true
+  const stored = window.localStorage.getItem(runtimeSoundStorageKey)
+  if (stored === 'off') return false
+  return true
+}
+
+const writeStoredSoundPreference = (soundEnabled: boolean) => {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(runtimeSoundStorageKey, soundEnabled ? 'on' : 'off')
 }
 
 const buildRuntimeAsset = (mission: MissionRuntimeMission, scene: MissionRuntimeSceneRecord): SceneAssetRecord => ({
@@ -595,10 +611,10 @@ const buildSpeakingPrompt = (
   return {
     type: 'speaking' as const,
     npc: payload.npc,
-    question: payload.prompt,
-    translation: payload.translation || '',
+    question: scene.question || payload.prompt,
+    translation: scene.questionTranslation || payload.translation || '',
     answers: scene.answers.map(buildRuntimeAnswerViewModel),
-    audioUrl: payload.audio?.url || '',
+    audioUrl: scene.audioUrl || payload.audio?.url || '',
     helperLabel: 'Your reply',
     helperActionLabel: 'Answer naturally',
   }
@@ -650,6 +666,7 @@ export function MissionRuntime({
   scenes,
   sceneContracts = [],
   learnerLevel,
+  questionTimeLimitSeconds,
   streakDays,
   totalXp,
   avatarUrl,
@@ -759,11 +776,15 @@ export function MissionRuntime({
     if (storedPreference !== null) return storedPreference
     return resolveDefaultSubtitleVisibility(learnerLevel)
   })
+  const [soundEnabled, setSoundEnabled] = useState(readStoredSoundPreference)
+  const [questionTimeLeft, setQuestionTimeLeft] = useState(0)
+  const [timedOutScenes, setTimedOutScenes] = useState<Record<string, boolean>>({})
   const activeSceneRef = useRef<string | null>(null)
   const autoNarrationKeyRef = useRef<string>('')
   const hoverPreviewRef = useRef<Record<string, number>>({})
   const pacingTimersRef = useRef<number[]>([])
   const audioCueTimerRef = useRef<number | null>(null)
+  const questionTimeoutRef = useRef<string | null>(null)
 
   const clearPacingTimers = () => {
     pacingTimersRef.current.forEach((timer) => window.clearTimeout(timer))
@@ -798,6 +819,22 @@ export function MissionRuntime({
     void playSpeech(text, { audioUrl, voiceRole })
   }, [activateAudioCue])
 
+  const toggleSpeech = useCallback((
+    text: string,
+    audioUrl?: string,
+    cue: Exclude<RuntimeAudioCue, null> = 'prompt',
+    voiceRole: RuntimeSpeechVoiceRole = 'narration',
+  ) => {
+    if (activeAudioCue === cue) {
+      stopRuntimeSpeech()
+      clearAudioCueTimer()
+      setActiveAudioCue(null)
+      return
+    }
+
+    triggerSpeech(text, audioUrl, cue, voiceRole)
+  }, [activeAudioCue, clearAudioCueTimer, triggerSpeech])
+
   const previewSpeechOnHover = useCallback((
     previewKey: string,
     text: string,
@@ -805,12 +842,13 @@ export function MissionRuntime({
     cue: Exclude<RuntimeAudioCue, null>,
     voiceRole: RuntimeSpeechVoiceRole,
   ) => {
+    if (!soundEnabled) return
     const now = Date.now()
     const lastRun = hoverPreviewRef.current[previewKey] ?? 0
     if (now - lastRun < 1400) return
     hoverPreviewRef.current[previewKey] = now
     triggerSpeech(text, audioUrl, cue, voiceRole)
-  }, [triggerSpeech])
+  }, [soundEnabled, triggerSpeech])
 
   const schedulePacingTimer = (callback: () => void, delay: number) => {
     const timer = window.setTimeout(callback, delay)
@@ -843,6 +881,8 @@ export function MissionRuntime({
     setSelectedAnswers({})
     setSceneSteps({})
     setFeedbackRevealStages({})
+    setTimedOutScenes({})
+    setQuestionTimeLeft(0)
     setEarnedXp(0)
     setComboCount(0)
     setFeedbackPulse(false)
@@ -854,6 +894,7 @@ export function MissionRuntime({
     clearAudioCueTimer()
     activeSceneRef.current = null
     autoNarrationKeyRef.current = ''
+    questionTimeoutRef.current = null
   }, [clearAudioCueTimer, mission.id])
 
   useEffect(
@@ -895,7 +936,7 @@ export function MissionRuntime({
     /airport/i.test(currentScene.missionTitle || mission.title) &&
     Boolean(listeningExperience && speakingExperience)
   const currentSceneStep = currentScene
-    ? sceneSteps[currentScene.id] ?? (isImmigrationPlayableSlice ? 'listening' : 'speaking')
+    ? sceneSteps[currentScene.id] ?? 'speaking'
     : 'speaking'
   const prompt = useMemo(
     () =>
@@ -913,6 +954,7 @@ export function MissionRuntime({
   const answerOptions = useMemo(() => prompt?.answers ?? [], [prompt])
   const selectedAnswerId = currentScene ? selectedAnswers[currentScene.id] ?? '' : ''
   const selectedAnswer = answerOptions.find((answer) => answer.id === selectedAnswerId) ?? null
+  const currentSceneTimedOut = currentScene ? Boolean(timedOutScenes[currentScene.id]) : false
   const currentFeedbackRevealStage = currentScene
     ? feedbackRevealStages[currentScene.id] ?? 'idle'
     : 'idle'
@@ -1027,26 +1069,6 @@ export function MissionRuntime({
     setPreviousBackgroundIndex(0)
   }, [previousScene?.id, previousBackgroundCandidatesKey, isMobileViewport])
 
-  useEffect(() => {
-    if (!currentScene || phase !== 'scene' || !isImmigrationPlayableSlice || currentSceneStep !== 'listening') return
-
-    const listeningText = prompt?.question || currentScene.question || ''
-    const revealDelay = Math.min(7200, Math.max(3600, listeningText.length * 55))
-    setIsListeningTransitioning(true)
-    const timer = window.setTimeout(() => {
-      setSceneSteps((current) => ({
-        ...current,
-        [currentScene.id]: 'speaking',
-      }))
-      setIsListeningTransitioning(false)
-    }, revealDelay)
-
-    return () => {
-      window.clearTimeout(timer)
-      setIsListeningTransitioning(false)
-    }
-  }, [currentScene?.id, currentScene, currentSceneStep, isImmigrationPlayableSlice, phase, prompt?.question])
-
   const rewardBadgeIconUrl = currentScene?.rewardIconUrl
   const rewardChestIconUrl = currentScene?.rewardChestIconUrl || currentScene?.rewardIconUrl
   const totalSceneCount = Math.max(1, sceneFlow.length || currentScene?.sceneTotal || mission.sceneCount || 1)
@@ -1112,6 +1134,8 @@ export function MissionRuntime({
           ? isListeningTransitioning
             ? 'Take it in'
             : 'Listen first'
+          : currentSceneTimedOut
+            ? 'Tempo esgotado'
           : !selectedAnswer
           ? 'Checkpoint'
           : currentFeedbackRevealStage === 'idle'
@@ -1158,7 +1182,6 @@ export function MissionRuntime({
     mission.asset.missionObjectiveBody ||
     'Just enough to steady your confidence and keep the moment feeling human.'
   const introNarration = `${introWorldTitle}. ${mission.title}. ${introDescription}`
-  const topbarXpValue = phase === 'complete' ? earnedXp || currentScene?.xpReward || 0 : currentScene?.xpReward || 0
   const currentPromptVoiceRole: RuntimeSpeechVoiceRole =
     currentSceneStep === 'listening' ? 'npc' : 'narration'
   const nextTeaserScene =
@@ -1174,6 +1197,66 @@ export function MissionRuntime({
       : -1
     return linkedIndex >= 0 ? linkedIndex : sceneIndex + 1
   }
+  const questionTimeLimit = Math.min(90, Math.max(8, Math.round(questionTimeLimitSeconds ?? 22)))
+  const questionTimerProgress = questionTimeLimit > 0
+    ? Math.max(0, Math.min(100, (questionTimeLeft / questionTimeLimit) * 100))
+    : 0
+  const shouldShowQuestionTimer =
+    phase === 'scene' &&
+    currentSceneStep === 'speaking' &&
+    answerOptions.length > 0 &&
+    !selectedAnswer &&
+    !isCheckpointTransitioning
+
+  useEffect(() => {
+    if (!currentScene || !shouldShowQuestionTimer) {
+      questionTimeoutRef.current = null
+      setQuestionTimeLeft(0)
+      return undefined
+    }
+
+    const sceneId = currentScene.id
+    questionTimeoutRef.current = sceneId
+    setQuestionTimeLeft(questionTimeLimit)
+
+    let advanceTimer: number | null = null
+    const timer = window.setInterval(() => {
+      setQuestionTimeLeft((current) => {
+        if (current <= 1) {
+          window.clearInterval(timer)
+          if (questionTimeoutRef.current !== sceneId) return 0
+
+          questionTimeoutRef.current = null
+          setTimedOutScenes((items) => ({ ...items, [sceneId]: true }))
+          setIsCheckpointTransitioning(true)
+          advanceTimer = window.setTimeout(() => {
+            setIsCheckpointTransitioning(false)
+            const nextIndex = resolveNextSceneIndex()
+            if (nextIndex >= sceneFlow.length) {
+              setPhase('complete')
+              return
+            }
+            setSceneIndex(nextIndex)
+          }, 720)
+
+          return 0
+        }
+
+        return current - 1
+      })
+    }, 1000)
+
+    return () => {
+      window.clearInterval(timer)
+      if (advanceTimer !== null) window.clearTimeout(advanceTimer)
+    }
+  }, [
+    currentScene?.id,
+    currentScene,
+    questionTimeLimit,
+    sceneFlow.length,
+    shouldShowQuestionTimer,
+  ])
   const completionTitle = isImmigrationPlayableSlice
     ? isCheckpointCleared
       ? 'Immigration is behind you.'
@@ -1259,10 +1342,6 @@ export function MissionRuntime({
   useEffect(() => {
     const speechTexts = new Set<string>()
 
-    if (phase === 'intro') {
-      speechTexts.add(introNarration)
-    }
-
     if (currentScene) {
       if (currentScene.question) speechTexts.add(currentScene.question)
       if (prompt?.question) speechTexts.add(prompt.question)
@@ -1274,9 +1353,7 @@ export function MissionRuntime({
 
     speechTexts.forEach((text) => {
       let voiceRole: RuntimeSpeechVoiceRole = 'learner-guide'
-      if (text === introNarration) {
-        voiceRole = 'narration'
-      } else if (text === (currentScene?.question || '')) {
+      if (text === (currentScene?.question || '')) {
         voiceRole = 'npc'
       } else if (text === (prompt?.question || '')) {
         voiceRole = currentPromptVoiceRole
@@ -1292,25 +1369,20 @@ export function MissionRuntime({
     currentScene,
     currentScene?.id,
     currentScene?.question,
-    introNarration,
     phase,
     prompt?.question,
     speakingPromptPreview?.question,
   ])
 
   useEffect(() => {
-    if (phase === 'complete') return
+    if (phase === 'complete' || phase === 'intro' || !soundEnabled) return
 
     let narrationKey = ''
     let narrationText = ''
     let narrationAudioUrl = ''
     let narrationDelay = 360
 
-    if (phase === 'intro') {
-      narrationKey = `intro:${mission.id}`
-      narrationText = introNarration
-      narrationDelay = 420
-    } else if (currentScene) {
+    if (currentScene) {
       if (currentSceneStep === 'listening') {
         narrationKey = `${currentScene.id}:listening`
         narrationText = prompt?.question || currentScene.question
@@ -1333,7 +1405,7 @@ export function MissionRuntime({
         narrationText,
         narrationAudioUrl,
         'prompt',
-        phase === 'intro' ? 'narration' : currentSceneStep === 'listening' ? 'npc' : 'narration',
+        currentSceneStep === 'listening' ? 'npc' : 'narration',
       )
     }, narrationDelay)
 
@@ -1343,11 +1415,10 @@ export function MissionRuntime({
     currentScene,
     currentScene?.id,
     currentSceneStep,
-    introNarration,
-    mission.id,
     phase,
     prompt?.audioUrl,
     prompt?.question,
+    soundEnabled,
     triggerSpeech,
   ])
 
@@ -1416,7 +1487,7 @@ export function MissionRuntime({
       if (currentScene && isImmigrationPlayableSlice) {
         setSceneSteps((current) => ({
           ...current,
-          [currentScene.id]: 'listening',
+          [currentScene.id]: 'speaking',
         }))
       }
       setPhase('scene')
@@ -1469,7 +1540,7 @@ export function MissionRuntime({
       if (currentScene && isImmigrationPlayableSlice) {
         setSceneSteps((current) => ({
           ...current,
-          [currentScene.id]: 'listening',
+          [currentScene.id]: 'speaking',
         }))
       }
       setPhase('scene')
@@ -1639,12 +1710,30 @@ export function MissionRuntime({
               <span>{showTranslations ? 'Português visível' : 'Português oculto'}</span>
             </div>
           </button>
-          <div className="mission-runtime-topbar-pill mission-runtime-topbar-pill-xp">
-            <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="XP reward icon">
-              <Star size={15} />
-            </RuntimeIcon>
-            +{topbarXpValue} XP
-          </div>
+          <button
+            type="button"
+            className={`mission-runtime-topbar-pill mission-runtime-sound-toggle${soundEnabled ? ' is-active' : ''}`}
+            onClick={() => {
+              setSoundEnabled((current) => {
+                const nextValue = !current
+                writeStoredSoundPreference(nextValue)
+                if (!nextValue) {
+                  stopRuntimeSpeech()
+                  clearAudioCueTimer()
+                  setActiveAudioCue(null)
+                }
+                return nextValue
+              })
+            }}
+            aria-pressed={soundEnabled}
+            aria-label={soundEnabled ? 'Disable runtime sound' : 'Enable runtime sound'}
+          >
+            {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
+            <div>
+              <strong>Som</strong>
+              <span>{soundEnabled ? 'ativo' : 'manual'}</span>
+            </div>
+          </button>
           <div className="mission-runtime-topbar-status">
             <div className="mission-runtime-status-pill">
               <Flame size={15} />
@@ -1675,9 +1764,7 @@ export function MissionRuntime({
                   <button
                     type="button"
                     className={`mission-runtime-phase-audio${activeAudioCue === 'prompt' ? ' is-audio-active' : ''}`}
-                    onClick={() => triggerSpeech(introNarration, '', 'prompt', 'narration')}
-                    onMouseEnter={() => previewSpeechOnHover(`intro:${mission.id}`, introNarration, '', 'prompt', 'narration')}
-                    onFocus={() => previewSpeechOnHover(`intro:${mission.id}`, introNarration, '', 'prompt', 'narration')}
+                    onClick={() => toggleSpeech(introNarration, '', 'prompt', 'narration')}
                     aria-label="Play intro audio"
                   >
                     <Volume2 size={18} />
@@ -1812,7 +1899,7 @@ export function MissionRuntime({
                       type="button"
                       className={activeAudioCue === 'prompt' ? 'is-audio-active' : ''}
                       onClick={() =>
-                        triggerSpeech(
+                        toggleSpeech(
                           prompt?.question || currentScene.question,
                           prompt?.audioUrl || currentScene.audioUrl,
                           'prompt',
@@ -1850,11 +1937,19 @@ export function MissionRuntime({
                   ) : null}
                 </article>
 
-                <div className="mission-runtime-dots" aria-hidden="true">
-                  <span className={currentSceneStep !== 'listening' ? 'is-active' : ''} />
-                  <span className={currentSceneStep === 'feedback' || Boolean(selectedAnswer) ? 'is-active' : ''} />
-                  <span className={currentSceneStep === 'feedback' ? 'is-active' : ''} />
-                </div>
+                {shouldShowQuestionTimer ? (
+                  <div
+                    className={`mission-runtime-question-timer${questionTimeLeft <= 5 ? ' is-low' : ''}`}
+                    style={{ '--runtime-question-timer': `${questionTimerProgress}%` } as CSSProperties}
+                  >
+                    <span>
+                      <Hourglass size={16} />
+                      tempo para responder
+                    </span>
+                    <strong>{questionTimeLeft}s</strong>
+                    <i aria-hidden="true" />
+                  </div>
+                ) : null}
 
                 <div
                   className={`mission-runtime-answers mission-runtime-answers-step-${currentSceneStep}${
@@ -1895,13 +1990,13 @@ export function MissionRuntime({
                           onClick={(event) => {
                             event.preventDefault()
                             event.stopPropagation()
-                            triggerSpeech(answer.text, answer.audioUrl, 'answer', 'learner-guide')
+                            toggleSpeech(answer.text, answer.audioUrl, 'answer', 'learner-guide')
                           }}
                           onKeyDown={(event) => {
                             if (event.key !== 'Enter' && event.key !== ' ') return
                             event.preventDefault()
                             event.stopPropagation()
-                            triggerSpeech(answer.text, answer.audioUrl, 'answer', 'learner-guide')
+                            toggleSpeech(answer.text, answer.audioUrl, 'answer', 'learner-guide')
                           }}
                           onMouseEnter={() => previewSpeechOnHover(`answer:${currentScene.id}:${answer.id}`, answer.text, answer.audioUrl, 'answer', 'learner-guide')}
                           onFocus={() => previewSpeechOnHover(`answer:${currentScene.id}:${answer.id}`, answer.text, answer.audioUrl, 'answer', 'learner-guide')}
@@ -1968,7 +2063,7 @@ export function MissionRuntime({
                 Pular cena
               </button>
 
-              <div className={`mission-runtime-reward-rail${rewardVisible ? ' is-reward-ready' : ''}`}>
+              <div className={`mission-runtime-reward-rail${rewardVisible ? ' is-reward-ready' : ''}${selectedAnswer ? ' is-xp-live' : ''}`}>
                 <div className="mission-runtime-reward-core">
                   <span className="mission-runtime-reward-badge">
                     <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="Reward badge icon">
@@ -2034,7 +2129,7 @@ export function MissionRuntime({
                           type="button"
                           className={activeAudioCue === 'prompt' ? 'is-audio-active' : ''}
                           onClick={() =>
-                            triggerSpeech(
+                            toggleSpeech(
                               prompt?.question || currentScene.question,
                               prompt?.audioUrl || currentScene.audioUrl,
                               'prompt',
@@ -2077,7 +2172,7 @@ export function MissionRuntime({
                       }`}
                       type="button"
                       onClick={() =>
-                        triggerSpeech(
+                        toggleSpeech(
                           prompt?.question || currentScene.question,
                           prompt?.audioUrl || currentScene.audioUrl,
                           'prompt',
@@ -2134,7 +2229,7 @@ export function MissionRuntime({
                     <button
                       type="button"
                       className={`mission-runtime-mini-audio${activeAudioCue === 'answer' ? ' is-audio-active' : ''}`}
-                      onClick={() => selectedAnswer && triggerSpeech(selectedAnswer.text, selectedAnswer.audioUrl, 'answer', 'learner-guide')}
+                      onClick={() => selectedAnswer && toggleSpeech(selectedAnswer.text, selectedAnswer.audioUrl, 'answer', 'learner-guide')}
                       onMouseEnter={() =>
                         selectedAnswer &&
                         previewSpeechOnHover(

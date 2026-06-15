@@ -591,6 +591,10 @@ function App() {
           scenes={runtimeScenes}
           sceneContracts={runtimeContracts}
           learnerLevel={profile?.level ?? null}
+          questionTimeLimitSeconds={
+            platformConfig?.runtimeQuestionTimeLimitSeconds ??
+            defaultPlatformConfig.runtimeQuestionTimeLimitSeconds
+          }
           streakDays={streakDays}
           totalXp={totalXp}
           avatarUrl={profile?.avatarUrl}

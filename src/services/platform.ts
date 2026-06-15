@@ -18,6 +18,7 @@ export type PlatformConfig = {
   heroGlowColor: string
   heroTransitionDuration: number
   heroAutoplayDelay: number
+  runtimeQuestionTimeLimitSeconds: number
   supportEmail: string
 }
 
@@ -38,6 +39,7 @@ export const defaultPlatformConfig: PlatformConfig = {
   heroGlowColor: '#8f58ff',
   heroTransitionDuration: 900,
   heroAutoplayDelay: 6800,
+  runtimeQuestionTimeLimitSeconds: 22,
   supportEmail: 'support@sparklingo.app',
 }
 
@@ -95,6 +97,11 @@ const sanitizePlatformConfig = (config: Partial<PlatformConfig> & Record<string,
       cleanNumber(config.heroAutoplayDelay, defaultPlatformConfig.heroAutoplayDelay),
       2500,
       20000,
+    ),
+    runtimeQuestionTimeLimitSeconds: clamp(
+      cleanNumber(config.runtimeQuestionTimeLimitSeconds, defaultPlatformConfig.runtimeQuestionTimeLimitSeconds),
+      8,
+      90,
     ),
     supportEmail: cleanString(config.supportEmail) || defaultPlatformConfig.supportEmail,
   }

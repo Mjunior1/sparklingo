@@ -4405,6 +4405,9 @@ export function AdminScreen({
                         <input type="number" min="2500" max="20000" step="100" value={platformDraft.heroAutoplayDelay} onChange={(event) => setPlatformDraft((current) => ({ ...current, heroAutoplayDelay: Number(event.target.value) || 2500 }))} />
                       </label>
                     </div>
+                    <label>Runtime answer timer (seconds)
+                      <input type="number" min="8" max="90" step="1" value={platformDraft.runtimeQuestionTimeLimitSeconds} onChange={(event) => setPlatformDraft((current) => ({ ...current, runtimeQuestionTimeLimitSeconds: Number(event.target.value) || 22 }))} />
+                    </label>
                   </div>
                   <button
                     className="admin-primary"

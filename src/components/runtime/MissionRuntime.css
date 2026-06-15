@@ -410,6 +410,51 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
+.mission-runtime-sound-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: #f7f0ff;
+  cursor: pointer;
+  transition:
+    transform 260ms ease,
+    border-color 260ms ease,
+    background 260ms ease,
+    box-shadow 260ms ease;
+}
+
+.mission-runtime-sound-toggle:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 214, 129, 0.34);
+}
+
+.mission-runtime-sound-toggle div {
+  display: grid;
+  gap: 2px;
+  text-align: left;
+}
+
+.mission-runtime-sound-toggle strong {
+  font-size: 0.96rem;
+  line-height: 1;
+}
+
+.mission-runtime-sound-toggle span {
+  color: rgba(233, 225, 247, 0.68);
+  font-size: 0.78rem;
+}
+
+.mission-runtime-sound-toggle.is-active {
+  border-color: rgba(255, 207, 107, 0.28);
+  background:
+    radial-gradient(circle at 18% 50%, rgba(255, 205, 105, 0.16), transparent 34%),
+    linear-gradient(180deg, rgba(27, 21, 39, 0.86), rgba(13, 13, 31, 0.8));
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.2),
+    0 0 28px rgba(255, 197, 86, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
 .mission-runtime-status-pill div {
   display: grid;
   gap: 2px;
@@ -447,6 +492,20 @@
   gap: 38px;
   min-height: 600px;
   padding-top: 58px;
+}
+
+.mission-runtime-phase-intro .mission-runtime-main,
+.mission-runtime-phase-complete .mission-runtime-main {
+  grid-template-columns: minmax(0, 560px) minmax(0, 1fr);
+  min-height: 700px;
+}
+
+.mission-runtime-phase-complete .mission-runtime-phase-panel {
+  width: min(100%, 520px);
+  min-height: 760px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
 }
 
 .mission-runtime-play-focus .mission-runtime-section-head {
@@ -710,6 +769,74 @@
 .mission-runtime-dots span.is-active {
   background: rgba(170, 110, 255, 0.96);
   box-shadow: 0 0 20px rgba(164, 109, 255, 0.62);
+}
+
+.mission-runtime-question-timer {
+  --runtime-question-timer: 100%;
+  position: relative;
+  width: min(100%, 482px);
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px 16px;
+  border-radius: 20px;
+  border: 1px solid rgba(236, 200, 112, 0.2);
+  background:
+    radial-gradient(circle at 10% 50%, rgba(255, 207, 107, 0.14), transparent 34%),
+    linear-gradient(180deg, rgba(17, 15, 34, 0.76), rgba(9, 10, 24, 0.8));
+  box-shadow:
+    0 18px 30px rgba(0, 0, 0, 0.2),
+    0 0 26px rgba(255, 202, 102, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+
+.mission-runtime-question-timer span {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  color: rgba(255, 239, 205, 0.82);
+  font-size: 0.86rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.mission-runtime-question-timer strong {
+  color: #ffe49a;
+  font-size: 1.08rem;
+  text-shadow: 0 0 18px rgba(255, 203, 91, 0.24);
+}
+
+.mission-runtime-question-timer i {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 8px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+}
+
+.mission-runtime-question-timer i::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: var(--runtime-question-timer);
+  border-radius: inherit;
+  background: linear-gradient(90deg, #8f5cff, #e890ff 52%, #ffd36e);
+  box-shadow: 0 0 18px rgba(255, 207, 97, 0.28);
+  transition: width 620ms linear;
+}
+
+.mission-runtime-question-timer.is-low {
+  border-color: rgba(255, 181, 82, 0.34);
+  box-shadow:
+    0 18px 30px rgba(0, 0, 0, 0.2),
+    0 0 34px rgba(255, 178, 80, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
 .mission-runtime-answers {
@@ -1507,13 +1634,13 @@
 }
 
 .mission-runtime-focus-listening .mission-runtime-reward-rail {
-  opacity: 0.58;
-  transform: translateY(6px);
+  opacity: 0.84;
+  transform: translateY(2px);
 }
 
 .mission-runtime-focus-speaking .mission-runtime-reward-rail {
-  opacity: 0.72;
-  transform: translateY(4px);
+  opacity: 0.92;
+  transform: translateY(1px);
 }
 
 .mission-runtime-focus-feedback .mission-runtime-reward-rail,
@@ -1529,6 +1656,19 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.06),
     0 24px 42px rgba(0, 0, 0, 0.24),
     0 0 28px rgba(255, 208, 108, 0.08);
+}
+
+.mission-runtime-reward-rail.is-xp-live {
+  border-color: rgba(255, 218, 118, 0.32);
+  background:
+    linear-gradient(180deg, rgba(19, 16, 32, 0.86), rgba(9, 10, 24, 0.9)),
+    radial-gradient(circle at 16% 50%, rgba(255, 213, 117, 0.24), transparent 26%),
+    radial-gradient(circle at 88% 50%, rgba(255, 191, 87, 0.12), transparent 26%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 24px 42px rgba(0, 0, 0, 0.24),
+    0 0 34px rgba(255, 208, 108, 0.14);
+  animation: runtimeXpRailPulse 1.4s ease-in-out infinite alternate;
 }
 
 .mission-runtime-is-closing .mission-runtime-reward-rail {
@@ -2350,6 +2490,22 @@
   }
   100% {
     transform: translateY(0);
+  }
+}
+
+@keyframes runtimeXpRailPulse {
+  from {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 22px 40px rgba(0, 0, 0, 0.22),
+      0 0 24px rgba(255, 208, 108, 0.1);
+  }
+
+  to {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.07),
+      0 26px 46px rgba(0, 0, 0, 0.26),
+      0 0 42px rgba(255, 211, 112, 0.18);
   }
 }
 
