@@ -500,6 +500,16 @@
   min-height: 700px;
 }
 
+.mission-runtime-phase-intro .mission-runtime-main {
+  grid-template-columns: minmax(0, 1fr);
+  min-height: 500px;
+  padding-top: 36px;
+}
+
+.mission-runtime-phase-intro .mission-runtime-phase-side {
+  display: none;
+}
+
 .mission-runtime-phase-complete .mission-runtime-phase-panel {
   width: min(100%, 520px);
   min-height: 760px;
@@ -1079,9 +1089,18 @@
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel {
-  width: min(100%, 560px);
-  min-height: 690px;
-  padding: clamp(34px, 4vw, 52px) clamp(30px, 3.4vw, 44px);
+  width: min(100%, 1120px);
+  min-height: 0;
+  padding: clamp(32px, 3vw, 44px);
+  display: grid;
+  grid-template-columns: minmax(260px, 0.78fr) minmax(420px, 1.42fr);
+  grid-template-areas:
+    "head body"
+    "title body"
+    "note body";
+  column-gap: clamp(38px, 4vw, 72px);
+  row-gap: 18px;
+  align-items: start;
   border-color: rgba(222, 205, 255, 0.26);
   background:
     linear-gradient(180deg, rgba(27, 25, 48, 0.9), rgba(12, 13, 30, 0.94)),
@@ -1098,15 +1117,30 @@
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel-context > p {
-  max-width: 42ch;
-  font-size: clamp(1.06rem, 1.35vw, 1.22rem);
-  line-height: 1.72;
+  grid-area: body;
+  align-self: center;
+  margin: 0;
+  max-width: 64ch;
+  font-size: clamp(1rem, 1.15vw, 1.14rem);
+  line-height: 1.68;
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel-context {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  justify-content: stretch;
+}
+
+.mission-runtime-phase-intro .mission-runtime-phase-head {
+  grid-area: head;
+}
+
+.mission-runtime-phase-intro .mission-runtime-phase-panel h1 {
+  grid-area: title;
+  font-size: clamp(2.65rem, 3.5vw, 3.8rem);
+}
+
+.mission-runtime-phase-intro .mission-runtime-phase-note {
+  grid-area: note;
+  margin-top: 0;
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel.mission-runtime-phase-panel-context::before {
@@ -2710,6 +2744,30 @@
     width: 100%;
     padding: 24px;
     border-radius: 24px;
+  }
+
+  .mission-runtime-phase-intro .mission-runtime-main {
+    min-height: 0;
+    padding-top: 18px;
+  }
+
+  .mission-runtime-phase-intro .mission-runtime-phase-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    min-height: 0;
+  }
+
+  .mission-runtime-phase-intro .mission-runtime-phase-panel-context > p {
+    width: 100%;
+    max-width: none;
+    margin-top: 18px;
+    font-size: 1rem;
+    line-height: 1.62;
+  }
+
+  .mission-runtime-phase-intro .mission-runtime-phase-note {
+    margin-top: 22px;
   }
 
   .mission-runtime-phase-stats {
