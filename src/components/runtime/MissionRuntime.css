@@ -1089,11 +1089,11 @@
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel {
-  width: min(100%, 1120px);
+  width: min(100%, 1080px);
   min-height: 0;
   padding: clamp(32px, 3vw, 44px);
   display: grid;
-  grid-template-columns: minmax(260px, 0.78fr) minmax(420px, 1.42fr);
+  grid-template-columns: minmax(290px, 0.82fr) minmax(440px, 1.38fr);
   grid-template-areas:
     "head body"
     "title body"
@@ -1101,28 +1101,41 @@
   column-gap: clamp(38px, 4vw, 72px);
   row-gap: 18px;
   align-items: start;
-  border-color: rgba(222, 205, 255, 0.26);
+  border-color: rgba(208, 184, 255, 0.18);
   background:
-    linear-gradient(180deg, rgba(27, 25, 48, 0.9), rgba(12, 13, 30, 0.94)),
-    radial-gradient(ellipse 58% 44% at 26% 10%, rgba(255, 237, 197, 0.14), transparent 68%),
-    radial-gradient(ellipse 80% 70% at 94% 44%, rgba(169, 104, 255, 0.16), transparent 70%),
-    linear-gradient(90deg, rgba(188, 145, 255, 0.09), transparent 16%);
+    linear-gradient(90deg, rgba(16, 13, 38, 0.84), rgba(17, 14, 39, 0.62) 62%, rgba(13, 12, 31, 0.42)),
+    radial-gradient(ellipse 58% 70% at 14% 22%, rgba(128, 77, 223, 0.18), transparent 72%),
+    radial-gradient(ellipse 62% 80% at 78% 62%, rgba(255, 171, 91, 0.07), transparent 72%);
+  backdrop-filter: blur(10px) saturate(0.94);
   box-shadow:
-    0 42px 74px rgba(0, 0, 0, 0.4),
-    0 0 0 1px rgba(255, 244, 218, 0.04),
-    0 0 46px rgba(181, 137, 255, 0.1),
-    0 0 96px rgba(255, 224, 169, 0.07),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07),
-    inset 0 0 54px rgba(255, 241, 214, 0.025);
+    0 34px 68px rgba(0, 0, 0, 0.32),
+    0 0 0 1px rgba(255, 244, 218, 0.025),
+    0 0 52px rgba(135, 91, 226, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
 }
 
-.mission-runtime-phase-intro .mission-runtime-phase-panel-context > p {
+.mission-runtime-phase-intro .mission-runtime-intro-narrative {
   grid-area: body;
   align-self: center;
+  display: grid;
+  gap: 22px;
+  max-width: 60ch;
+}
+
+.mission-runtime-phase-intro .mission-runtime-intro-narrative p {
   margin: 0;
-  max-width: 64ch;
+  color: rgba(246, 239, 252, 0.86);
   font-size: clamp(1rem, 1.15vw, 1.14rem);
   line-height: 1.68;
+}
+
+.mission-runtime-phase-intro .mission-runtime-intro-narrative strong {
+  display: block;
+  max-width: 47ch;
+  color: #b279ff;
+  font-size: clamp(1.04rem, 1.2vw, 1.18rem);
+  line-height: 1.55;
+  text-shadow: 0 0 24px rgba(158, 93, 255, 0.16);
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel-context {
@@ -1138,9 +1151,42 @@
   font-size: clamp(2.65rem, 3.5vw, 3.8rem);
 }
 
+.mission-runtime-phase-intro .mission-runtime-phase-panel h1 span,
+.mission-runtime-phase-intro .mission-runtime-phase-panel h1 em {
+  display: block;
+}
+
+.mission-runtime-phase-intro .mission-runtime-phase-panel h1 em {
+  color: #9460ff;
+  font-style: normal;
+  text-shadow: 0 0 32px rgba(134, 79, 255, 0.18);
+}
+
 .mission-runtime-phase-intro .mission-runtime-phase-note {
   grid-area: note;
   margin-top: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 16px;
+  align-items: start;
+  padding: 18px;
+  background:
+    linear-gradient(180deg, rgba(14, 12, 31, 0.76), rgba(10, 10, 25, 0.82)),
+    radial-gradient(circle at 14% 22%, rgba(144, 82, 255, 0.14), transparent 40%);
+}
+
+.mission-runtime-phase-note-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 15px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #f3e9ff;
+  background: linear-gradient(145deg, #7440dd, #9f64ff);
+  box-shadow:
+    0 12px 28px rgba(114, 65, 218, 0.26),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel.mission-runtime-phase-panel-context::before {
@@ -1156,7 +1202,7 @@
 
 .mission-runtime-phase-intro .mission-runtime-phase-head,
 .mission-runtime-phase-intro .mission-runtime-phase-panel h1,
-.mission-runtime-phase-intro .mission-runtime-phase-panel > p,
+.mission-runtime-phase-intro .mission-runtime-intro-narrative,
 .mission-runtime-phase-intro .mission-runtime-phase-note {
   position: relative;
   z-index: 1;
@@ -2758,10 +2804,15 @@
     min-height: 0;
   }
 
-  .mission-runtime-phase-intro .mission-runtime-phase-panel-context > p {
+  .mission-runtime-phase-intro .mission-runtime-intro-narrative {
     width: 100%;
     max-width: none;
     margin-top: 18px;
+    gap: 16px;
+  }
+
+  .mission-runtime-phase-intro .mission-runtime-intro-narrative p,
+  .mission-runtime-phase-intro .mission-runtime-intro-narrative strong {
     font-size: 1rem;
     line-height: 1.62;
   }

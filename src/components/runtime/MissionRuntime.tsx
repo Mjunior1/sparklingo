@@ -1181,6 +1181,17 @@ export function MissionRuntime({
   const introObjectiveBody =
     mission.asset.missionObjectiveBody ||
     'Just enough to steady your confidence and keep the moment feeling human.'
+  const introTitleWords = mission.title.trim().split(/\s+/)
+  const introTitleAccent = introTitleWords.pop() || mission.title
+  const introTitleLead = introTitleWords.join(' ')
+  const introSentences = introDescription.match(/[^.!?]+[.!?]+|[^.!?]+$/g)?.map((sentence) => sentence.trim()) ?? [introDescription]
+  const introClosingSentence = introSentences.length > 2 ? introSentences[introSentences.length - 1] || '' : ''
+  const introNarrativeSentences = introClosingSentence ? introSentences.slice(0, -1) : introSentences
+  const introNarrativeSplit = Math.max(1, Math.ceil(introNarrativeSentences.length / 2))
+  const introNarrativeParagraphs = [
+    introNarrativeSentences.slice(0, introNarrativeSplit).join(' '),
+    introNarrativeSentences.slice(introNarrativeSplit).join(' '),
+  ].filter(Boolean)
   const introNarration = `${introWorldTitle}. ${mission.title}. ${introDescription}`
   const currentPromptVoiceRole: RuntimeSpeechVoiceRole =
     currentSceneStep === 'listening' ? 'npc' : 'narration'
@@ -1770,11 +1781,22 @@ export function MissionRuntime({
                     <Volume2 size={18} />
                   </button>
                 </div>
-                <h1>{mission.title}</h1>
-                <p>{introDescription}</p>
+                <h1>
+                  {introTitleLead ? <span>{introTitleLead}</span> : null}
+                  <em>{introTitleAccent}</em>
+                </h1>
+                <div className="mission-runtime-intro-narrative">
+                  {introNarrativeParagraphs.map((paragraph, index) => (
+                    <p key={`${mission.id}-intro-paragraph-${index}`}>{paragraph}</p>
+                  ))}
+                  {introClosingSentence ? <strong>{introClosingSentence}</strong> : null}
+                </div>
                 <div className="mission-runtime-phase-note">
-                  <strong>{introObjectiveTitle}</strong>
-                  <p>{introObjectiveBody}</p>
+                  <span className="mission-runtime-phase-note-icon"><Sparkles size={20} /></span>
+                  <div>
+                    <strong>{introObjectiveTitle}</strong>
+                    <p>{introObjectiveBody}</p>
+                  </div>
                 </div>
               </section>
               <aside className="mission-runtime-phase-side">
