@@ -48,17 +48,18 @@
 
 .mission-runtime-phase-intro .mission-runtime-background-layer-current {
   animation: none;
-  filter: blur(1.2px) saturate(0.92) brightness(0.78);
+  filter: blur(1px) saturate(0.82) brightness(0.7) contrast(0.92);
   transform: scale(1.01);
 }
 
 .mission-runtime-phase-intro .mission-runtime-global-overlay {
   opacity: 1;
   background:
-    radial-gradient(ellipse 36% 34% at 25% 42%, rgba(255, 236, 197, 0.12), transparent 62%),
-    radial-gradient(ellipse 48% 42% at 25% 42%, rgba(146, 103, 255, 0.14), transparent 70%),
-    linear-gradient(90deg, rgba(3, 4, 13, 0.42) 0%, rgba(4, 5, 15, 0.22) 40%, rgba(4, 5, 15, 0.52) 100%),
-    linear-gradient(180deg, rgba(3, 4, 12, 0.38) 0%, rgba(6, 7, 18, 0.12) 36%, rgba(3, 4, 12, 0.5) 100%);
+    radial-gradient(ellipse 38% 36% at 24% 40%, rgba(255, 236, 197, 0.1), transparent 64%),
+    radial-gradient(ellipse 52% 48% at 26% 44%, rgba(129, 81, 222, 0.14), transparent 72%),
+    radial-gradient(ellipse 42% 74% at 82% 46%, rgba(4, 5, 16, 0.34), transparent 80%),
+    linear-gradient(90deg, rgba(3, 4, 13, 0.5) 0%, rgba(4, 5, 15, 0.24) 44%, rgba(4, 5, 15, 0.62) 100%),
+    linear-gradient(180deg, rgba(3, 4, 12, 0.42) 0%, rgba(6, 7, 18, 0.14) 36%, rgba(3, 4, 12, 0.54) 100%);
 }
 
 .mission-runtime-phase-intro .mission-runtime-atmosphere {
@@ -1101,17 +1102,18 @@
   column-gap: clamp(38px, 4vw, 72px);
   row-gap: 18px;
   align-items: start;
-  border-color: rgba(208, 184, 255, 0.18);
+  border-color: rgba(213, 194, 255, 0.22);
   background:
-    linear-gradient(90deg, rgba(16, 13, 38, 0.84), rgba(17, 14, 39, 0.62) 62%, rgba(13, 12, 31, 0.42)),
-    radial-gradient(ellipse 58% 70% at 14% 22%, rgba(128, 77, 223, 0.18), transparent 72%),
-    radial-gradient(ellipse 62% 80% at 78% 62%, rgba(255, 171, 91, 0.07), transparent 72%);
-  backdrop-filter: blur(10px) saturate(0.94);
+    linear-gradient(90deg, rgba(14, 12, 35, 0.9), rgba(17, 14, 39, 0.7) 62%, rgba(13, 12, 31, 0.52)),
+    radial-gradient(ellipse 58% 70% at 14% 22%, rgba(128, 77, 223, 0.2), transparent 72%),
+    radial-gradient(ellipse 62% 80% at 78% 62%, rgba(255, 171, 91, 0.08), transparent 72%);
+  backdrop-filter: blur(14px) saturate(0.9);
   box-shadow:
-    0 34px 68px rgba(0, 0, 0, 0.32),
-    0 0 0 1px rgba(255, 244, 218, 0.025),
-    0 0 52px rgba(135, 91, 226, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.055);
+    0 36px 74px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(255, 244, 218, 0.03),
+    0 0 54px rgba(135, 91, 226, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.075),
+    inset 0 -30px 70px rgba(3, 4, 15, 0.18);
 }
 
 .mission-runtime-phase-intro .mission-runtime-intro-narrative {
@@ -1120,6 +1122,8 @@
   display: grid;
   gap: 22px;
   max-width: 60ch;
+  padding-left: clamp(24px, 2.4vw, 38px);
+  border-left: 1px solid rgba(191, 159, 255, 0.16);
 }
 
 .mission-runtime-phase-intro .mission-runtime-intro-narrative p {
@@ -1148,7 +1152,9 @@
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel h1 {
   grid-area: title;
-  font-size: clamp(2.65rem, 3.5vw, 3.8rem);
+  font-size: clamp(2.8rem, 3.8vw, 4.15rem);
+  letter-spacing: -0.045em;
+  text-shadow: 0 16px 38px rgba(0, 0, 0, 0.34);
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel h1 span,
@@ -1157,7 +1163,7 @@
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel h1 em {
-  color: #9460ff;
+  color: #a36cff;
   font-style: normal;
   text-shadow: 0 0 32px rgba(134, 79, 255, 0.18);
 }
@@ -1170,9 +1176,13 @@
   gap: 16px;
   align-items: start;
   padding: 18px;
+  border-color: rgba(197, 168, 255, 0.2);
   background:
-    linear-gradient(180deg, rgba(14, 12, 31, 0.76), rgba(10, 10, 25, 0.82)),
-    radial-gradient(circle at 14% 22%, rgba(144, 82, 255, 0.14), transparent 40%);
+    linear-gradient(180deg, rgba(14, 12, 31, 0.84), rgba(8, 9, 23, 0.9)),
+    radial-gradient(circle at 14% 22%, rgba(144, 82, 255, 0.18), transparent 42%);
+  box-shadow:
+    0 18px 34px rgba(0, 0, 0, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
 }
 
 .mission-runtime-phase-note-icon {
@@ -1224,7 +1234,7 @@
     radial-gradient(ellipse 74% 62% at 66% 78%, rgba(160, 110, 255, 0.13), transparent 70%);
   filter: blur(16px);
   opacity: 0.82;
-  animation: runtimeIntroSpotlight 5.8s ease-in-out infinite alternate;
+  animation: none;
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel::after {
@@ -1677,6 +1687,49 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
+.mission-runtime-phase-intro .mission-runtime-primary {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border: 1px solid rgba(232, 217, 255, 0.18);
+  background: linear-gradient(135deg, #7143ef 0%, #9d61ff 48%, #b875ff 100%);
+  box-shadow:
+    0 24px 46px rgba(103, 57, 238, 0.4),
+    0 0 34px rgba(157, 91, 255, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28),
+    inset 0 -10px 24px rgba(69, 31, 151, 0.18);
+  text-shadow: 0 2px 12px rgba(40, 18, 86, 0.3);
+  transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 260ms ease;
+}
+
+.mission-runtime-phase-intro .mission-runtime-primary::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  border-radius: inherit;
+  background:
+    linear-gradient(115deg, rgba(255, 255, 255, 0.16), transparent 28%, transparent 68%, rgba(255, 255, 255, 0.1)),
+    radial-gradient(circle at 74% 28%, rgba(255, 225, 255, 0.24), transparent 32%);
+  opacity: 0.54;
+  transition: opacity 260ms ease;
+}
+
+.mission-runtime-phase-intro .mission-runtime-primary:hover {
+  transform: translateY(-3px);
+}
+
+.mission-runtime-phase-intro .mission-runtime-primary:hover::before {
+  opacity: 0.9;
+}
+
+.mission-runtime-phase-intro .mission-runtime-primary:focus-visible,
+.mission-runtime-phase-intro .mission-runtime-secondary:focus-visible,
+.mission-runtime-phase-intro .mission-runtime-phase-audio:focus-visible {
+  outline: 3px solid rgba(228, 207, 255, 0.9);
+  outline-offset: 4px;
+}
+
 .mission-runtime-primary:disabled {
   opacity: 0.45;
   cursor: not-allowed;
@@ -1711,6 +1764,35 @@
     border-color 560ms ease,
     box-shadow 560ms ease,
     transform 560ms ease;
+}
+
+.mission-runtime-phase-intro .mission-runtime-reward-rail {
+  border-color: rgba(218, 189, 255, 0.22);
+  background:
+    linear-gradient(180deg, rgba(18, 15, 37, 0.9), rgba(9, 10, 24, 0.94)),
+    radial-gradient(circle at 14% 50%, rgba(255, 205, 105, 0.18), transparent 26%),
+    radial-gradient(circle at 82% 40%, rgba(135, 82, 236, 0.16), transparent 34%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.075),
+    0 22px 42px rgba(0, 0, 0, 0.3),
+    0 0 38px rgba(125, 79, 221, 0.08);
+  transition: transform 320ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 320ms ease;
+}
+
+.mission-runtime-phase-intro .mission-runtime-reward-core strong {
+  color: #fff8e8;
+  text-shadow: 0 0 18px rgba(255, 217, 132, 0.12);
+}
+
+.mission-runtime-phase-intro .mission-runtime-secondary {
+  border: 1px solid rgba(199, 175, 255, 0.2);
+  background: rgba(12, 11, 29, 0.82);
+  backdrop-filter: blur(14px);
+  transition: transform 240ms ease, opacity 240ms ease;
+}
+
+.mission-runtime-phase-intro .mission-runtime-secondary:hover {
+  transform: translateY(-2px);
 }
 
 .mission-runtime-focus-listening .mission-runtime-reward-rail {
@@ -2809,6 +2891,8 @@
     max-width: none;
     margin-top: 18px;
     gap: 16px;
+    padding-left: 0;
+    border-left: 0;
   }
 
   .mission-runtime-phase-intro .mission-runtime-intro-narrative p,
@@ -2954,5 +3038,21 @@
   .mission-runtime-system-card {
     padding: 18px;
     border-radius: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mission-runtime-phase-intro *,
+  .mission-runtime-phase-intro *::before,
+  .mission-runtime-phase-intro *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition-duration: 0.01ms !important;
+  }
+
+  .mission-runtime-phase-intro .mission-runtime-primary:hover,
+  .mission-runtime-phase-intro .mission-runtime-secondary:hover,
+  .mission-runtime-phase-intro .mission-runtime-phase-audio:hover {
+    transform: none;
   }
 }
