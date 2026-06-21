@@ -1836,7 +1836,7 @@ export function MissionRuntime({
                 </div>
               </div>
               <button className="mission-runtime-primary" type="button" onClick={goToNextScene}>
-                Start mission
+                Começar missão
                 <ArrowRight size={18} />
               </button>
             </div>

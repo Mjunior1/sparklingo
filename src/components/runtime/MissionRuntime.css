@@ -48,7 +48,7 @@
 
 .mission-runtime-phase-intro .mission-runtime-background-layer-current {
   animation: none;
-  filter: blur(0.5px) saturate(0.9) brightness(0.82) contrast(0.96);
+  filter: blur(0.35px) saturate(0.94) brightness(0.9) contrast(0.98);
   transform: scale(1.01);
 }
 
@@ -57,13 +57,13 @@
   background:
     radial-gradient(ellipse 38% 36% at 24% 40%, rgba(255, 236, 197, 0.1), transparent 64%),
     radial-gradient(ellipse 52% 48% at 26% 44%, rgba(129, 81, 222, 0.14), transparent 72%),
-    radial-gradient(ellipse 42% 74% at 82% 46%, rgba(4, 5, 16, 0.2), transparent 80%),
-    linear-gradient(90deg, rgba(3, 4, 13, 0.46) 0%, rgba(4, 5, 15, 0.18) 44%, rgba(4, 5, 15, 0.42) 100%),
-    linear-gradient(180deg, rgba(3, 4, 12, 0.34) 0%, rgba(6, 7, 18, 0.08) 36%, rgba(3, 4, 12, 0.46) 100%);
+    radial-gradient(ellipse 40% 70% at 82% 44%, rgba(4, 5, 16, 0.1), transparent 80%),
+    linear-gradient(90deg, rgba(3, 4, 13, 0.44) 0%, rgba(4, 5, 15, 0.14) 44%, rgba(4, 5, 15, 0.26) 100%),
+    linear-gradient(180deg, rgba(3, 4, 12, 0.3) 0%, rgba(6, 7, 18, 0.04) 36%, rgba(3, 4, 12, 0.4) 100%);
 }
 
 .mission-runtime-phase-intro .mission-runtime-atmosphere {
-  opacity: 0.48;
+  opacity: 0.38;
   filter: blur(0.6px) saturate(0.96);
 }
 
@@ -71,7 +71,7 @@
   opacity: 1;
   background:
     radial-gradient(ellipse 44% 42% at 25% 42%, transparent 0%, transparent 52%, rgba(2, 3, 10, 0.36) 92%),
-    linear-gradient(90deg, rgba(2, 3, 10, 0.46) 0%, rgba(2, 3, 10, 0.04) 28%, rgba(2, 3, 10, 0.42) 100%),
+    linear-gradient(90deg, rgba(2, 3, 10, 0.44) 0%, rgba(2, 3, 10, 0.03) 28%, rgba(2, 3, 10, 0.24) 100%),
     linear-gradient(180deg, rgba(2, 3, 10, 0.44) 0%, rgba(2, 3, 10, 0.02) 34%, rgba(2, 3, 10, 0.46) 100%);
 }
 
@@ -503,8 +503,15 @@
 
 .mission-runtime-phase-intro .mission-runtime-main {
   grid-template-columns: minmax(0, 1fr);
-  min-height: 500px;
-  padding-top: 36px;
+  min-height: 0;
+  padding-top: 24px;
+  align-items: center;
+}
+
+.mission-runtime-phase-intro .mission-runtime-stage {
+  min-height: max(820px, calc(100vh - 56px));
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-side {
@@ -1090,24 +1097,24 @@
 }
 
 .mission-runtime-phase-intro .mission-runtime-phase-panel {
-  width: min(100%, 1020px);
+  width: min(100%, 960px);
   min-height: 0;
   padding: clamp(32px, 3vw, 44px);
   display: grid;
-  grid-template-columns: minmax(310px, 0.9fr) minmax(420px, 1.3fr);
+  grid-template-columns: minmax(280px, 0.78fr) minmax(440px, 1.42fr);
   grid-template-areas:
     "head body"
     "title body"
     "note body";
-  column-gap: clamp(34px, 3.4vw, 58px);
+  column-gap: clamp(32px, 3vw, 52px);
   row-gap: 18px;
   align-items: start;
   border-color: rgba(213, 194, 255, 0.16);
   background:
-    linear-gradient(90deg, rgba(14, 12, 35, 0.82), rgba(17, 14, 39, 0.58) 62%, rgba(13, 12, 31, 0.38)),
-    radial-gradient(ellipse 58% 70% at 14% 22%, rgba(128, 77, 223, 0.16), transparent 72%),
+    linear-gradient(90deg, rgba(14, 12, 35, 0.76), rgba(17, 14, 39, 0.48) 62%, rgba(13, 12, 31, 0.28)),
+    radial-gradient(ellipse 58% 70% at 14% 22%, rgba(128, 77, 223, 0.14), transparent 72%),
     radial-gradient(ellipse 62% 80% at 78% 62%, rgba(255, 171, 91, 0.055), transparent 72%);
-  backdrop-filter: blur(10px) saturate(0.94);
+  backdrop-filter: blur(8px) saturate(0.96);
   box-shadow:
     0 30px 64px rgba(0, 0, 0, 0.32),
     0 0 0 1px rgba(255, 244, 218, 0.03),
@@ -1121,16 +1128,16 @@
   align-self: center;
   display: grid;
   gap: 22px;
-  max-width: 60ch;
-  padding-left: clamp(24px, 2.4vw, 38px);
-  border-left: 1px solid rgba(191, 159, 255, 0.16);
+  max-width: 66ch;
+  padding-left: clamp(22px, 2.2vw, 34px);
+  border-left: 1px solid rgba(191, 159, 255, 0.11);
 }
 
 .mission-runtime-phase-intro .mission-runtime-intro-narrative p {
   margin: 0;
   color: rgba(246, 239, 252, 0.86);
-  font-size: clamp(1.02rem, 1.16vw, 1.15rem);
-  line-height: 1.72;
+  font-size: clamp(1.03rem, 1.14vw, 1.14rem);
+  line-height: 1.7;
 }
 
 .mission-runtime-phase-intro .mission-runtime-intro-narrative strong {
@@ -1175,27 +1182,25 @@
   grid-template-columns: auto 1fr;
   gap: 16px;
   align-items: start;
-  padding: 18px;
-  border-color: rgba(197, 168, 255, 0.13);
-  background:
-    linear-gradient(180deg, rgba(14, 12, 31, 0.62), rgba(8, 9, 23, 0.7)),
-    radial-gradient(circle at 14% 22%, rgba(144, 82, 255, 0.12), transparent 42%);
-  box-shadow:
-    0 14px 28px rgba(0, 0, 0, 0.16),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  padding: 18px 0 4px;
+  border: 0;
+  border-top: 1px solid rgba(196, 168, 255, 0.14);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .mission-runtime-phase-note-icon {
-  width: 46px;
-  height: 46px;
-  border-radius: 15px;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   color: #f3e9ff;
-  background: linear-gradient(145deg, #7440dd, #9f64ff);
+  background: linear-gradient(145deg, rgba(116, 64, 221, 0.86), rgba(159, 100, 255, 0.92));
   box-shadow:
-    0 12px 28px rgba(114, 65, 218, 0.26),
+    0 10px 24px rgba(114, 65, 218, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.18);
 }
 
@@ -1692,10 +1697,10 @@
   isolation: isolate;
   overflow: hidden;
   border: 1px solid rgba(232, 217, 255, 0.18);
-  background: linear-gradient(135deg, #7143ef 0%, #9d61ff 48%, #b875ff 100%);
+  background: linear-gradient(135deg, #6f40ed 0%, #995cff 46%, #bb78ff 100%);
   box-shadow:
-    0 24px 46px rgba(103, 57, 238, 0.4),
-    0 0 34px rgba(157, 91, 255, 0.2),
+    0 24px 46px rgba(103, 57, 238, 0.44),
+    0 0 38px rgba(157, 91, 255, 0.24),
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     inset 0 -10px 24px rgba(69, 31, 151, 0.18);
   text-shadow: 0 2px 12px rgba(40, 18, 86, 0.3);
@@ -1767,15 +1772,16 @@
 }
 
 .mission-runtime-phase-intro .mission-runtime-reward-rail {
-  border-color: rgba(218, 189, 255, 0.22);
+  border-color: rgba(218, 189, 255, 0.16);
   background:
-    linear-gradient(180deg, rgba(18, 15, 37, 0.9), rgba(9, 10, 24, 0.94)),
-    radial-gradient(circle at 14% 50%, rgba(255, 205, 105, 0.18), transparent 26%),
-    radial-gradient(circle at 82% 40%, rgba(135, 82, 236, 0.16), transparent 34%);
+    linear-gradient(180deg, rgba(18, 15, 37, 0.78), rgba(9, 10, 24, 0.84)),
+    radial-gradient(circle at 14% 50%, rgba(255, 205, 105, 0.15), transparent 26%),
+    radial-gradient(circle at 82% 40%, rgba(135, 82, 236, 0.12), transparent 34%);
+  backdrop-filter: blur(12px) saturate(0.94);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.075),
-    0 22px 42px rgba(0, 0, 0, 0.3),
-    0 0 38px rgba(125, 79, 221, 0.08);
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 18px 36px rgba(0, 0, 0, 0.24),
+    0 0 30px rgba(125, 79, 221, 0.06);
   transition: transform 320ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 320ms ease;
 }
 
@@ -1793,6 +1799,13 @@
 
 .mission-runtime-phase-intro .mission-runtime-secondary:hover {
   transform: translateY(-2px);
+}
+
+.mission-runtime-phase-intro .mission-runtime-footer {
+  margin-top: 12px;
+  padding-top: 18px;
+  border-top: 1px solid rgba(188, 158, 255, 0.1);
+  background: linear-gradient(180deg, transparent, rgba(5, 6, 17, 0.1));
 }
 
 .mission-runtime-focus-listening .mission-runtime-reward-rail {
@@ -2778,6 +2791,11 @@
     padding: 14px;
   }
 
+  .mission-runtime-phase-intro .mission-runtime-stage {
+    min-height: 0;
+    display: block;
+  }
+
   .mission-runtime-play-focus .mission-runtime-system-grid {
     display: none;
   }
@@ -2903,6 +2921,11 @@
 
   .mission-runtime-phase-intro .mission-runtime-phase-note {
     margin-top: 22px;
+    padding-top: 18px;
+  }
+
+  .mission-runtime-phase-intro .mission-runtime-footer {
+    margin-top: 18px;
   }
 
   .mission-runtime-phase-stats {
