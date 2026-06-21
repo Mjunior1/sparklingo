@@ -602,17 +602,19 @@
 }
 
 .mission-runtime-prompt-card {
-  width: min(100%, 480px);
-  min-height: 284px;
-  padding: 30px;
+  width: min(100%, 500px);
+  min-height: 260px;
+  padding: 32px;
   border-radius: 32px;
+  border-color: rgba(199, 174, 255, 0.22);
   background:
-    linear-gradient(180deg, rgba(20, 18, 39, 0.88), rgba(16, 14, 34, 0.78)),
-    radial-gradient(circle at top right, rgba(157, 110, 255, 0.14), transparent 28%),
-    radial-gradient(circle at 72% 20%, rgba(255, 184, 122, 0.1), transparent 26%);
+    linear-gradient(155deg, rgba(24, 20, 45, 0.92), rgba(13, 13, 31, 0.84)),
+    radial-gradient(circle at 88% 14%, rgba(157, 110, 255, 0.18), transparent 30%),
+    radial-gradient(circle at 68% 18%, rgba(255, 184, 122, 0.08), transparent 28%);
   box-shadow:
-    0 28px 42px rgba(0, 0, 0, 0.24),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 30px 52px rgba(0, 0, 0, 0.3),
+    0 0 36px rgba(132, 85, 226, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
   transition:
     transform 720ms cubic-bezier(0.2, 0.7, 0.2, 1),
     box-shadow 720ms ease,
@@ -631,12 +633,13 @@
 }
 
 .mission-runtime-focus-speaking .mission-runtime-prompt-card {
-  opacity: 0.84;
-  transform: translateY(-2px) scale(0.995);
+  opacity: 1;
+  transform: translateY(-4px);
+  border-color: rgba(207, 181, 255, 0.28);
   box-shadow:
-    0 24px 38px rgba(0, 0, 0, 0.18),
-    0 0 16px rgba(167, 113, 255, 0.05),
-    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    0 34px 56px rgba(0, 0, 0, 0.3),
+    0 0 34px rgba(167, 113, 255, 0.11),
+    inset 0 1px 0 rgba(255, 255, 255, 0.07);
 }
 
 .mission-runtime-phase-scene .mission-runtime-prompt-card,
@@ -694,10 +697,11 @@
 }
 
 .mission-runtime-prompt-head span {
-  color: #b991ff;
+  color: #c9a9ff;
   font-size: 0.88rem;
-  font-weight: 700;
-  letter-spacing: 0.1em;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .mission-runtime-prompt-head button,
@@ -761,7 +765,9 @@
   margin: 0;
   color: #fff8ff;
   font-size: clamp(2rem, 2vw + 1.25rem, 3.55rem);
-  line-height: 1.04;
+  line-height: 1.02;
+  letter-spacing: -0.035em;
+  text-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
 }
 
 .mission-runtime-prompt-card p {
@@ -799,10 +805,10 @@
   gap: 14px;
   padding: 14px 16px 16px;
   border-radius: 20px;
-  border: 1px solid rgba(236, 200, 112, 0.2);
+  border: 1px solid rgba(236, 200, 112, 0.26);
   background:
-    radial-gradient(circle at 10% 50%, rgba(255, 207, 107, 0.14), transparent 34%),
-    linear-gradient(180deg, rgba(17, 15, 34, 0.76), rgba(9, 10, 24, 0.8));
+    radial-gradient(circle at 10% 50%, rgba(255, 207, 107, 0.18), transparent 34%),
+    linear-gradient(180deg, rgba(20, 17, 35, 0.86), rgba(9, 10, 24, 0.88));
   box-shadow:
     0 18px 30px rgba(0, 0, 0, 0.2),
     0 0 26px rgba(255, 202, 102, 0.07),
@@ -1003,25 +1009,32 @@
   align-items: center;
   gap: 14px;
   padding: 18px 20px;
-  border-radius: 24px;
+  border-radius: 22px;
   text-align: left;
   color: #f7f1ff;
+  border-color: rgba(192, 169, 248, 0.18);
+  background:
+    linear-gradient(180deg, rgba(20, 18, 39, 0.82), rgba(12, 12, 29, 0.86)),
+    radial-gradient(circle at 10% 50%, rgba(137, 91, 229, 0.08), transparent 30%);
   transition:
     transform 260ms ease,
-    border-color 260ms ease,
-    box-shadow 260ms ease,
-    background-color 260ms ease;
+    opacity 260ms ease;
 }
 
 .mission-runtime-answer:hover,
 .mission-runtime-answer:focus-visible,
 .mission-runtime-answer.is-selected {
   transform: translateY(-4px);
-  border-color: rgba(188, 146, 255, 0.32);
+  border-color: rgba(205, 169, 255, 0.4);
   box-shadow:
-    0 24px 42px rgba(0, 0, 0, 0.24),
-    0 0 0 1px rgba(188, 146, 255, 0.22),
-    0 0 26px rgba(171, 109, 255, 0.2);
+    0 24px 42px rgba(0, 0, 0, 0.28),
+    0 0 0 1px rgba(188, 146, 255, 0.18),
+    0 0 28px rgba(171, 109, 255, 0.16);
+}
+
+.mission-runtime-answer:focus-visible {
+  outline: 3px solid rgba(221, 198, 255, 0.88);
+  outline-offset: 3px;
 }
 
 .mission-runtime-answer.is-selected {
@@ -1048,10 +1061,7 @@
 
 .mission-runtime-answer-audio {
   cursor: pointer;
-  transition:
-    transform 220ms ease,
-    box-shadow 220ms ease,
-    background-color 220ms ease;
+  transition: transform 220ms ease, opacity 220ms ease;
 }
 
 .mission-runtime-answer-audio:hover,
@@ -1704,6 +1714,10 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.28),
     inset 0 -10px 24px rgba(69, 31, 151, 0.18);
   text-shadow: 0 2px 12px rgba(40, 18, 86, 0.3);
+  white-space: nowrap;
+  padding-inline: 16px;
+  gap: 8px;
+  font-size: 0.94rem;
   transition: transform 260ms cubic-bezier(0.2, 0.7, 0.2, 1), opacity 260ms ease;
 }
 
