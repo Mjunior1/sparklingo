@@ -32,7 +32,6 @@ import type { SceneAssetRecord } from '../../services/sceneAssets'
 import type { MissionRuntimeAnswerRecord, MissionRuntimeSceneRecord } from '../../services/missionRuntime'
 import {
   getRuntimeSpeechAudioUrl,
-  prefetchRuntimeSpeechAudio,
   type RuntimeSpeechVoiceRole,
 } from '../../services/runtimeSpeech'
 
@@ -392,16 +391,10 @@ const playSpeech = async (
     }
   }
 
-  if (typeof window === 'undefined' || !('speechSynthesis' in window) || !trimmedText) return
-  console.log('[runtime-speech] runtime browser fallback', {
+  console.log('[runtime-speech] runtime audio unavailable', {
     voiceRole: options?.voiceRole || 'default',
     textPreview: trimmedText.slice(0, 80),
   })
-  const utterance = new SpeechSynthesisUtterance(text)
-  utterance.rate = 0.84
-  utterance.pitch = 1
-  stopRuntimeSpeech()
-  window.speechSynthesis.speak(utterance)
 }
 
 const buildFeedback = (
@@ -761,7 +754,6 @@ export function MissionRuntime({
   const [feedbackRevealStages, setFeedbackRevealStages] = useState<Record<string, RuntimeFeedbackRevealStage>>({})
   const [earnedXp, setEarnedXp] = useState(0)
   const [comboCount, setComboCount] = useState(0)
-  const [feedbackPulse, setFeedbackPulse] = useState(false)
   const [isListeningTransitioning, setIsListeningTransitioning] = useState(false)
   const [isCheckpointTransitioning, setIsCheckpointTransitioning] = useState(false)
   const [previousSceneId, setPreviousSceneId] = useState<string | null>(null)
@@ -780,8 +772,6 @@ export function MissionRuntime({
   const [questionTimeLeft, setQuestionTimeLeft] = useState(0)
   const [timedOutScenes, setTimedOutScenes] = useState<Record<string, boolean>>({})
   const activeSceneRef = useRef<string | null>(null)
-  const autoNarrationKeyRef = useRef<string>('')
-  const hoverPreviewRef = useRef<Record<string, number>>({})
   const pacingTimersRef = useRef<number[]>([])
   const audioCueTimerRef = useRef<number | null>(null)
   const questionTimeoutRef = useRef<string | null>(null)
@@ -813,11 +803,12 @@ export function MissionRuntime({
     cue: Exclude<RuntimeAudioCue, null> = 'prompt',
     voiceRole: RuntimeSpeechVoiceRole = 'narration',
   ) => {
+    if (!soundEnabled) return
     const trimmed = text.trim()
     if (!trimmed && !audioUrl) return
     activateAudioCue(cue, audioUrl ? 2400 : Math.min(3200, Math.max(1500, trimmed.length * 42)))
     void playSpeech(text, { audioUrl, voiceRole })
-  }, [activateAudioCue])
+  }, [activateAudioCue, soundEnabled])
 
   const toggleSpeech = useCallback((
     text: string,
@@ -836,19 +827,14 @@ export function MissionRuntime({
   }, [activeAudioCue, clearAudioCueTimer, triggerSpeech])
 
   const previewSpeechOnHover = useCallback((
-    previewKey: string,
-    text: string,
-    audioUrl: string | undefined,
-    cue: Exclude<RuntimeAudioCue, null>,
-    voiceRole: RuntimeSpeechVoiceRole,
+    _previewKey: string,
+    _text: string,
+    _audioUrl: string | undefined,
+    _cue: Exclude<RuntimeAudioCue, null>,
+    _voiceRole: RuntimeSpeechVoiceRole,
   ) => {
-    if (!soundEnabled) return
-    const now = Date.now()
-    const lastRun = hoverPreviewRef.current[previewKey] ?? 0
-    if (now - lastRun < 1400) return
-    hoverPreviewRef.current[previewKey] = now
-    triggerSpeech(text, audioUrl, cue, voiceRole)
-  }, [soundEnabled, triggerSpeech])
+    // Runtime audio is click-only to avoid unsolicited playback and concurrent TTS requests.
+  }, [])
 
   const schedulePacingTimer = (callback: () => void, delay: number) => {
     const timer = window.setTimeout(callback, delay)
@@ -885,7 +871,6 @@ export function MissionRuntime({
     setQuestionTimeLeft(0)
     setEarnedXp(0)
     setComboCount(0)
-    setFeedbackPulse(false)
     setPreviousSceneId(null)
     setIsListeningTransitioning(false)
     setIsCheckpointTransitioning(false)
@@ -893,7 +878,6 @@ export function MissionRuntime({
     clearPacingTimers()
     clearAudioCueTimer()
     activeSceneRef.current = null
-    autoNarrationKeyRef.current = ''
     questionTimeoutRef.current = null
   }, [clearAudioCueTimer, mission.id])
 
@@ -946,10 +930,6 @@ export function MissionRuntime({
           : buildInteractivePrompt(currentScene, interactiveExperience)
         : null,
     [currentScene, currentSceneStep, interactiveExperience, speakingExperience],
-  )
-  const speakingPromptPreview = useMemo(
-    () => (currentScene ? buildSpeakingPrompt(currentScene, speakingExperience) : null),
-    [currentScene, speakingExperience],
   )
   const answerOptions = useMemo(() => prompt?.answers ?? [], [prompt])
   const selectedAnswerId = currentScene ? selectedAnswers[currentScene.id] ?? '' : ''
@@ -1110,18 +1090,6 @@ export function MissionRuntime({
     : ''
   const totalXpLabel = totalXp + earnedXp
   const completedSceneCount = isImmigrationPlayableSlice ? 1 : totalSceneCount
-  const canAdvance =
-    phase === 'intro'
-      ? true
-      : phase === 'complete'
-        ? true
-        : isImmigrationPlayableSlice
-          ? currentSceneStep === 'listening'
-            ? false
-            : currentSceneStep === 'speaking'
-              ? false
-              : currentFeedbackRevealStage === 'ready' && !isCheckpointTransitioning
-          : answerOptions.length === 0 || Boolean(selectedAnswer)
   const rewardDots = Array.from({ length: totalSceneCount })
   const rewardLabel =
     phase === 'intro'
@@ -1149,14 +1117,6 @@ export function MissionRuntime({
                 : selectedAnswer.isCorrect
                   ? 'Excelente!'
                   : 'Boa tentativa!'
-  const companionStyle = currentScene
-    ? ({
-        '--runtime-companion-scale': `${currentScene.companionScale / 100}`,
-        '--runtime-companion-offset-x': `${currentScene.companionOffsetX}%`,
-        '--runtime-companion-offset-y': `${currentScene.companionOffsetY}%`,
-        '--runtime-companion-glow-strength': `${currentScene.companionGlowStrength / 100}`,
-      } as CSSProperties)
-    : undefined
   const storyContextImageSource =
     currentScene?.backgroundImageUrl ||
     currentScene?.backgroundImageUrlMobile ||
@@ -1230,7 +1190,6 @@ export function MissionRuntime({
     questionTimeoutRef.current = sceneId
     setQuestionTimeLeft(questionTimeLimit)
 
-    let advanceTimer: number | null = null
     const timer = window.setInterval(() => {
       setQuestionTimeLeft((current) => {
         if (current <= 1) {
@@ -1240,7 +1199,7 @@ export function MissionRuntime({
           questionTimeoutRef.current = null
           setTimedOutScenes((items) => ({ ...items, [sceneId]: true }))
           setIsCheckpointTransitioning(true)
-          advanceTimer = window.setTimeout(() => {
+          schedulePacingTimer(() => {
             setIsCheckpointTransitioning(false)
             const nextIndex = resolveNextSceneIndex()
             if (nextIndex >= sceneFlow.length) {
@@ -1259,7 +1218,6 @@ export function MissionRuntime({
 
     return () => {
       window.clearInterval(timer)
-      if (advanceTimer !== null) window.clearTimeout(advanceTimer)
     }
   }, [
     currentScene?.id,
@@ -1297,25 +1255,6 @@ export function MissionRuntime({
         { label: 'Scenes cleared', value: `${completedSceneCount}` },
         { label: 'Confidence loop', value: `${Math.max(comboCount, 1)}x` },
       ]
-  const scenePrimaryLabel = isImmigrationPlayableSlice
-    ? currentSceneStep === 'listening'
-      ? 'Listening...'
-      : currentSceneStep === 'feedback'
-        ? rewardVisible
-          ? isCheckpointTransitioning
-            ? 'Crossing checkpoint...'
-            : isCheckpointCleared
-              ? nextTeaserScene
-                ? 'Next scene'
-                : 'Finish checkpoint'
-              : nextTeaserScene
-                ? 'Recover and continue'
-                : 'Finish checkpoint'
-          : 'Let it land'
-        : 'Choose an answer'
-    : sceneIndex >= totalSceneCount - 1
-      ? 'Complete mission'
-      : 'Próxima'
   const listeningPanelTitle = isListeningTransitioning ? 'Officer speaking' : 'Immigration audio'
   const listeningPanelBody = isListeningTransitioning
     ? 'Stay with the line. You only need the purpose of the trip.'
@@ -1350,98 +1289,13 @@ export function MissionRuntime({
       ? 'Your spoken reply will settle here'
       : 'Your reply opens after the officer finishes'
 
-  useEffect(() => {
-    const speechTexts = new Set<string>()
-
-    if (currentScene) {
-      if (currentScene.question) speechTexts.add(currentScene.question)
-      if (prompt?.question) speechTexts.add(prompt.question)
-      if (speakingPromptPreview?.question) speechTexts.add(speakingPromptPreview.question)
-      answerOptions.forEach((answer) => {
-        if (answer.text) speechTexts.add(answer.text)
-      })
-    }
-
-    speechTexts.forEach((text) => {
-      let voiceRole: RuntimeSpeechVoiceRole = 'learner-guide'
-      if (text === (currentScene?.question || '')) {
-        voiceRole = 'npc'
-      } else if (text === (prompt?.question || '')) {
-        voiceRole = currentPromptVoiceRole
-      } else if (text === (speakingPromptPreview?.question || '')) {
-        voiceRole = 'narration'
-      }
-
-      void prefetchRuntimeSpeechAudio(text, { voiceRole })
-    })
-  }, [
-    answerOptions,
-    currentPromptVoiceRole,
-    currentScene,
-    currentScene?.id,
-    currentScene?.question,
-    phase,
-    prompt?.question,
-    speakingPromptPreview?.question,
-  ])
-
-  useEffect(() => {
-    if (phase === 'complete' || phase === 'intro' || !soundEnabled) return
-
-    let narrationKey = ''
-    let narrationText = ''
-    let narrationAudioUrl = ''
-    let narrationDelay = 360
-
-    if (currentScene) {
-      if (currentSceneStep === 'listening') {
-        narrationKey = `${currentScene.id}:listening`
-        narrationText = prompt?.question || currentScene.question
-        narrationAudioUrl = prompt?.audioUrl || currentScene.audioUrl || ''
-        narrationDelay = 420
-      } else if (currentSceneStep === 'speaking') {
-        narrationKey = `${currentScene.id}:speaking`
-        narrationText = prompt?.question || currentScene.question
-        narrationAudioUrl = prompt?.audioUrl || ''
-        narrationDelay = 520
-      }
-    }
-
-    if (!narrationKey || (!narrationText.trim() && !narrationAudioUrl)) return
-    if (autoNarrationKeyRef.current === narrationKey) return
-
-    autoNarrationKeyRef.current = narrationKey
-    const timer = window.setTimeout(() => {
-      triggerSpeech(
-        narrationText,
-        narrationAudioUrl,
-        'prompt',
-        currentSceneStep === 'listening' ? 'npc' : 'narration',
-      )
-    }, narrationDelay)
-
-    return () => window.clearTimeout(timer)
-  }, [
-    currentScene?.audioUrl,
-    currentScene,
-    currentScene?.id,
-    currentSceneStep,
-    phase,
-    prompt?.audioUrl,
-    prompt?.question,
-    soundEnabled,
-    triggerSpeech,
-  ])
 
   const handleSelectAnswer = (answer: RuntimeAnswerViewModel) => {
     if (!currentScene || phase !== 'scene') return
 
     const wasSelected = selectedAnswers[currentScene.id]
-    if (isImmigrationPlayableSlice && currentSceneStep === 'feedback') return
-
     if (wasSelected) {
       if (wasSelected !== answer.id) return
-      triggerSpeech(answer.text, answer.audioUrl, 'answer', 'learner-guide')
       return
     }
 
@@ -1461,36 +1315,26 @@ export function MissionRuntime({
     })
 
     setComboCount((current) => (answer.isCorrect ? current + 1 : Math.max(0, current - 1)))
-    if (isImmigrationPlayableSlice) {
-      setSceneSteps((current) => ({
-        ...current,
-        [currentScene.id]: 'feedback',
-      }))
-    }
-    triggerSpeech(answer.text, answer.audioUrl, 'answer', 'learner-guide')
-
-    schedulePacingTimer(() => {
-      setFeedbackRevealStages((current) => ({
-        ...current,
-        [currentScene.id]: 'feedback',
-      }))
-      setFeedbackPulse(true)
-      schedulePacingTimer(() => setFeedbackPulse(false), 520)
-    }, 220)
-
     schedulePacingTimer(() => {
       setFeedbackRevealStages((current) => ({
         ...current,
         [currentScene.id]: 'reward',
       }))
-    }, 980)
+    }, 180)
 
     schedulePacingTimer(() => {
-      setFeedbackRevealStages((current) => ({
-        ...current,
-        [currentScene.id]: 'ready',
-      }))
-    }, 1560)
+      setIsCheckpointTransitioning(true)
+    }, 2500)
+
+    schedulePacingTimer(() => {
+      setIsCheckpointTransitioning(false)
+      const nextIndex = resolveNextSceneIndex()
+      if (nextIndex >= sceneFlow.length) {
+        setPhase('complete')
+        return
+      }
+      setSceneIndex(nextIndex)
+    }, 3000)
   }
 
   const goToNextScene = () => {
@@ -1585,13 +1429,11 @@ export function MissionRuntime({
     setFeedbackRevealStages({})
     setEarnedXp(0)
     setComboCount(0)
-    setFeedbackPulse(false)
     setPreviousSceneId(null)
     setIsListeningTransitioning(false)
     setIsCheckpointTransitioning(false)
     clearPacingTimers()
     activeSceneRef.current = null
-    autoNarrationKeyRef.current = ''
   }
 
   const handleToggleTranslations = useCallback(() => {
@@ -1820,8 +1662,8 @@ export function MissionRuntime({
                     </RuntimeIcon>
                   </span>
                   <div>
-                    <small>Mission ready</small>
-                    <strong>{totalSceneCount} scenes</strong>
+                    <small>Missão • {mission.title}</small>
+                    <strong>{totalSceneCount} cenas</strong>
                   </div>
                 </div>
                 <div className="mission-runtime-reward-dots">
@@ -2003,7 +1845,7 @@ export function MissionRuntime({
                     answerOptions.map((answer) => (
                       <button
                         key={answer.id}
-                        className={`mission-runtime-answer${selectedAnswer?.id === answer.id ? ' is-selected' : ''}${selectedAnswer ? ' is-locked' : ''}`}
+                        className={`mission-runtime-answer${selectedAnswer?.id === answer.id ? ` is-selected ${answer.isCorrect ? 'is-correct' : 'is-incorrect'}` : ''}${selectedAnswer ? ' is-locked' : ''}`}
                         type="button"
                         onClick={() => handleSelectAnswer(answer)}
                       >
@@ -2044,39 +1886,6 @@ export function MissionRuntime({
                   )}
                 </div>
               </section>
-
-              <aside className="mission-runtime-companion-column">
-                <div className="mission-runtime-feedback-stage">
-                  <article
-                    className={`mission-runtime-feedback-card${feedbackPulse ? ' is-pulsing' : ''}${
-                      feedbackVisible ? ' is-revealed' : ''
-                    }${rewardVisible ? ' is-reward-ready' : ''}`}
-                  >
-                    <span className="mission-runtime-feedback-star">
-                      <RuntimeIcon iconUrl={currentScene.feedbackIconUrl} alt="Feedback icon">
-                        <Sparkles size={16} />
-                      </RuntimeIcon>
-                    </span>
-                    <div className="mission-runtime-feedback-copy">
-                      <strong>{feedbackTitle}</strong>
-                      <p>{feedbackBody}</p>
-                      {selectedAnswer ? (
-                        <span className="mission-runtime-feedback-xp">
-                          <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="XP reward icon">
-                            <Star size={16} />
-                          </RuntimeIcon>
-                          +{feedbackXpValue} XP
-                        </span>
-                      ) : null}
-                    </div>
-                  </article>
-                  {stageCompanionImage && feedbackVisible ? (
-                    <div className={`mission-runtime-character${rewardVisible ? ' is-revealed' : ''}`} style={companionStyle}>
-                      <img src={stageCompanionImage} alt="Spark companion" />
-                    </div>
-                  ) : null}
-                </div>
-              </aside>
             </div>
 
             <div className="mission-runtime-footer">
@@ -2109,10 +1918,6 @@ export function MissionRuntime({
                 </div>
               </div>
 
-              <button className="mission-runtime-primary" type="button" disabled={!canAdvance} onClick={goToNextScene}>
-                {scenePrimaryLabel}
-                <ArrowRight size={18} />
-              </button>
             </div>
           </>
         )}

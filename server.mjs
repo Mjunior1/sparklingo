@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { createServer } from 'node:http'
 import { extname, join, normalize } from 'node:path'
-import { readFile, stat } from 'node:fs/promises'
+import { mkdir, readFile, stat, writeFile } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 
 const __dirname = fileURLToPath(new URL('.', import.meta.url))
@@ -20,6 +20,11 @@ const runtimeVoiceRoleConfig = {
 }
 const speechCache = new Map()
 const speechCacheTtlMs = 1000 * 60 * 60 * 12
+const speechRequestCache = new Map()
+const railwayVolumePath = (process.env.RAILWAY_VOLUME_MOUNT_PATH || '').trim()
+const speechCacheDir = (process.env.RUNTIME_SPEECH_CACHE_DIR || '').trim() ||
+  (railwayVolumePath ? join(railwayVolumePath, 'runtime-speech') : join(__dirname, '.cache', 'runtime-speech'))
+let speechGenerationQueue = Promise.resolve()
 const port = Number(process.env.PORT || 3000)
 
 const mimeTypes = {
@@ -328,6 +333,35 @@ const buildRuntimeSpeechCacheKey = (text, voiceId, modelId) =>
     .update(`${voiceId}::${modelId}::${text.trim().toLowerCase()}`)
     .digest('hex')
 
+const readPersistentSpeechCache = async (cacheKey) => {
+  try {
+    const audio = await readFile(join(speechCacheDir, `${cacheKey}.mp3`))
+    return audio.toString('base64')
+  } catch {
+    return ''
+  }
+}
+
+const writePersistentSpeechCache = async (cacheKey, audioBase64) => {
+  try {
+    await mkdir(speechCacheDir, { recursive: true })
+    await writeFile(join(speechCacheDir, `${cacheKey}.mp3`), Buffer.from(audioBase64, 'base64'))
+    return true
+  } catch (error) {
+    runtimeSpeechLog('persistent-cache-write-failed', {
+      cacheKey,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return false
+  }
+}
+
+const enqueueSpeechGeneration = (task) => {
+  const queued = speechGenerationQueue.then(task, task)
+  speechGenerationQueue = queued.catch(() => undefined)
+  return queued
+}
+
 const isRuntimeVoiceRole = (value) => runtimeVoiceRoles.includes(value)
 
 const resolveRuntimeVoiceId = (requestedVoiceId, voiceRole) => {
@@ -402,44 +436,55 @@ const synthesizeRuntimeSpeech = async (text, voiceId = defaultVoiceId, modelId =
     }
   }
 
-  let contentType = 'audio/mpeg'
-  let audioBase64 = ''
-  let fallbackUsed = false
-
-  try {
-    const response = await fetchElevenLabsSpeech(text, voiceId, modelId)
-    contentType = response.contentType
-    audioBase64 = response.audioBase64
-  } catch (error) {
-    if (voiceId !== defaultVoiceId) {
-      console.warn(`[runtime-speech] role voice failed for ${voiceId}, retrying default voice`, error instanceof Error ? error.message : error)
-      const fallbackResponse = await fetchElevenLabsSpeech(text, defaultVoiceId, modelId)
-      contentType = fallbackResponse.contentType
-      audioBase64 = fallbackResponse.audioBase64
-      voiceId = defaultVoiceId
-      fallbackUsed = true
-    } else {
-      throw error
+  const persistentAudioBase64 = await readPersistentSpeechCache(cacheKey)
+  if (persistentAudioBase64) {
+    speechCache.set(cacheKey, {
+      audioBase64: persistentAudioBase64,
+      contentType: 'audio/mpeg',
+      expiresAt: Date.now() + speechCacheTtlMs,
+    })
+    return {
+      ok: true,
+      audioBase64: persistentAudioBase64,
+      contentType: 'audio/mpeg',
+      voiceId,
+      modelId,
+      cacheKey,
+      fallbackUsed: false,
+      cacheHit: true,
+      persistentCacheHit: true,
+      resolvedVoiceId: voiceId,
     }
   }
 
-  speechCache.set(cacheKey, {
-    audioBase64,
-    contentType,
-    expiresAt: Date.now() + speechCacheTtlMs,
-  })
+  const inFlightRequest = speechRequestCache.get(cacheKey)
+  if (inFlightRequest) return inFlightRequest
 
-  return {
-    ok: true,
-    audioBase64,
-    contentType,
-    voiceId,
-    modelId,
-    cacheKey,
-    fallbackUsed,
-    cacheHit: false,
-    resolvedVoiceId: voiceId,
-  }
+  const request = enqueueSpeechGeneration(async () => {
+    const response = await fetchElevenLabsSpeech(text, voiceId, modelId)
+    speechCache.set(cacheKey, {
+      audioBase64: response.audioBase64,
+      contentType: response.contentType,
+      expiresAt: Date.now() + speechCacheTtlMs,
+    })
+    const persisted = await writePersistentSpeechCache(cacheKey, response.audioBase64)
+    return {
+      ok: true,
+      audioBase64: response.audioBase64,
+      contentType: response.contentType,
+      voiceId,
+      modelId,
+      cacheKey,
+      fallbackUsed: false,
+      cacheHit: false,
+      persistentCacheHit: false,
+      persisted,
+      resolvedVoiceId: voiceId,
+    }
+  }).finally(() => speechRequestCache.delete(cacheKey))
+
+  speechRequestCache.set(cacheKey, request)
+  return request
 }
 
 const serveStatic = async (req, res) => {
@@ -577,6 +622,8 @@ const server = createServer(async (req, res) => {
         voiceSource,
         finalVoiceId: maskVoiceId(payload.voiceId),
         cacheHit: Boolean(payload.cacheHit),
+        persistentCacheHit: Boolean(payload.persistentCacheHit),
+        persisted: Boolean(payload.persisted),
         fallbackUsed: Boolean(payload.fallbackUsed),
       })
       sendJson(res, 200, {
@@ -616,6 +663,7 @@ server.listen(port, () => {
     sparkVoiceId: maskVoiceId(runtimeVoiceRoleConfig.spark),
     learnerGuideVoiceId: maskVoiceId(runtimeVoiceRoleConfig['learner-guide']),
     modelId: defaultModelId,
+    cacheDir: speechCacheDir,
     ttsConfigured: Boolean(elevenLabsApiKey),
   })
 })
