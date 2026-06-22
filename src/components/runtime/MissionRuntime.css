@@ -1082,6 +1082,13 @@
   font-weight: 800;
 }
 
+.mission-runtime-complete-lock.is-review {
+  border-color: rgba(178, 139, 255, 0.3);
+  color: #ddcaff;
+  background: linear-gradient(145deg, rgba(73, 48, 116, 0.5), rgba(18, 16, 31, 0.9));
+  box-shadow: inset 0 1px 0 rgba(239, 226, 255, 0.1), 0 0 28px rgba(137, 89, 244, 0.12);
+}
+
 .mission-runtime-answer.is-locked {
   cursor: default;
 }

@@ -522,15 +522,19 @@ function App() {
     completedSceneIds: string[]
     correctAnswers: number
     totalScenes: number
+    progressPercent: number
   }) => {
     if (!user || !runtimeMission?.lesson) return
 
     const currentProgress = progressSnapshot ?? await getUserProgress(user.uid)
     const completionId = `mission:${runtimeMission.id}`
     const nextTotalXp = currentProgress.totalXp + Math.max(0, result.earnedXp)
+    const completedExerciseIds = result.progressPercent >= 100
+      ? [...new Set([...currentProgress.completedExerciseIds, completionId])]
+      : currentProgress.completedExerciseIds.filter((id) => id !== completionId)
     const nextProgress = await saveUserProgress(user.uid, {
       totalXp: nextTotalXp,
-      completedExerciseIds: [...new Set([...currentProgress.completedExerciseIds, completionId])],
+      completedExerciseIds,
       choiceAnswers: currentProgress.choiceAnswers,
       dragFillAnswers: currentProgress.dragFillAnswers,
       speakingCompletions: currentProgress.speakingCompletions,
@@ -540,9 +544,9 @@ function App() {
       emotional: currentProgress.emotional,
     })
 
-    await saveLessonProgressMap(user.uid, { [runtimeMission.id]: 100 })
+    await saveLessonProgressMap(user.uid, { [runtimeMission.id]: result.progressPercent })
     setProgressSnapshot(nextProgress)
-    setMissionProgressMap((current) => ({ ...current, [runtimeMission.id]: 100 }))
+    setMissionProgressMap((current) => ({ ...current, [runtimeMission.id]: result.progressPercent }))
     await patchProfile({ xp: nextProgress.totalXp, level: nextProgress.level })
   }, [patchProfile, progressSnapshot, runtimeMission, user])
 

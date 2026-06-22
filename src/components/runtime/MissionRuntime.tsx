@@ -60,6 +60,7 @@ type MissionRuntimeProps = {
     completedSceneIds: string[]
     correctAnswers: number
     totalScenes: number
+    progressPercent: number
   }) => void | Promise<void>
   onBack: () => void
   onOpenAdmin?: () => void
@@ -1096,6 +1097,15 @@ export function MissionRuntime({
         currentScene.companionImageUrl
     : ''
   const totalXpLabel = totalXp + earnedXp
+  const scorableScenes = sceneFlow.filter((item) => item.scene.answers.length > 0)
+  const correctAnswerCount = scorableScenes.reduce((total, item) => {
+    const answerId = selectedAnswers[item.scene.id]
+    return total + (item.scene.answers.find((answer) => answer.id === answerId)?.isCorrect ? 1 : 0)
+  }, 0)
+  const completionScorePercent = scorableScenes.length > 0
+    ? Math.round((correctAnswerCount / scorableScenes.length) * 100)
+    : 100
+  const missionPassed = completionScorePercent >= 100
   const completedSceneCount = isImmigrationPlayableSlice ? 1 : totalSceneCount
   const rewardDots = Array.from({ length: totalSceneCount })
   const rewardLabel =
@@ -1235,14 +1245,14 @@ export function MissionRuntime({
     shouldShowQuestionTimer,
   ])
   const completionTitle = isImmigrationPlayableSlice
-    ? isCheckpointCleared
+    ? missionPassed
       ? 'Immigration is behind you.'
-      : 'You still made it through.'
+      : 'The checkpoint needs another pass.'
     : `${mission.title} complete.`
   const completionBody = isImmigrationPlayableSlice
-    ? isCheckpointCleared
+    ? missionPassed
       ? 'The officer got what they needed, the line kept moving and the checkpoint opened without turning into a lesson.'
-      : 'It was not perfectly clean, but you stayed present under pressure and kept the checkpoint from closing on you.'
+      : `Você acertou ${correctAnswerCount} de ${scorableScenes.length} respostas. A tentativa terminou, mas a missão continua disponível para revisão.`
     : 'You survived the airport with more confidence, clearer English and visible progress.'
   const completionSparkTitle = isImmigrationPlayableSlice
     ? sparkMemory.completionTitle
@@ -1254,8 +1264,8 @@ export function MissionRuntime({
   const completionStats = isImmigrationPlayableSlice
     ? [
         { label: 'XP carried', value: `+${earnedXp}` },
-        { label: 'Checkpoint', value: sparkMemory.completionOutcome },
-        { label: 'Spark read', value: sparkMemory.completionConfidence },
+        { label: 'Precisão', value: `${completionScorePercent}%` },
+        { label: 'Checkpoint', value: missionPassed ? 'Concluído' : 'Revisar' },
       ]
     : [
         { label: 'XP earned', value: `+${earnedXp}` },
@@ -1431,22 +1441,17 @@ export function MissionRuntime({
   useEffect(() => {
     if (phase !== 'complete' || completionReportedRef.current || !onMissionComplete) return
     completionReportedRef.current = true
-    const correctAnswers = sceneFlow.reduce((total, item) => {
-      const answerId = selectedAnswers[item.scene.id]
-      const answer = item.scene.answers.find((candidate) => candidate.id === answerId)
-      return total + (answer?.isCorrect ? 1 : 0)
-    }, 0)
-
     void Promise.resolve(onMissionComplete({
       earnedXp,
       completedSceneIds: sceneFlow.map((item) => item.scene.id),
-      correctAnswers,
-      totalScenes: sceneFlow.length,
+      correctAnswers: correctAnswerCount,
+      totalScenes: scorableScenes.length,
+      progressPercent: completionScorePercent,
     })).catch((error) => {
       console.error('[mission-runtime] failed to persist mission completion', error)
       completionReportedRef.current = false
     })
-  }, [earnedXp, onMissionComplete, phase, sceneFlow, selectedAnswers])
+  }, [completionScorePercent, correctAnswerCount, earnedXp, onMissionComplete, phase, sceneFlow, scorableScenes.length])
 
   const handleToggleTranslations = useCallback(() => {
     setShowTranslations((current) => {
@@ -1707,9 +1712,9 @@ export function MissionRuntime({
               </aside>
             </div>
             <div className="mission-runtime-footer">
-              <div className="mission-runtime-complete-lock" aria-label="Missão concluída">
+              <div className={`mission-runtime-complete-lock${missionPassed ? ' is-passed' : ' is-review'}`} aria-label={missionPassed ? 'Missão concluída' : 'Tentativa finalizada'}>
                 <Medal size={17} />
-                Missão concluída
+                {missionPassed ? 'Missão concluída' : 'Revisão disponível'}
               </div>
               <div className="mission-runtime-reward-rail">
                 <div className="mission-runtime-reward-core">
