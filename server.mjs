@@ -669,6 +669,8 @@ const server = createServer(async (req, res) => {
       sendJson(res, 200, {
         ok: true,
         ttsConfigured: Boolean(elevenLabsApiKey),
+        speechCacheDir,
+        speechCachePersistent: speechCacheDir === '/data' || speechCacheDir.startsWith('/data/'),
       })
       return
     }
