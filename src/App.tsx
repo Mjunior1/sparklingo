@@ -46,6 +46,22 @@ import {
 } from './services/missionRuntime'
 
 const clampPercent = (value: number) => Math.min(100, Math.max(0, Math.round(value)))
+const missionAttemptStorageKey = 'sparklingo.runtime.missionAttempts'
+
+const readMissionAttemptCounts = () => {
+  if (typeof window === 'undefined') return {} as Record<string, number>
+  try {
+    const value = JSON.parse(window.localStorage.getItem(missionAttemptStorageKey) || '{}')
+    return typeof value === 'object' && value ? value as Record<string, number> : {}
+  } catch {
+    return {}
+  }
+}
+
+const writeMissionAttemptCounts = (counts: Record<string, number>) => {
+  if (typeof window === 'undefined') return
+  window.localStorage.setItem(missionAttemptStorageKey, JSON.stringify(counts))
+}
 
 const getGreeting = () => {
   const hour = new Date().getHours()
@@ -210,7 +226,7 @@ function App() {
   const [runtimeMissionId, setRuntimeMissionId] = useState<string | null>(null)
   const [previousMissionId, setPreviousMissionId] = useState<string | null>(null)
   const [pauseCarousel, setPauseCarousel] = useState(false)
-  const [missionAttemptCounts, setMissionAttemptCounts] = useState<Record<string, number>>({})
+  const [missionAttemptCounts, setMissionAttemptCounts] = useState<Record<string, number>>(readMissionAttemptCounts)
 
   const missionCardRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const missionTrackRef = useRef<HTMLDivElement | null>(null)
@@ -473,7 +489,11 @@ function App() {
     if (!mission || mission.progressPercent >= 100) return
     setActiveMissionId(missionId)
     setRuntimeMissionId(missionId)
-    setMissionAttemptCounts((current) => ({ ...current, [missionId]: (current[missionId] ?? 0) + 1 }))
+    setMissionAttemptCounts((current) => {
+      const next = { ...current, [missionId]: (current[missionId] ?? 0) + 1 }
+      writeMissionAttemptCounts(next)
+      return next
+    })
     setView('runtime')
   }, [missionVisuals])
 
