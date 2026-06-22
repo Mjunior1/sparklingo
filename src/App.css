@@ -7881,6 +7881,13 @@
   transform: translateX(340%) rotate(18deg);
 }
 
+.global-hero-cta:disabled {
+  cursor: default;
+  opacity: 0.62;
+  filter: saturate(0.58);
+  animation: none;
+}
+
 .hero-momentum-layer {
   position: absolute;
   z-index: 11;
@@ -8236,6 +8243,27 @@
     inset 0 1px 0 rgba(255, 255, 255, 0.08),
     0 0 0 1px rgba(157, 123, 255, 0.1),
     0 0 46px rgba(145, 88, 255, 0.18);
+}
+
+.global-hero-mission-poster.is-completed {
+  cursor: default;
+  border-color: rgba(255, 208, 99, 0.28);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 243, 199, 0.1),
+    0 24px 48px rgba(48, 31, 6, 0.32),
+    0 0 32px rgba(255, 190, 62, 0.1);
+}
+
+.global-hero-mission-poster.is-completed .global-hero-mission-chip {
+  align-items: center;
+  gap: 7px;
+  color: #fff0b7;
+  background: linear-gradient(135deg, rgba(134, 91, 20, 0.88), rgba(77, 51, 17, 0.84));
+  box-shadow: inset 0 1px 0 rgba(255, 241, 190, 0.18), 0 0 24px rgba(255, 188, 55, 0.14);
+}
+
+.global-hero-mission-poster.is-completed .global-hero-mission-art img {
+  filter: saturate(0.72) brightness(0.78) contrast(0.96);
 }
 
 .global-hero-mission-art,

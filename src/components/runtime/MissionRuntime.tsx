@@ -18,7 +18,6 @@ import {
   Star,
   UserRound,
   Volume2,
-  VolumeX,
 } from 'lucide-react'
 import type {
   ListeningExperiencePayload,
@@ -55,6 +54,13 @@ type MissionRuntimeProps = {
   streakDays: number
   totalXp: number
   avatarUrl?: string | null
+  randomizeScenes?: boolean
+  onMissionComplete?: (result: {
+    earnedXp: number
+    completedSceneIds: string[]
+    correctAnswers: number
+    totalScenes: number
+  }) => void | Promise<void>
   onBack: () => void
   onOpenAdmin?: () => void
 }
@@ -97,7 +103,6 @@ type RuntimePromptViewModel = {
 
 const waveformBars = Array.from({ length: 24 }, (_, index) => 20 + ((index * 17) % 65))
 const runtimeSubtitleStorageKey = 'sparklingo.runtime.showTranslations'
-const runtimeSoundStorageKey = 'sparklingo.runtime.soundEnabled'
 
 const resolveDefaultSubtitleVisibility = (learnerLevel?: number | null) =>
   learnerLevel == null || learnerLevel <= 3
@@ -115,16 +120,13 @@ const writeStoredSubtitlePreference = (showTranslations: boolean) => {
   window.localStorage.setItem(runtimeSubtitleStorageKey, showTranslations ? 'on' : 'off')
 }
 
-const readStoredSoundPreference = () => {
-  if (typeof window === 'undefined') return true
-  const stored = window.localStorage.getItem(runtimeSoundStorageKey)
-  if (stored === 'off') return false
-  return true
-}
-
-const writeStoredSoundPreference = (soundEnabled: boolean) => {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(runtimeSoundStorageKey, soundEnabled ? 'on' : 'off')
+const shuffleRuntimeItems = <T,>(items: T[]) => {
+  const shuffled = [...items]
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    ;[shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]]
+  }
+  return shuffled
 }
 
 const buildRuntimeAsset = (mission: MissionRuntimeMission, scene: MissionRuntimeSceneRecord): SceneAssetRecord => ({
@@ -663,6 +665,8 @@ export function MissionRuntime({
   streakDays,
   totalXp,
   avatarUrl,
+  randomizeScenes = false,
+  onMissionComplete,
   onBack,
   onOpenAdmin,
 }: MissionRuntimeProps) {
@@ -729,15 +733,16 @@ export function MissionRuntime({
         })
       })
 
-      return flows.sort(
+      const orderedFlows = flows.sort(
         (a, b) =>
           a.scene.order - b.scene.order ||
           a.scene.sceneNumber - b.scene.sceneNumber ||
           a.scene.id.localeCompare(b.scene.id),
       )
+      return randomizeScenes ? shuffleRuntimeItems(orderedFlows) : orderedFlows
     }
 
-    return sortedScenes.map((scene) => ({
+    const flows = sortedScenes.map((scene) => ({
       scene,
       contract: null,
       interactiveExperience: null,
@@ -745,7 +750,8 @@ export function MissionRuntime({
       speakingExperience: null,
       feedbackExperience: null,
     }))
-  }, [sceneContracts, sortedScenes])
+    return randomizeScenes ? shuffleRuntimeItems(flows) : flows
+  }, [randomizeScenes, sceneContracts, sortedScenes])
 
   const [phase, setPhase] = useState<RuntimePhase>('intro')
   const [sceneIndex, setSceneIndex] = useState(0)
@@ -768,13 +774,13 @@ export function MissionRuntime({
     if (storedPreference !== null) return storedPreference
     return resolveDefaultSubtitleVisibility(learnerLevel)
   })
-  const [soundEnabled, setSoundEnabled] = useState(readStoredSoundPreference)
   const [questionTimeLeft, setQuestionTimeLeft] = useState(0)
   const [timedOutScenes, setTimedOutScenes] = useState<Record<string, boolean>>({})
   const activeSceneRef = useRef<string | null>(null)
   const pacingTimersRef = useRef<number[]>([])
   const audioCueTimerRef = useRef<number | null>(null)
   const questionTimeoutRef = useRef<string | null>(null)
+  const completionReportedRef = useRef(false)
 
   const clearPacingTimers = () => {
     pacingTimersRef.current.forEach((timer) => window.clearTimeout(timer))
@@ -803,12 +809,11 @@ export function MissionRuntime({
     cue: Exclude<RuntimeAudioCue, null> = 'prompt',
     voiceRole: RuntimeSpeechVoiceRole = 'narration',
   ) => {
-    if (!soundEnabled) return
     const trimmed = text.trim()
     if (!trimmed && !audioUrl) return
     activateAudioCue(cue, audioUrl ? 2400 : Math.min(3200, Math.max(1500, trimmed.length * 42)))
     void playSpeech(text, { audioUrl, voiceRole })
-  }, [activateAudioCue, soundEnabled])
+  }, [activateAudioCue])
 
   const toggleSpeech = useCallback((
     text: string,
@@ -947,9 +952,9 @@ export function MissionRuntime({
   const sparkMemory = buildImmigrationSparkMemory(selectedAnswer)
   const shouldShowStoryReflection =
     phase === 'scene' &&
-    (!isImmigrationPlayableSlice || feedbackVisible || rewardVisible || isCheckpointTransitioning)
+    !isImmigrationPlayableSlice
   const shouldShowSystemReflection =
-    phase === 'scene' && (!isImmigrationPlayableSlice || rewardVisible || isCheckpointTransitioning)
+    phase === 'scene' && !isImmigrationPlayableSlice
   const feedback = currentScene ? buildFeedback(currentScene, selectedAnswer, feedbackExperience) : null
   const feedbackTitle =
     phase === 'scene'
@@ -981,7 +986,9 @@ export function MissionRuntime({
             : sparkMemory.speakingBody
           : 'React to the scene and Spark will guide your next move.'
       : ''
-  const feedbackXpValue = rewardVisible && selectedAnswer ? feedback?.xp ?? currentScene?.xpReward ?? 0 : 0
+  const feedbackXpValue = rewardVisible && selectedAnswer?.isCorrect
+    ? Math.max(0, selectedAnswer.xpReward || feedback?.xp || currentScene?.xpReward || 0)
+    : 0
   const runtimeFocusMode =
     phase === 'scene'
       ? currentSceneStep === 'feedback'
@@ -1163,6 +1170,7 @@ export function MissionRuntime({
       : sceneFlow[sceneIndex + 1]?.scene ?? null
   const resolveNextSceneIndex = () => {
     if (!currentScene) return -1
+    if (randomizeScenes) return sceneIndex + 1
     const linkedIndex = currentScene.nextSceneId
       ? sceneFlow.findIndex((item) => item.scene.id === currentScene.nextSceneId)
       : -1
@@ -1243,7 +1251,6 @@ export function MissionRuntime({
     ? sparkMemory.completionBody
     : 'You stayed with the scene long enough to turn pressure into visible progress.'
   const completionPrimaryLabel = isImmigrationPlayableSlice ? 'Continue airport journey' : 'Continue journey'
-  const completionSecondaryLabel = isImmigrationPlayableSlice ? 'Replay immigration' : 'Replay mission'
   const completionStats = isImmigrationPlayableSlice
     ? [
         { label: 'XP carried', value: `+${earnedXp}` },
@@ -1310,9 +1317,9 @@ export function MissionRuntime({
       [currentScene.id]: answer.id,
     }))
 
-    setEarnedXp((current) => {
-      return current + answer.xpReward
-    })
+    if (answer.isCorrect) {
+      setEarnedXp((current) => current + Math.max(0, answer.xpReward))
+    }
 
     setComboCount((current) => (answer.isCorrect ? current + 1 : Math.max(0, current - 1)))
     schedulePacingTimer(() => {
@@ -1421,20 +1428,25 @@ export function MissionRuntime({
     setSceneIndex(nextIndex)
   }
 
-  const restartMission = () => {
-    setPhase('intro')
-    setSceneIndex(0)
-    setSelectedAnswers({})
-    setSceneSteps({})
-    setFeedbackRevealStages({})
-    setEarnedXp(0)
-    setComboCount(0)
-    setPreviousSceneId(null)
-    setIsListeningTransitioning(false)
-    setIsCheckpointTransitioning(false)
-    clearPacingTimers()
-    activeSceneRef.current = null
-  }
+  useEffect(() => {
+    if (phase !== 'complete' || completionReportedRef.current || !onMissionComplete) return
+    completionReportedRef.current = true
+    const correctAnswers = sceneFlow.reduce((total, item) => {
+      const answerId = selectedAnswers[item.scene.id]
+      const answer = item.scene.answers.find((candidate) => candidate.id === answerId)
+      return total + (answer?.isCorrect ? 1 : 0)
+    }, 0)
+
+    void Promise.resolve(onMissionComplete({
+      earnedXp,
+      completedSceneIds: sceneFlow.map((item) => item.scene.id),
+      correctAnswers,
+      totalScenes: sceneFlow.length,
+    })).catch((error) => {
+      console.error('[mission-runtime] failed to persist mission completion', error)
+      completionReportedRef.current = false
+    })
+  }, [earnedXp, onMissionComplete, phase, sceneFlow, selectedAnswers])
 
   const handleToggleTranslations = useCallback(() => {
     setShowTranslations((current) => {
@@ -1561,30 +1573,6 @@ export function MissionRuntime({
             <div>
               <strong>Legenda</strong>
               <span>{showTranslations ? 'Português visível' : 'Português oculto'}</span>
-            </div>
-          </button>
-          <button
-            type="button"
-            className={`mission-runtime-topbar-pill mission-runtime-sound-toggle${soundEnabled ? ' is-active' : ''}`}
-            onClick={() => {
-              setSoundEnabled((current) => {
-                const nextValue = !current
-                writeStoredSoundPreference(nextValue)
-                if (!nextValue) {
-                  stopRuntimeSpeech()
-                  clearAudioCueTimer()
-                  setActiveAudioCue(null)
-                }
-                return nextValue
-              })
-            }}
-            aria-pressed={soundEnabled}
-            aria-label={soundEnabled ? 'Disable runtime sound' : 'Enable runtime sound'}
-          >
-            {soundEnabled ? <Volume2 size={15} /> : <VolumeX size={15} />}
-            <div>
-              <strong>Som</strong>
-              <span>{soundEnabled ? 'ativo' : 'manual'}</span>
             </div>
           </button>
           <div className="mission-runtime-topbar-status">
@@ -1719,10 +1707,10 @@ export function MissionRuntime({
               </aside>
             </div>
             <div className="mission-runtime-footer">
-              <button className="mission-runtime-secondary" type="button" onClick={restartMission}>
-                <Play size={16} />
-                {completionSecondaryLabel}
-              </button>
+              <div className="mission-runtime-complete-lock" aria-label="Missão concluída">
+                <Medal size={17} />
+                Missão concluída
+              </div>
               <div className="mission-runtime-reward-rail">
                 <div className="mission-runtime-reward-core">
                   <span className="mission-runtime-reward-badge">
@@ -1894,7 +1882,7 @@ export function MissionRuntime({
                 Pular cena
               </button>
 
-              <div className={`mission-runtime-reward-rail${rewardVisible ? ' is-reward-ready' : ''}${selectedAnswer ? ' is-xp-live' : ''}`}>
+              <div className={`mission-runtime-reward-rail${rewardVisible ? ' is-reward-ready' : ''}${selectedAnswer?.isCorrect ? ' is-xp-live' : ''}`}>
                 <div className="mission-runtime-reward-core">
                   <span className="mission-runtime-reward-badge">
                     <RuntimeIcon iconUrl={rewardBadgeIconUrl} alt="Reward badge icon">
@@ -1903,7 +1891,11 @@ export function MissionRuntime({
                   </span>
                   <div>
                     <small>{rewardLabel}</small>
-                    <strong>+{rewardVisible && selectedAnswer ? feedbackXpValue : currentScene.xpReward} XP</strong>
+                    <strong>
+                      {selectedAnswer || currentSceneTimedOut
+                        ? `+${feedbackXpValue} XP`
+                        : `até +${currentScene.xpReward} XP`}
+                    </strong>
                   </div>
                 </div>
                 <div className="mission-runtime-reward-dots">

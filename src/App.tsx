@@ -28,9 +28,9 @@ import {
   type QuizCatalogItem,
   type QuizQuestionItem,
 } from './services/catalog'
-import { getLessonProgressMap } from './services/lessonProgress'
+import { getLessonProgressMap, saveLessonProgressMap } from './services/lessonProgress'
 import { defaultPlatformConfig } from './services/platform'
-import { getUserProgress, type UserProgress } from './services/progress'
+import { getUserProgress, saveUserProgress, type UserProgress } from './services/progress'
 import {
   defaultQuickWinsConfig,
   getQuickWins,
@@ -141,10 +141,11 @@ const buildMissionVisual = (
   quizzes: QuizCatalogItem[],
   asset: SceneAssetRecord,
   progressionOrder: number,
+  savedProgress?: number,
 ): MissionVisual => {
   const lessonQuizzes = lesson ? quizzes.filter((quiz) => quiz.lessonId === lesson.id) : []
   const sceneCount = Math.max(lessonQuizzes.length || 0, 5)
-  const progressPercent = clampPercent(lesson?.progress ?? 0)
+  const progressPercent = clampPercent(savedProgress ?? lesson?.progress ?? 0)
 
   return {
     id: asset.id,
@@ -196,6 +197,7 @@ function App() {
   const [view, setView] = useState<'home' | 'admin' | 'runtime'>('home')
   const [catalogLoading, setCatalogLoading] = useState(false)
   const [progressSnapshot, setProgressSnapshot] = useState<UserProgress | null>(null)
+  const [missionProgressMap, setMissionProgressMap] = useState<Record<string, number>>({})
   const [lessonsCatalog, setLessonsCatalog] = useState<LessonCatalogItem[]>([])
   const [quizCatalog, setQuizCatalog] = useState<QuizCatalogItem[]>([])
   const [achievementCatalog, setAchievementCatalog] = useState<AchievementCatalogItem[]>([])
@@ -208,6 +210,7 @@ function App() {
   const [runtimeMissionId, setRuntimeMissionId] = useState<string | null>(null)
   const [previousMissionId, setPreviousMissionId] = useState<string | null>(null)
   const [pauseCarousel, setPauseCarousel] = useState(false)
+  const [missionAttemptCounts, setMissionAttemptCounts] = useState<Record<string, number>>({})
 
   const missionCardRefs = useRef<Record<string, HTMLButtonElement | null>>({})
   const missionTrackRef = useRef<HTMLDivElement | null>(null)
@@ -250,6 +253,7 @@ function App() {
         progress: nextLessonProgress[lesson.id] ?? lesson.progress,
       })),
     )
+    setMissionProgressMap(nextLessonProgress)
     setQuizCatalog(nextQuizCatalog)
     setAchievementCatalog(nextAchievementCatalog)
     setQuizQuestionCatalog(nextQuizQuestions)
@@ -306,9 +310,15 @@ function App() {
   const missionVisuals = useMemo(() => {
     const visibleAssets = activeSceneAssets.filter((asset) => asset.showInHero)
     return visibleAssets.map((asset, index) =>
-      buildMissionVisual(resolveLessonForAsset(asset, lessonsCatalog), quizCatalog, asset, index),
+      buildMissionVisual(
+        resolveLessonForAsset(asset, lessonsCatalog),
+        quizCatalog,
+        asset,
+        index,
+        missionProgressMap[asset.id],
+      ),
     )
-  }, [activeSceneAssets, lessonsCatalog, quizCatalog])
+  }, [activeSceneAssets, lessonsCatalog, missionProgressMap, quizCatalog])
 
   const featuredMission = useMemo(() => {
     const featuredAsset = activeSceneAssets.find((asset) => asset.featuredHero) ?? null
@@ -459,10 +469,15 @@ function App() {
   }, [])
 
   const openMissionRuntime = useCallback((missionId: string) => {
+    const mission = missionVisuals.find((item) => item.id === missionId)
+    if (!mission || mission.progressPercent >= 100) return
     setActiveMissionId(missionId)
     setRuntimeMissionId(missionId)
+    setMissionAttemptCounts((current) => ({ ...current, [missionId]: (current[missionId] ?? 0) + 1 }))
     setView('runtime')
-  }, [])
+  }, [missionVisuals])
+
+  const availableMission = missionVisuals.find((mission) => mission.progressPercent < 100) ?? null
 
   const goToAdjacentMission = useCallback(
     (direction: -1 | 1) => {
@@ -481,6 +496,35 @@ function App() {
     missionVisuals.find((mission) => mission.id === runtimeMissionId) ??
     activeMission ??
     null
+
+  const handleRuntimeMissionComplete = useCallback(async (result: {
+    earnedXp: number
+    completedSceneIds: string[]
+    correctAnswers: number
+    totalScenes: number
+  }) => {
+    if (!user || !runtimeMission?.lesson) return
+
+    const currentProgress = progressSnapshot ?? await getUserProgress(user.uid)
+    const completionId = `mission:${runtimeMission.id}`
+    const nextTotalXp = currentProgress.totalXp + Math.max(0, result.earnedXp)
+    const nextProgress = await saveUserProgress(user.uid, {
+      totalXp: nextTotalXp,
+      completedExerciseIds: [...new Set([...currentProgress.completedExerciseIds, completionId])],
+      choiceAnswers: currentProgress.choiceAnswers,
+      dragFillAnswers: currentProgress.dragFillAnswers,
+      speakingCompletions: currentProgress.speakingCompletions,
+      orderWordMap: currentProgress.orderWordMap,
+      recentMissionTheme: runtimeMission.title,
+      recentMissionContext: `${result.correctAnswers}/${result.totalScenes} respostas corretas`,
+      emotional: currentProgress.emotional,
+    })
+
+    await saveLessonProgressMap(user.uid, { [runtimeMission.id]: 100 })
+    setProgressSnapshot(nextProgress)
+    setMissionProgressMap((current) => ({ ...current, [runtimeMission.id]: 100 }))
+    await patchProfile({ xp: nextProgress.totalXp, level: nextProgress.level })
+  }, [patchProfile, progressSnapshot, runtimeMission, user])
 
   const runtimeBundle = useMemo(() => {
     if (!runtimeMission?.lesson) return null
@@ -598,6 +642,8 @@ function App() {
           streakDays={streakDays}
           totalXp={totalXp}
           avatarUrl={profile?.avatarUrl}
+          randomizeScenes={(missionAttemptCounts[runtimeMission.id] ?? 0) > 1 && runtimeMission.progressPercent < 100}
+          onMissionComplete={handleRuntimeMissionComplete}
           onBack={() => setView('home')}
           onOpenAdmin={isAdmin ? () => setView('admin') : undefined}
         />
@@ -719,7 +765,12 @@ function App() {
               ))}
             </h1>
             <p>{heroSubheadline}</p>
-            <button className="global-hero-cta" type="button">
+            <button
+              className="global-hero-cta"
+              type="button"
+              disabled={!availableMission}
+              onClick={() => availableMission && openMissionRuntime(availableMission.id)}
+            >
               <span>{heroCTA}</span>
               <ArrowRight size={18} />
             </button>
@@ -754,7 +805,8 @@ function App() {
                 }}
                 type="button"
                 role="listitem"
-                className={`global-hero-mission-poster${mission.id === activeMission.id ? ' is-active' : ''}`}
+                aria-disabled={mission.progressPercent >= 100}
+                className={`global-hero-mission-poster${mission.id === activeMission.id ? ' is-active' : ''}${mission.progressPercent >= 100 ? ' is-completed' : ''}`}
                 onMouseEnter={() => changeMission(mission.id)}
                 onFocus={() => {
                   setPauseCarousel(true)
@@ -768,7 +820,9 @@ function App() {
                 </div>
                 <div className="global-hero-mission-overlay" />
                 <div className="global-hero-mission-copy">
-                  <span className="global-hero-mission-chip">Current Mission</span>
+                  <span className="global-hero-mission-chip">
+                    {mission.progressPercent >= 100 ? <><Medal size={14} /> Missão concluída</> : 'Current Mission'}
+                  </span>
                   <strong>{mission.title}</strong>
                   <p>{mission.description}</p>
                   <div className="global-hero-mission-meta">
@@ -782,7 +836,7 @@ function App() {
                   </div>
                   <div className="global-hero-mission-footer">
                     <small>{mission.progressLabel}</small>
-                    <span>{mission.progressPercent >= 100 ? 'Replay' : 'Começar minha aventura'}</span>
+                    <span>{mission.progressPercent >= 100 ? 'Troféu conquistado' : 'Começar minha aventura'}</span>
                   </div>
                 </div>
               </button>

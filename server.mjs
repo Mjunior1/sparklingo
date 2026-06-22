@@ -410,13 +410,41 @@ const fetchElevenLabsSpeech = async (text, voiceId, modelId) => {
       const textResponse = await response.text().catch(() => '')
       if (textResponse) message = textResponse
     }
-    throw new Error(message)
+    const error = new Error(message)
+    error.status = response.status
+    throw error
   }
 
   return {
     contentType: response.headers.get('content-type') || 'audio/mpeg',
     audioBase64: Buffer.from(await response.arrayBuffer()).toString('base64'),
   }
+}
+
+const wait = (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
+
+const fetchElevenLabsSpeechWithRetry = async (text, voiceId, modelId) => {
+  const delays = [0, 1800, 4200, 8000]
+  let lastError = null
+
+  for (let attempt = 0; attempt < delays.length; attempt += 1) {
+    if (delays[attempt] > 0) await wait(delays[attempt])
+    try {
+      return await fetchElevenLabsSpeech(text, voiceId, modelId)
+    } catch (error) {
+      lastError = error
+      const retryable = error?.status === 429 || error?.status >= 500 || /concurrent requests/i.test(error?.message || '')
+      runtimeSpeechLog('elevenlabs-attempt-failed', {
+        attempt: attempt + 1,
+        retryable,
+        voiceId: maskVoiceId(voiceId),
+        error: error instanceof Error ? error.message : String(error),
+      })
+      if (!retryable) break
+    }
+  }
+
+  throw lastError || new Error('ElevenLabs speech generation failed.')
 }
 
 const synthesizeRuntimeSpeech = async (text, voiceId = defaultVoiceId, modelId = defaultModelId) => {
@@ -461,7 +489,7 @@ const synthesizeRuntimeSpeech = async (text, voiceId = defaultVoiceId, modelId =
   if (inFlightRequest) return inFlightRequest
 
   const request = enqueueSpeechGeneration(async () => {
-    const response = await fetchElevenLabsSpeech(text, voiceId, modelId)
+    const response = await fetchElevenLabsSpeechWithRetry(text, voiceId, modelId)
     speechCache.set(cacheKey, {
       audioBase64: response.audioBase64,
       contentType: response.contentType,
