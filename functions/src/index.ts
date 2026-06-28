@@ -4,6 +4,9 @@ import { getFirestore } from 'firebase-admin/firestore'
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 import { onDocumentWritten } from 'firebase-functions/v2/firestore'
 
+import './config/runtime'
+export { healthCheck } from './http/v1/healthCheck'
+
 const firebaseAdminApp = initializeApp()
 const firestoreDatabaseId = process.env.FIRESTORE_DATABASE_ID?.trim() || undefined
 const db = firestoreDatabaseId
