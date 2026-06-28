@@ -141,6 +141,6 @@ Firebase Functions should own:
 
 1. Normalize Firebase Functions Gen2 with Node 20, TypeScript, linting, and `healthCheck`.
 2. Add provider interfaces before implementing any provider-specific service.
-3. Move the next secure AI operation into Functions behind an `AIProvider`.
+3. Validate the first vertical AI flow with Mission Studio, AI Gateway, and `MockAIProvider`.
 4. Add Azure Speech pronunciation assessment behind `SpeechAssessmentProvider`.
 5. Keep Railway TTS isolated until a Storage-backed Firebase cache is explicitly designed.

@@ -1,3 +1,5 @@
+import { httpsCallable } from 'firebase/functions'
+import { requireFirebase } from '../lib/firebase'
 import type { MissionRuntimeSceneRecord } from './missionRuntime'
 import type { SceneAssetRecord } from './sceneAssets'
 
@@ -278,22 +280,37 @@ export const generateAiMissionStudioDraft = async (
   options: DraftOptions,
 ): Promise<AiMissionStudioDraft> => {
   try {
-    const response = await fetch('/api/ai/scene-draft', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        brief,
-        sceneAsset: options.sceneAsset ?? null,
+    const { functions } = requireFirebase()
+    const generateDraft = httpsCallable<
+      {
+        brief: AiMissionStudioBrief
+        sceneAsset: SceneAssetRecord | null
         defaults: {
-          nextId: options.nextId,
-          order: options.order,
-          lessonId: options.lessonId || '',
-        },
-      }),
+          nextId: string
+          order: number
+          lessonId: string
+          parentMissionTitle: string
+        }
+      },
+      {
+        ok: boolean
+        draft?: Partial<AiMissionStudioDraft>
+        error?: string
+      }
+    >(functions, 'generateMissionStudioDraft')
+
+    const result = await generateDraft({
+      brief,
+      sceneAsset: options.sceneAsset ?? null,
+      defaults: {
+        nextId: options.nextId,
+        order: options.order,
+        lessonId: options.lessonId || '',
+        parentMissionTitle: options.parentMissionTitle || '',
+      },
     })
 
-    if (!response.ok) throw new Error(`AI Mission Studio respondeu com HTTP ${response.status}.`)
-    const json = await response.json()
+    const json = result.data
     if (!json?.ok) throw new Error(json?.error || 'A geração da cena falhou.')
     return normalizeDraft(json.draft, brief, options)
   } catch (error) {
