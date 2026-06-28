@@ -3,7 +3,11 @@ import type {
   QuizCatalogItem,
   QuizQuestionItem,
 } from '../catalog'
-import type { MissionRuntimeAnswerRecord, MissionRuntimeSceneRecord } from '../missionRuntime'
+import {
+  isPublishedMissionRuntimeScene,
+  type MissionRuntimeAnswerRecord,
+  type MissionRuntimeSceneRecord,
+} from '../missionRuntime'
 import type { SceneAssetRecord } from '../sceneAssets'
 import {
   buildRuntimeContract,
@@ -397,7 +401,7 @@ export const buildLegacyMissionBundle = (params: {
   const matchingRuntimeScenes = params.runtimeScenes
     .filter(
       (scene) =>
-        scene.active &&
+        isPublishedMissionRuntimeScene(scene) &&
         (
           scene.lessonId === params.lesson.id ||
           includesNormalized(scene.missionTitle, params.lesson.missionTitle ?? params.lesson.title) ||

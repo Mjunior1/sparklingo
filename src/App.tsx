@@ -42,6 +42,7 @@ import { getSceneAssets, type SceneAssetRecord } from './services/sceneAssets'
 import {
   defaultMissionRuntimeScenes,
   getMissionRuntimeScenes,
+  isPublishedMissionRuntimeScene,
   type MissionRuntimeSceneRecord,
 } from './services/missionRuntime'
 
@@ -199,11 +200,11 @@ const buildMissionVisual = (
 
 const mergeRuntimeSceneCatalog = (runtimeScenes: MissionRuntimeSceneRecord[]) => {
   const merged = new Map(defaultMissionRuntimeScenes.map((scene) => [scene.id, scene]))
-  runtimeScenes.forEach((scene) => {
+  runtimeScenes.filter(isPublishedMissionRuntimeScene).forEach((scene) => {
     merged.set(scene.id, scene)
   })
 
-  return [...merged.values()].sort(
+  return [...merged.values()].filter(isPublishedMissionRuntimeScene).sort(
     (a, b) => a.order - b.order || a.sceneNumber - b.sceneNumber || a.id.localeCompare(b.id),
   )
 }

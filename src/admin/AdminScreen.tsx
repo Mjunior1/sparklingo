@@ -2,6 +2,7 @@ import './AdminScreen.css'
 import { useEffect, useMemo, useState } from 'react'
 import {
   AlertCircle,
+  Archive,
   ArrowLeft,
   BarChart3,
   Bot,
@@ -143,11 +144,14 @@ import {
   defaultMissionRuntimeScenes,
   deleteMissionRuntimeScene,
   getMissionRuntimeScenes,
+  markMissionRuntimeSceneArchived,
+  markMissionRuntimeScenePublished,
   missionRuntimeFeedbackToneOptions,
   seedDefaultMissionRuntimeScenes,
   upsertMissionRuntimeScene,
   type MissionRuntimeAnswerRecord,
   type MissionRuntimeFeedbackTone,
+  type MissionRuntimePublicationStatus,
   type MissionRuntimeSceneRecord,
 } from '../services/missionRuntime'
 import {
@@ -218,6 +222,7 @@ type RuntimeMediaGuide = {
 }
 
 type SceneAssetStatusFilter = 'all' | 'active' | 'inactive'
+type MissionRuntimeStatusFilter = 'all' | 'published' | 'draft' | 'archived' | 'active' | 'inactive'
 
 const tagOptions: Exclude<FilterKey, 'Todos'>[] = ['Gramática', 'Vocabulário', 'Listening', 'Reading', 'Speaking']
 type ToastState = {
@@ -232,6 +237,11 @@ const questionKinds: Array<QuizQuestionItem['kind']> = ['multiple-choice', 'drag
 const aiMissionStudioLevels: AiMissionStudioLevel[] = ['A1', 'A2', 'B1', 'B2']
 const aiMissionStudioSkills: AiMissionStudioSkill[] = ['Speaking', 'Listening', 'Reading', 'Writing', 'Mixed']
 const aiMissionStudioImpactLevels: AiMissionStudioImpactLevel[] = ['Low', 'Medium', 'High']
+const missionRuntimePublicationLabels: Record<MissionRuntimePublicationStatus, string> = {
+  draft: 'Draft',
+  published: 'Publicado',
+  archived: 'Arquivado',
+}
 const normalizeAdminText = (value?: string) =>
   (value ?? '')
     .normalize('NFD')
@@ -547,7 +557,7 @@ export function AdminScreen({
   const [sceneAssetStatus, setSceneAssetStatus] = useState<SceneAssetStatusFilter>('all')
   const [missionRuntimeSearch, setMissionRuntimeSearch] = useState('')
   const [missionRuntimeAssetFilter, setMissionRuntimeAssetFilter] = useState<string>('all')
-  const [missionRuntimeStatus, setMissionRuntimeStatus] = useState<StatusFilter>('all')
+  const [missionRuntimeStatus, setMissionRuntimeStatus] = useState<MissionRuntimeStatusFilter>('all')
   const [lessonDraft, setLessonDraft] = useState<LessonCatalogItem>(emptyLesson)
   const [quizDraft, setQuizDraft] = useState<QuizCatalogItem>(emptyQuiz)
   const [questionDraft, setQuestionDraft] = useState<QuizQuestionItem>(emptyQuestion)
@@ -793,7 +803,12 @@ export function AdminScreen({
   const filteredMissionRuntimeScenes = useMemo(() => {
     return missionRuntimeScenes
       .filter((scene) => missionRuntimeAssetFilter === 'all' || scene.sceneAssetId === missionRuntimeAssetFilter)
-      .filter((scene) => missionRuntimeStatus === 'all' || (missionRuntimeStatus === 'active' ? scene.active : !scene.active))
+      .filter((scene) => {
+        if (missionRuntimeStatus === 'all') return true
+        if (missionRuntimeStatus === 'active') return scene.active
+        if (missionRuntimeStatus === 'inactive') return !scene.active
+        return scene.publicationStatus === missionRuntimeStatus
+      })
       .filter((scene) => {
         if (!debouncedMissionRuntimeSearch.trim()) return true
         const linkedAsset = sceneAssets.find((asset) => asset.id === scene.sceneAssetId)
@@ -1207,9 +1222,19 @@ export function AdminScreen({
     'Salvando cena runtime...',
     `Cena "${missionRuntimeDraft.title}" salva com sucesso.`,
     async () => {
+      const isExistingScene = Boolean(missionRuntimeDraft.id)
       await upsertMissionRuntimeScene({
         ...missionRuntimeDraft,
         id: missionRuntimeDraft.id || missionRuntimeIdPreview,
+        provenance: [
+          ...missionRuntimeDraft.provenance,
+          {
+            type: isExistingScene ? 'edited' : 'created',
+            at: new Date().toISOString(),
+            by: 'admin',
+            note: isExistingScene ? 'Cena runtime editada manualmente.' : 'Cena runtime criada manualmente.',
+          },
+        ],
       })
       await refreshMissionRuntime()
       if (onRefresh) await onRefresh()
@@ -1249,20 +1274,81 @@ export function AdminScreen({
     }
   }
 
-  const approveAiMissionDraft = () => {
+  const saveAiMissionDraft = () => {
     if (!aiMissionDraft) return
 
     runAdminTask(
-      'Aprovando Scene Draft...',
-      `Scene "${aiMissionDraft.runtimeScene.title}" salva no Mission Runtime.`,
+      'Salvando Scene Draft...',
+      `Draft "${aiMissionDraft.runtimeScene.title}" salvo no Mission Runtime.`,
       async () => {
-        await upsertMissionRuntimeScene(aiMissionDraft.runtimeScene)
+        await upsertMissionRuntimeScene({
+          ...aiMissionDraft.runtimeScene,
+          publicationStatus: 'draft',
+          active: true,
+        })
+        await refreshMissionRuntime()
+        if (onRefresh) await onRefresh()
+      },
+    )
+  }
+
+  const publishAiMissionDraft = () => {
+    if (!aiMissionDraft) return
+
+    runAdminTask(
+      'Publicando Scene Draft...',
+      `Scene "${aiMissionDraft.runtimeScene.title}" publicada para os alunos.`,
+      async () => {
+        await upsertMissionRuntimeScene(markMissionRuntimeScenePublished(aiMissionDraft.runtimeScene, 'admin'))
         await refreshMissionRuntime()
         if (onRefresh) await onRefresh()
         setAiMissionDraft(null)
       },
     )
   }
+
+  const deleteAiMissionDraft = () => {
+    if (!aiMissionDraft) return
+
+    const savedDraft = missionRuntimeScenes.find((scene) => scene.id === aiMissionDraft.runtimeScene.id)
+    if (!savedDraft) {
+      setAiMissionDraft(null)
+      return
+    }
+
+    if (!window.confirm(`Excluir o draft "${savedDraft.title}" do Mission Runtime?`)) return
+
+    runAdminTask(
+      `Excluindo draft "${savedDraft.title}"...`,
+      `Draft "${savedDraft.title}" removido do Mission Runtime.`,
+      async () => {
+        await deleteMissionRuntimeScene(savedDraft.id)
+        await refreshMissionRuntime()
+        if (onRefresh) await onRefresh()
+        setAiMissionDraft(null)
+      },
+    )
+  }
+
+  const publishMissionRuntimeItem = (scene: MissionRuntimeSceneRecord) => runAdminTask(
+    `Publicando "${scene.title}"...`,
+    `"${scene.title}" publicada para os alunos.`,
+    async () => {
+      await upsertMissionRuntimeScene(markMissionRuntimeScenePublished(scene, 'admin'))
+      await refreshMissionRuntime()
+      if (onRefresh) await onRefresh()
+    },
+  )
+
+  const archiveMissionRuntimeItem = (scene: MissionRuntimeSceneRecord) => runAdminTask(
+    `Arquivando "${scene.title}"...`,
+    `"${scene.title}" arquivada.`,
+    async () => {
+      await upsertMissionRuntimeScene(markMissionRuntimeSceneArchived(scene, 'admin'))
+      await refreshMissionRuntime()
+      if (onRefresh) await onRefresh()
+    },
+  )
 
   const removeCatalogItem = async (label: string, task: () => Promise<void>) => {
     if (!window.confirm(`Excluir "${label}" do catálogo?`)) return
@@ -2868,7 +2954,7 @@ export function AdminScreen({
   }
 
   return (
-    <div className="cms-shell">
+    <div className={`cms-shell ${activeSection === 'ai-mission-studio' ? 'cms-shell-wide' : ''}`}>
       <aside className="cms-sidebar">
         <div className="cms-brand">
           <div className="cms-brand-mark"><Shield size={18} /></div>
@@ -3142,6 +3228,9 @@ export function AdminScreen({
 
                   <div className="ai-validation-strip">
                     <strong>{aiMissionDraft.source === 'ai' ? 'IA provider' : 'Fallback local'}</strong>
+                    <span>{missionRuntimePublicationLabels[aiMissionDraft.runtimeScene.publicationStatus]}</span>
+                    <span>{aiMissionDraft.generation.provider} • {aiMissionDraft.generation.model}</span>
+                    <span>Prompt {aiMissionDraft.generation.promptVersion}</span>
                     {aiMissionDraft.validation.issues.length
                       ? aiMissionDraft.validation.issues.map((issue) => <span key={issue}>{issue}</span>)
                       : <span>Scene Draft compatível com o Mission Runtime atual.</span>}
@@ -3159,9 +3248,17 @@ export function AdminScreen({
                         <Pencil size={14} />
                         Ajustar no editor
                       </button>
-                      <button className="admin-primary" type="button" disabled={!aiMissionDraft.validation.valid || saving} onClick={approveAiMissionDraft}>
+                      <button className="admin-secondary danger" type="button" onClick={deleteAiMissionDraft}>
+                        <Trash2 size={14} />
+                        Excluir draft
+                      </button>
+                      <button className="admin-secondary" type="button" disabled={!aiMissionDraft.validation.valid || saving} onClick={saveAiMissionDraft}>
                         <Save size={16} />
-                        Approve & Save
+                        Save Draft
+                      </button>
+                      <button className="admin-primary" type="button" disabled={!aiMissionDraft.validation.valid || saving} onClick={publishAiMissionDraft}>
+                        <CheckCircle2 size={16} />
+                        Publish
                       </button>
                     </div>
                   </div>
@@ -3999,8 +4096,11 @@ export function AdminScreen({
                     <option key={asset.id} value={asset.id}>{asset.title}</option>
                   ))}
                 </select>
-                <select value={missionRuntimeStatus} onChange={(event) => setMissionRuntimeStatus(event.target.value as StatusFilter)}>
+                <select value={missionRuntimeStatus} onChange={(event) => setMissionRuntimeStatus(event.target.value as MissionRuntimeStatusFilter)}>
                   <option value="all">Todos status</option>
+                  <option value="published">Publicadas</option>
+                  <option value="draft">Drafts</option>
+                  <option value="archived">Arquivadas</option>
                   <option value="active">Ativas</option>
                   <option value="inactive">Inativas</option>
                 </select>
@@ -4049,10 +4149,19 @@ export function AdminScreen({
                           <span>{scene.character}</span>
                           <span>{scene.sceneNumber}/{scene.sceneTotal}</span>
                           <span>{scene.answers.length} respostas</span>
+                          <span className={`runtime-publication-badge is-${scene.publicationStatus}`}>
+                            {missionRuntimePublicationLabels[scene.publicationStatus]}
+                          </span>
                           <span>{scene.active ? 'ativo' : 'inativo'}</span>
                         </div>
                       </div>
                       <div className="cms-content-actions">
+                        {scene.publicationStatus !== 'published' && (
+                          <button type="button" onClick={() => publishMissionRuntimeItem(scene)}><CheckCircle2 size={14} />Publish</button>
+                        )}
+                        {scene.publicationStatus !== 'archived' && (
+                          <button type="button" onClick={() => archiveMissionRuntimeItem(scene)}><Archive size={14} />Archive</button>
+                        )}
                         <button type="button" onClick={() => openMissionRuntimeEditor(scene)}><Pencil size={14} />Editar</button>
                         <button type="button" className="danger" onClick={() => removeMissionRuntimeItem(scene)}><Trash2 size={14} />Excluir</button>
                       </div>

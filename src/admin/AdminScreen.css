@@ -438,6 +438,11 @@
   align-items: start;
 }
 
+.cms-shell-wide {
+  width: min(1880px, calc(100vw - 32px));
+  grid-template-columns: 260px minmax(0, 1fr);
+}
+
 .cms-quickwins-preview-wrap,
 .cms-quickwins-card {
   display: grid;
@@ -838,6 +843,30 @@
   width: 22px;
   height: 22px;
   object-fit: contain;
+}
+
+.runtime-publication-badge {
+  border: 1px solid rgba(145, 115, 255, 0.16);
+  background: rgba(126, 92, 255, 0.1);
+  color: #5a43c8;
+}
+
+.runtime-publication-badge.is-published {
+  border-color: rgba(40, 170, 112, 0.2);
+  background: rgba(40, 170, 112, 0.12);
+  color: #1d7e58;
+}
+
+.runtime-publication-badge.is-draft {
+  border-color: rgba(255, 184, 77, 0.28);
+  background: rgba(255, 184, 77, 0.14);
+  color: #8a5d0d;
+}
+
+.runtime-publication-badge.is-archived {
+  border-color: rgba(130, 121, 160, 0.2);
+  background: rgba(130, 121, 160, 0.12);
+  color: #675b8f;
 }
 
 .scene-safearea-card {
@@ -1972,6 +2001,7 @@
 }
 
 .ai-runtime-preview-panel {
+  width: 100%;
   background:
     linear-gradient(180deg, rgba(15, 13, 35, 0.96), rgba(8, 10, 28, 0.98)),
     radial-gradient(circle at 52% 0%, rgba(139, 92, 246, 0.22), transparent 42%);
@@ -1983,7 +2013,9 @@
 }
 
 .ai-runtime-preview-shell {
-  overflow: hidden;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 14px;
   border-radius: 30px;
   border: 1px solid rgba(179, 136, 255, 0.24);
   box-shadow: 0 28px 90px rgba(0, 0, 0, 0.42);
@@ -1991,6 +2023,8 @@
 }
 
 .ai-runtime-preview-shell .mission-runtime {
+  width: 100%;
+  min-width: clamp(980px, calc(100vw - 380px), 1480px);
   min-height: 720px;
   border-radius: 28px;
 }
@@ -2003,6 +2037,7 @@
   }
 
   .ai-runtime-preview-shell .mission-runtime {
+    min-width: 860px;
     min-height: 760px;
   }
 }

@@ -11,6 +11,22 @@ import {
 import { requireFirebase } from '../lib/firebase'
 
 export type MissionRuntimeFeedbackTone = 'encouraging' | 'celebration' | 'recovery' | 'calm'
+export type MissionRuntimePublicationStatus = 'draft' | 'published' | 'archived'
+export type MissionRuntimeSource = 'manual' | 'ai' | 'local-fallback'
+
+export type MissionRuntimeGenerationMetadata = {
+  provider: string
+  model: string
+  promptVersion: string
+  generatedAt: string
+}
+
+export type MissionRuntimeProvenanceEvent = {
+  type: 'created' | 'edited' | 'published' | 'archived'
+  at: string
+  by: string
+  note: string
+}
 
 export type MissionRuntimeAnswerRecord = {
   id: string
@@ -65,6 +81,10 @@ export type MissionRuntimeSceneRecord = {
   emotionalFeedbackTone: MissionRuntimeFeedbackTone
   nextSceneId: string
   active: boolean
+  publicationStatus: MissionRuntimePublicationStatus
+  source: MissionRuntimeSource
+  generation: MissionRuntimeGenerationMetadata | null
+  provenance: MissionRuntimeProvenanceEvent[]
   order: number
   answers: MissionRuntimeAnswerRecord[]
 }
@@ -87,6 +107,8 @@ const cleanNumber = (value: unknown, fallback = 0) => {
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
 const pickEnum = <T extends string>(value: unknown, allowed: T[], fallback: T): T =>
   typeof value === 'string' && allowed.includes(value as T) ? (value as T) : fallback
+const missionRuntimePublicationStatuses: MissionRuntimePublicationStatus[] = ['draft', 'published', 'archived']
+const missionRuntimeSources: MissionRuntimeSource[] = ['manual', 'ai', 'local-fallback']
 
 const createEmptyAnswer = (id = 'answer-1'): MissionRuntimeAnswerRecord => ({
   id,
@@ -97,6 +119,17 @@ const createEmptyAnswer = (id = 'answer-1'): MissionRuntimeAnswerRecord => ({
   feedbackTitle: '',
   feedbackBody: '',
   xpReward: 25,
+})
+
+export const createMissionRuntimeProvenanceEvent = (
+  type: MissionRuntimeProvenanceEvent['type'],
+  by = 'admin',
+  note = '',
+): MissionRuntimeProvenanceEvent => ({
+  type,
+  at: new Date().toISOString(),
+  by,
+  note,
 })
 
 export const createEmptyMissionRuntimeScene = (): MissionRuntimeSceneRecord => ({
@@ -141,6 +174,10 @@ export const createEmptyMissionRuntimeScene = (): MissionRuntimeSceneRecord => (
   emotionalFeedbackTone: 'encouraging',
   nextSceneId: '',
   active: true,
+  publicationStatus: 'published',
+  source: 'manual',
+  generation: null,
+  provenance: [],
   order: 1,
   answers: [
     createEmptyAnswer('answer-1'),
@@ -162,6 +199,39 @@ const sanitizeMissionRuntimeAnswer = (
   feedbackBody: cleanString(answer.feedbackBody),
   xpReward: clamp(cleanNumber(answer.xpReward, 25), 0, 250),
 })
+
+const sanitizeMissionRuntimeGeneration = (generation: unknown): MissionRuntimeGenerationMetadata | null => {
+  if (!generation || typeof generation !== 'object') return null
+  const record = generation as Record<string, unknown>
+  const safeGeneration: MissionRuntimeGenerationMetadata = {
+    provider: cleanString(record.provider),
+    model: cleanString(record.model),
+    promptVersion: cleanString(record.promptVersion),
+    generatedAt: cleanString(record.generatedAt),
+  }
+
+  return Object.values(safeGeneration).some(Boolean) ? safeGeneration : null
+}
+
+const sanitizeMissionRuntimeProvenance = (provenance: unknown): MissionRuntimeProvenanceEvent[] => {
+  if (!Array.isArray(provenance)) return []
+
+  return provenance
+    .map((event) => {
+      const record = event && typeof event === 'object' ? (event as Record<string, unknown>) : {}
+      return {
+        type: pickEnum(
+          record.type,
+          ['created', 'edited', 'published', 'archived'] as MissionRuntimeProvenanceEvent['type'][],
+          'edited',
+        ),
+        at: cleanString(record.at),
+        by: cleanString(record.by) || 'admin',
+        note: cleanString(record.note),
+      }
+    })
+    .filter((event) => event.at)
+}
 
 const sanitizeMissionRuntimeScene = (
   scene: Partial<MissionRuntimeSceneRecord> & Record<string, unknown>,
@@ -224,10 +294,47 @@ const sanitizeMissionRuntimeScene = (
     ),
     nextSceneId: cleanString(scene.nextSceneId),
     active: cleanBoolean(scene.active, true),
+    publicationStatus: pickEnum(
+      scene.publicationStatus,
+      missionRuntimePublicationStatuses,
+      'published',
+    ),
+    source: pickEnum(scene.source, missionRuntimeSources, 'manual'),
+    generation: sanitizeMissionRuntimeGeneration(scene.generation),
+    provenance: sanitizeMissionRuntimeProvenance(scene.provenance),
     order: Math.max(1, cleanNumber(scene.order, 1)),
     answers: safeAnswers,
   }
 }
+
+export const isPublishedMissionRuntimeScene = (scene: MissionRuntimeSceneRecord) =>
+  scene.active && scene.publicationStatus === 'published'
+
+export const markMissionRuntimeScenePublished = (
+  scene: MissionRuntimeSceneRecord,
+  by = 'admin',
+): MissionRuntimeSceneRecord => ({
+  ...scene,
+  active: true,
+  publicationStatus: 'published',
+  provenance: [
+    ...scene.provenance,
+    createMissionRuntimeProvenanceEvent('published', by, 'Publicado para a jornada do aluno.'),
+  ],
+})
+
+export const markMissionRuntimeSceneArchived = (
+  scene: MissionRuntimeSceneRecord,
+  by = 'admin',
+): MissionRuntimeSceneRecord => ({
+  ...scene,
+  active: false,
+  publicationStatus: 'archived',
+  provenance: [
+    ...scene.provenance,
+    createMissionRuntimeProvenanceEvent('archived', by, 'Arquivado no fluxo editorial.'),
+  ],
+})
 
 export const defaultMissionRuntimeScenes: MissionRuntimeSceneRecord[] = [
   {

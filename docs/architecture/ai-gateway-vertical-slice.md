@@ -11,7 +11,10 @@ AI Mission Studio Admin
   -> Provider Registry
   -> MockAIProvider
   -> normalized draft response
-  -> Runtime Preview / Approve & Save
+  -> Runtime Preview
+  -> Save Draft
+  -> Publish
+  -> Student Runtime consumes published scenes only
 ```
 
 ## Current Provider
@@ -38,6 +41,37 @@ Responsibilities:
 - Builds a Mission Runtime compatible draft.
 - Returns quality metrics and schema validation status.
 
+## Editorial Publishing Loop
+
+Mission Runtime scenes now have an explicit editorial status:
+
+- `draft`: saved in the CMS, visible to editors, hidden from the student journey.
+- `published`: available to Home, Adventure, and Mission Runtime.
+- `archived`: retained for history, hidden from the student journey.
+
+AI Mission Studio always creates `draft` scenes first. Editors can preview with the real `MissionRuntime`, save the draft, publish it, archive it, or delete it from the Mission Runtime list.
+
+Existing legacy scenes without editorial history are normalized as `published` for backwards compatibility.
+
+## Metadata And Provenance
+
+Generated scenes include minimal generation metadata:
+
+- `source`
+- `generation.provider`
+- `generation.model`
+- `generation.promptVersion`
+- `generation.generatedAt`
+
+Scenes also keep a lightweight provenance trail:
+
+- `created`
+- `edited`
+- `published`
+- `archived`
+
+This is intentionally not a full versioning system yet. It is enough to validate the editorial loop and to know how a scene entered production.
+
 ## Gateway Responsibilities
 
 `functions/src/ai/gateway/aiGateway.ts` owns:
@@ -58,7 +92,7 @@ To add OpenRouter later:
 4. Read `OPENROUTER_API_KEY` from Firebase Secrets inside the real provider or its function wrapper.
 5. Keep the frontend unchanged.
 
-The Admin and Mission Studio should continue calling `generateMissionStudioDraft`; only backend provider selection changes.
+The Admin and Mission Studio should continue calling `generateMissionStudioDraft`; only backend provider selection changes. The publishing loop remains unchanged.
 
 ## Why This Exists
 

@@ -40,6 +40,7 @@ type DraftDefaults = {
 }
 
 const fallbackBackground = '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png'
+const missionStudioPromptVersion = 'mission-studio-mock-v1'
 
 const cleanString = (value: unknown, fallback = '') =>
   typeof value === 'string' && value.trim() ? value.trim() : fallback
@@ -114,6 +115,13 @@ const buildRuntimeScene = (
     cleanString(sceneAsset?.mobileImageUrl) ||
     cleanString(sceneAsset?.imageUrlDesktop) ||
     background
+  const generatedAt = new Date().toISOString()
+  const generation = {
+    provider: 'mock',
+    model: 'mock-mission-studio-v1',
+    promptVersion: missionStudioPromptVersion,
+    generatedAt,
+  }
 
   return {
     id: cleanString(defaults.nextId, `RT-${Date.now()}`),
@@ -157,6 +165,17 @@ const buildRuntimeScene = (
     emotionalFeedbackTone: 'celebration',
     nextSceneId: '',
     active: true,
+    publicationStatus: 'draft',
+    source: 'ai',
+    generation,
+    provenance: [
+      {
+        type: 'created',
+        at: generatedAt,
+        by: 'ai-mission-studio',
+        note: 'Scene Draft criada pelo AI Mission Studio.',
+      },
+    ],
     order: cleanNumber(defaults.order, 1),
     answers: [
       {
@@ -229,6 +248,12 @@ export const generateMissionStudioDraft = onCall(async (request) => {
     },
     draft: {
       source: 'ai',
+      generation: {
+        provider: gatewayResponse.provider,
+        model: gatewayResponse.model,
+        promptVersion: missionStudioPromptVersion,
+        generatedAt: new Date().toISOString(),
+      },
       brief,
       runtimeScene: buildRuntimeScene(brief, sceneAsset, defaults),
       quality: buildQualityReport(brief),

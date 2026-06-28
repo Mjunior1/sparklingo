@@ -1,6 +1,10 @@
 import { httpsCallable } from 'firebase/functions'
 import { requireFirebase } from '../lib/firebase'
-import type { MissionRuntimeSceneRecord } from './missionRuntime'
+import {
+  createMissionRuntimeProvenanceEvent,
+  type MissionRuntimeGenerationMetadata,
+  type MissionRuntimeSceneRecord,
+} from './missionRuntime'
 import type { SceneAssetRecord } from './sceneAssets'
 
 export type AiMissionStudioLevel = 'A1' | 'A2' | 'B1' | 'B2'
@@ -51,6 +55,7 @@ export type AiMissionStudioQualityReport = {
 
 export type AiMissionStudioDraft = {
   source: 'ai' | 'local-fallback'
+  generation: MissionRuntimeGenerationMetadata
   brief: AiMissionStudioBrief
   runtimeScene: MissionRuntimeSceneRecord
   quality: AiMissionStudioQualityReport
@@ -69,6 +74,7 @@ type DraftOptions = {
 }
 
 const fallbackBackground = '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png'
+const missionStudioPromptVersion = 'mission-studio-mock-v1'
 
 export const defaultAiMissionStudioBrief: AiMissionStudioBrief = {
   world: 'Airport Survival',
@@ -142,6 +148,12 @@ export const createLocalAiMissionDraft = (
     asset?.imageUrlDesktop ||
     background
   const character = compact(brief.scenario, 'Immigration Officer')
+  const generation: MissionRuntimeGenerationMetadata = {
+    provider: source === 'ai' ? 'mock' : 'local-fallback',
+    model: source === 'ai' ? 'mock-mission-studio-v1' : 'local-template',
+    promptVersion: missionStudioPromptVersion,
+    generatedAt: new Date().toISOString(),
+  }
   const runtimeScene: MissionRuntimeSceneRecord = {
     id: options.nextId,
     sceneAssetId: brief.sceneAssetId || asset?.id || '',
@@ -184,6 +196,16 @@ export const createLocalAiMissionDraft = (
     emotionalFeedbackTone: 'celebration',
     nextSceneId: '',
     active: true,
+    publicationStatus: 'draft',
+    source,
+    generation,
+    provenance: [
+      createMissionRuntimeProvenanceEvent(
+        'created',
+        source === 'ai' ? 'ai-mission-studio' : 'local-fallback',
+        'Scene Draft criada pelo AI Mission Studio.',
+      ),
+    ],
     order: options.order,
     answers: [
       {
@@ -221,6 +243,7 @@ export const createLocalAiMissionDraft = (
 
   return {
     source,
+    generation,
     brief,
     runtimeScene,
     quality: createQualityReport(brief),
@@ -268,6 +291,7 @@ const normalizeDraft = (
   const validation = validateAiMissionDraft(runtimeScene)
   return {
     source: payload?.source === 'ai' ? 'ai' : fallback.source,
+    generation: runtimeScene.generation ?? fallback.generation,
     brief,
     runtimeScene,
     quality: payload?.quality ?? fallback.quality,
