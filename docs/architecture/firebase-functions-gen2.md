@@ -139,7 +139,7 @@ Firebase Functions should own:
 
 ## Migration Plan
 
-1. Normalize Firebase Functions Gen2 with Node 20, TypeScript, linting, and `healthCheck`.
+1. Normalize Firebase Functions Gen2 with Node 22, TypeScript, linting, and `healthCheck`.
 2. Add provider interfaces before implementing any provider-specific service.
 3. Validate the first vertical AI flow with Mission Studio, AI Gateway, and `MockAIProvider`.
 4. Add Azure Speech pronunciation assessment behind `SpeechAssessmentProvider`.
