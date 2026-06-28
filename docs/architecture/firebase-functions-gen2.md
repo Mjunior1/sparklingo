@@ -81,6 +81,8 @@ npm run serve
 
 ## Deploy
 
+Firebase Functions Gen2 requires the Firebase project to be on the Blaze plan because deployment uses Cloud Build and Artifact Registry.
+
 ```bash
 cd functions
 npm run deploy
