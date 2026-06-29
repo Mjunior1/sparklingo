@@ -100,6 +100,15 @@ const compact = (value: unknown, fallback = '') =>
 
 const buildMetric = (label: string, value: string, why: string): AiMissionStudioMetric => ({ label, value, why })
 
+const shuffleDraftItems = <T,>(items: T[]) => {
+  const shuffled = [...items]
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    ;[shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]]
+  }
+  return shuffled
+}
+
 const createQualityReport = (brief: AiMissionStudioBrief): AiMissionStudioQualityReport => ({
   linguisticQuality: {
     grammarCoverage: buildMetric(
@@ -207,7 +216,7 @@ export const createLocalAiMissionDraft = (
       ),
     ],
     order: options.order,
-    answers: [
+    answers: shuffleDraftItems([
       {
         id: 'answer-tourism',
         text: "I'm here for tourism.",
@@ -238,7 +247,7 @@ export const createLocalAiMissionDraft = (
         feedbackBody: 'The officer needs one clear purpose. Try adding tourism, business or study.',
         xpReward: 10,
       },
-    ],
+    ]),
   }
 
   return {
@@ -288,12 +297,16 @@ const normalizeDraft = (
       }
     : fallback.runtimeScene
 
-  const validation = validateAiMissionDraft(runtimeScene)
+  const runtimeSceneWithShuffledAnswers = {
+    ...runtimeScene,
+    answers: shuffleDraftItems(runtimeScene.answers),
+  }
+  const validation = validateAiMissionDraft(runtimeSceneWithShuffledAnswers)
   return {
     source: payload?.source === 'ai' ? 'ai' : fallback.source,
-    generation: runtimeScene.generation ?? fallback.generation,
+    generation: runtimeSceneWithShuffledAnswers.generation ?? fallback.generation,
     brief,
-    runtimeScene,
+    runtimeScene: runtimeSceneWithShuffledAnswers,
     quality: payload?.quality ?? fallback.quality,
     validation,
   }

@@ -622,6 +622,22 @@
     opacity 720ms ease;
 }
 
+.mission-runtime-prompt-card.is-long-prompt {
+  width: min(100%, 660px);
+  min-height: 224px;
+  padding: 28px 32px;
+}
+
+.mission-runtime-prompt-card.is-long-prompt h1 {
+  font-size: clamp(1.72rem, 1.25vw + 0.98rem, 2.72rem);
+  line-height: 1.04;
+  letter-spacing: -0.032em;
+}
+
+.mission-runtime-prompt-card.is-long-prompt p {
+  font-size: 0.98rem;
+}
+
 .mission-runtime-focus-listening .mission-runtime-prompt-card,
 .mission-runtime-focus-speaking .mission-runtime-prompt-card {
   transform: translateY(-4px);
@@ -2231,8 +2247,9 @@
   position: absolute;
   inset: 0;
   background:
-    linear-gradient(180deg, rgba(8, 8, 22, 0.08) 0%, rgba(8, 8, 22, 0.68) 100%),
-    radial-gradient(circle at 82% 20%, rgba(167, 105, 255, 0.14), transparent 22%);
+    linear-gradient(90deg, rgba(7, 7, 21, 0.78) 0%, rgba(9, 9, 24, 0.42) 52%, rgba(7, 7, 21, 0.68) 100%),
+    linear-gradient(180deg, rgba(8, 8, 22, 0.18) 0%, rgba(8, 8, 22, 0.78) 100%),
+    radial-gradient(circle at 82% 20%, rgba(167, 105, 255, 0.16), transparent 22%);
 }
 
 .runtime-scene-preview-companion {
@@ -2268,24 +2285,30 @@
 
 .runtime-scene-preview-copy span {
   color: #b98fff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.72);
   font-size: 0.82rem;
   font-weight: 700;
   letter-spacing: 0.08em;
 }
 
 .runtime-scene-preview-copy strong {
+  color: rgba(255, 248, 255, 0.96);
   font-size: 1.1rem;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.72);
 }
 
 .runtime-scene-preview-copy h3 {
   margin: 0;
+  color: #fff8ff;
   font-size: 2rem;
   line-height: 1.04;
+  text-shadow: 0 4px 18px rgba(0, 0, 0, 0.78);
 }
 
 .runtime-scene-preview-copy p {
   margin: 0;
-  color: rgba(240, 230, 250, 0.78);
+  color: rgba(255, 250, 255, 0.88);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.72);
 }
 
 .runtime-scene-preview-meta {

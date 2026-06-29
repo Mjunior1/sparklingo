@@ -51,6 +51,7 @@ type MissionRuntimeProps = {
   sceneContracts?: RuntimeSceneContract[]
   learnerLevel?: number | null
   questionTimeLimitSeconds?: number | null
+  disableResponseTimer?: boolean
   streakDays: number
   totalXp: number
   avatarUrl?: string | null
@@ -128,6 +129,46 @@ const shuffleRuntimeItems = <T,>(items: T[]) => {
     ;[shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]]
   }
   return shuffled
+}
+
+const playRuntimeAnswerCue = (isCorrect: boolean) => {
+  if (typeof window === 'undefined') return
+
+  const AudioContextCtor =
+    window.AudioContext ||
+    (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+
+  if (!AudioContextCtor) return
+
+  try {
+    const context = new AudioContextCtor()
+    const gain = context.createGain()
+    const oscillator = context.createOscillator()
+    const duration = isCorrect ? 0.24 : 0.18
+
+    oscillator.type = isCorrect ? 'sine' : 'triangle'
+    oscillator.frequency.setValueAtTime(isCorrect ? 880 : 240, context.currentTime)
+    if (isCorrect) {
+      oscillator.frequency.exponentialRampToValueAtTime(1320, context.currentTime + 0.12)
+    } else {
+      oscillator.frequency.exponentialRampToValueAtTime(180, context.currentTime + 0.11)
+    }
+
+    gain.gain.setValueAtTime(0.0001, context.currentTime)
+    gain.gain.exponentialRampToValueAtTime(isCorrect ? 0.075 : 0.045, context.currentTime + 0.018)
+    gain.gain.exponentialRampToValueAtTime(0.0001, context.currentTime + duration)
+
+    oscillator.connect(gain)
+    gain.connect(context.destination)
+    oscillator.start()
+    oscillator.stop(context.currentTime + duration)
+
+    window.setTimeout(() => {
+      void context.close().catch(() => undefined)
+    }, 420)
+  } catch {
+    // Audio cues are enhancement-only; never block the answer flow.
+  }
 }
 
 const buildRuntimeAsset = (mission: MissionRuntimeMission, scene: MissionRuntimeSceneRecord): SceneAssetRecord => ({
@@ -663,6 +704,7 @@ export function MissionRuntime({
   sceneContracts = [],
   learnerLevel,
   questionTimeLimitSeconds,
+  disableResponseTimer = false,
   streakDays,
   totalXp,
   avatarUrl,
@@ -672,10 +714,18 @@ export function MissionRuntime({
   onOpenAdmin,
 }: MissionRuntimeProps) {
   const sortedScenes = useMemo(
-    () =>
-      [...scenes]
+    () => {
+      const orderedScenes = [...scenes]
         .filter((scene) => scene.active)
-        .sort((a, b) => a.order - b.order || a.sceneNumber - b.sceneNumber || a.id.localeCompare(b.id)),
+        .sort((a, b) => a.order - b.order || a.sceneNumber - b.sceneNumber || a.id.localeCompare(b.id))
+      const sceneTotal = Math.max(1, orderedScenes.length)
+
+      return orderedScenes.map((scene, index) => ({
+        ...scene,
+        sceneNumber: index + 1,
+        sceneTotal,
+      }))
+    },
     [scenes],
   )
 
@@ -757,6 +807,7 @@ export function MissionRuntime({
   const [phase, setPhase] = useState<RuntimePhase>('intro')
   const [sceneIndex, setSceneIndex] = useState(0)
   const [selectedAnswers, setSelectedAnswers] = useState<Record<string, string>>({})
+  const [answerOrderByScene, setAnswerOrderByScene] = useState<Record<string, string[]>>({})
   const [sceneSteps, setSceneSteps] = useState<Record<string, RuntimeSceneStep>>({})
   const [feedbackRevealStages, setFeedbackRevealStages] = useState<Record<string, RuntimeFeedbackRevealStage>>({})
   const [earnedXp, setEarnedXp] = useState(0)
@@ -871,6 +922,7 @@ export function MissionRuntime({
     setPhase('intro')
     setSceneIndex(0)
     setSelectedAnswers({})
+    setAnswerOrderByScene({})
     setSceneSteps({})
     setFeedbackRevealStages({})
     setTimedOutScenes({})
@@ -937,7 +989,41 @@ export function MissionRuntime({
         : null,
     [currentScene, currentSceneStep, interactiveExperience, speakingExperience],
   )
-  const answerOptions = useMemo(() => prompt?.answers ?? [], [prompt])
+  const rawAnswerOptions = useMemo(() => prompt?.answers ?? [], [prompt])
+
+  useEffect(() => {
+    if (!currentScene || rawAnswerOptions.length < 2) return
+    const answerIds = rawAnswerOptions.map((answer) => answer.id)
+
+    setAnswerOrderByScene((current) => {
+      const existingOrder = current[currentScene.id]
+      const orderIsValid =
+        existingOrder &&
+        existingOrder.length === answerIds.length &&
+        answerIds.every((answerId) => existingOrder.includes(answerId))
+
+      if (orderIsValid) return current
+
+      return {
+        ...current,
+        [currentScene.id]: shuffleRuntimeItems(answerIds),
+      }
+    })
+  }, [currentScene, rawAnswerOptions])
+
+  const answerOptions = useMemo(() => {
+    if (!currentScene) return rawAnswerOptions
+    const sceneAnswerOrder = answerOrderByScene[currentScene.id]
+    if (!sceneAnswerOrder?.length) return rawAnswerOptions
+
+    const answerById = new Map(rawAnswerOptions.map((answer) => [answer.id, answer]))
+    const orderedAnswers = sceneAnswerOrder
+      .map((answerId) => answerById.get(answerId))
+      .filter((answer): answer is RuntimeAnswerViewModel => Boolean(answer))
+    const missingAnswers = rawAnswerOptions.filter((answer) => !sceneAnswerOrder.includes(answer.id))
+
+    return [...orderedAnswers, ...missingAnswers]
+  }, [answerOrderByScene, currentScene, rawAnswerOptions])
   const selectedAnswerId = currentScene ? selectedAnswers[currentScene.id] ?? '' : ''
   const selectedAnswer = answerOptions.find((answer) => answer.id === selectedAnswerId) ?? null
   const currentSceneTimedOut = currentScene ? Boolean(timedOutScenes[currentScene.id]) : false
@@ -1193,6 +1279,7 @@ export function MissionRuntime({
   const shouldShowQuestionTimer =
     phase === 'scene' &&
     currentSceneStep === 'speaking' &&
+    !disableResponseTimer &&
     answerOptions.length > 0 &&
     !selectedAnswer &&
     !isCheckpointTransitioning
@@ -1326,6 +1413,8 @@ export function MissionRuntime({
       ...current,
       [currentScene.id]: answer.id,
     }))
+
+    playRuntimeAnswerCue(answer.isCorrect)
 
     if (answer.isCorrect) {
       setEarnedXp((current) => current + Math.max(0, answer.xpReward))
@@ -1749,7 +1838,7 @@ export function MissionRuntime({
           <>
             <div className="mission-runtime-main">
               <section className="mission-runtime-dialogue">
-                <article className="mission-runtime-prompt-card">
+                <article className={`mission-runtime-prompt-card${(prompt?.question || currentScene.question || '').length > 88 ? ' is-long-prompt' : ''}`}>
                   <div className="mission-runtime-prompt-head">
                     <span>{prompt?.npc || currentScene.character}</span>
                     <button

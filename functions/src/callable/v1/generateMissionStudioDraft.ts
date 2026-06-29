@@ -53,6 +53,15 @@ const cleanNumber = (value: unknown, fallback: number) => {
 
 const buildMetric = (label: string, value: string, why: string) => ({ label, value, why })
 
+const shuffleItems = <T,>(items: T[]) => {
+  const shuffled = [...items]
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(Math.random() * (index + 1))
+    ;[shuffled[index], shuffled[swapIndex]] = [shuffled[swapIndex], shuffled[index]]
+  }
+  return shuffled
+}
+
 const buildQualityReport = (brief: Required<Brief>) => ({
   linguisticQuality: {
     grammarCoverage: buildMetric(
@@ -141,6 +150,42 @@ const buildRuntimeScene = (
       xpReward: answer.isCorrect ? cleanNumber(answer.xpReward, 25) : 0,
     }))
 
+  const safeAnswers =
+    generatedAnswers.length >= 2 && generatedAnswers.some((answer) => answer.isCorrect)
+      ? generatedAnswers
+      : [
+          {
+            id: 'answer-tourism',
+            text: "I'm here for tourism.",
+            translation: 'Estou aqui para turismo.',
+            audioUrl: '',
+            isCorrect: true,
+            feedbackTitle: 'Nice choice.',
+            feedbackBody: 'You answered clearly and matched the officer’s question.',
+            xpReward: 25,
+          },
+          {
+            id: 'answer-study',
+            text: "I'm here to study English.",
+            translation: 'Estou aqui para estudar inglês.',
+            audioUrl: '',
+            isCorrect: false,
+            feedbackTitle: 'Almost there.',
+            feedbackBody: 'This is a clear sentence, but it does not match the travel purpose in this scene.',
+            xpReward: 0,
+          },
+          {
+            id: 'answer-vague',
+            text: "I'm here.",
+            translation: 'Estou aqui.',
+            audioUrl: '',
+            isCorrect: false,
+            feedbackTitle: 'Keep going.',
+            feedbackBody: 'The officer needs one clear purpose. Try adding tourism, business or study.',
+            xpReward: 0,
+          },
+        ]
+
   return {
     id: cleanString(defaults.nextId, `RT-${Date.now()}`),
     sceneAssetId: brief.sceneAssetId || cleanString(sceneAsset?.id),
@@ -195,38 +240,7 @@ const buildRuntimeScene = (
       },
     ],
     order: cleanNumber(defaults.order, 1),
-    answers: generatedAnswers.length >= 2 && generatedAnswers.some((answer) => answer.isCorrect) ? generatedAnswers : [
-      {
-        id: 'answer-tourism',
-        text: "I'm here for tourism.",
-        translation: 'Estou aqui para turismo.',
-        audioUrl: '',
-        isCorrect: true,
-        feedbackTitle: 'Nice choice.',
-        feedbackBody: 'You answered clearly and matched the officer’s question.',
-        xpReward: 25,
-      },
-      {
-        id: 'answer-study',
-        text: "I'm here to study English.",
-        translation: 'Estou aqui para estudar inglês.',
-        audioUrl: '',
-        isCorrect: false,
-        feedbackTitle: 'Almost there.',
-        feedbackBody: 'This is a clear sentence, but it does not match the travel purpose in this scene.',
-        xpReward: 0,
-      },
-      {
-        id: 'answer-vague',
-        text: "I'm here.",
-        translation: 'Estou aqui.',
-        audioUrl: '',
-        isCorrect: false,
-        feedbackTitle: 'Keep going.',
-        feedbackBody: 'The officer needs one clear purpose. Try adding tourism, business or study.',
-        xpReward: 0,
-      },
-    ],
+    answers: shuffleItems(safeAnswers),
   }
 }
 
@@ -248,6 +262,7 @@ const buildSystemPrompt = () => [
   'The JSON must contain: runtimeScene and quality.',
   'runtimeScene must contain: title, subtitle, character, dialogue, question, questionTranslation, xpReward, emotionalFeedbackTitle, emotionalFeedbackBody, emotionalFeedbackTone, answers.',
   'answers must contain 3 or 4 items with: id, text, translation, isCorrect, feedbackTitle, feedbackBody, xpReward.',
+  'Randomize answer order. The correct answer must not always be first.',
   'Only correct answers may receive XP. Incorrect answers must have xpReward 0.',
   'Do not reuse generic immigration-purpose content unless the brief specifically asks for it.',
   'Adapt vocabulary, complexity, question and answers to the requested level, skill, grammar target, learning outcome and emotional design.',

@@ -272,6 +272,45 @@ const resolveAdminLessonForSceneAsset = (asset: SceneAssetRecord | null, lessons
   )
 }
 
+const runtimeSceneBelongsToSameMission = (
+  candidate: MissionRuntimeSceneRecord,
+  target: MissionRuntimeSceneRecord,
+) => {
+  const candidateLesson = normalizeAdminText(candidate.lessonId)
+  const targetLesson = normalizeAdminText(target.lessonId)
+  const candidateMission = normalizeAdminText(candidate.missionTitle)
+  const targetMission = normalizeAdminText(target.missionTitle)
+  const candidateAsset = normalizeAdminText(candidate.sceneAssetId)
+  const targetAsset = normalizeAdminText(target.sceneAssetId)
+
+  if (targetLesson && candidateLesson && targetLesson === candidateLesson) return true
+  if (targetMission && candidateMission && targetMission === candidateMission) return true
+  if (targetAsset && candidateAsset && targetAsset === candidateAsset) return true
+
+  return false
+}
+
+const computeMissionRuntimeSceneTotal = (
+  catalog: MissionRuntimeSceneRecord[],
+  target: MissionRuntimeSceneRecord,
+) =>
+  Math.max(
+    1,
+    catalog.filter((scene) =>
+      scene.id !== target.id &&
+      scene.publicationStatus !== 'archived' &&
+      runtimeSceneBelongsToSameMission(scene, target),
+    ).length + 1,
+  )
+
+const withComputedMissionRuntimeSceneTotal = (
+  catalog: MissionRuntimeSceneRecord[],
+  scene: MissionRuntimeSceneRecord,
+) => ({
+  ...scene,
+  sceneTotal: computeMissionRuntimeSceneTotal(catalog, scene),
+})
+
 const navItems: Array<{ key: SectionKey; label: string; icon: typeof LayoutDashboard }> = [
   { key: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { key: 'ai-control', label: 'AI Control Center', icon: BrainCircuit },
@@ -867,11 +906,14 @@ export function AdminScreen({
     sceneAssets[0] ??
     null
   const selectedAiMissionLesson = resolveAdminLessonForSceneAsset(selectedAiMissionAsset, lessons)
+  const aiMissionPreviewSceneTotal = aiMissionDraft
+    ? computeMissionRuntimeSceneTotal(missionRuntimeScenes, aiMissionDraft.runtimeScene)
+    : 1
   const aiMissionPreviewMission: MissionRuntimeMission | null = aiMissionDraft ? {
     id: aiMissionDraft.runtimeScene.missionTitle.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     title: aiMissionDraft.runtimeScene.missionTitle,
     chapterLabel: aiMissionDraft.runtimeScene.chapter,
-    sceneCount: aiMissionDraft.runtimeScene.sceneTotal,
+    sceneCount: aiMissionPreviewSceneTotal,
     posterImage: aiMissionDraft.runtimeScene.backgroundImageUrl,
     backgroundDesktop: aiMissionDraft.runtimeScene.backgroundImageUrl,
     backgroundMobile: aiMissionDraft.runtimeScene.backgroundImageUrlMobile || aiMissionDraft.runtimeScene.backgroundImageUrl,
@@ -1221,9 +1263,9 @@ export function AdminScreen({
   const saveMissionRuntimeItem = () => runAdminTask(
     'Salvando cena runtime...',
     `Cena "${missionRuntimeDraft.title}" salva com sucesso.`,
-    async () => {
+      async () => {
       const isExistingScene = Boolean(missionRuntimeDraft.id)
-      await upsertMissionRuntimeScene({
+      const sceneToSave = withComputedMissionRuntimeSceneTotal(missionRuntimeScenes, {
         ...missionRuntimeDraft,
         id: missionRuntimeDraft.id || missionRuntimeIdPreview,
         provenance: [
@@ -1236,6 +1278,7 @@ export function AdminScreen({
           },
         ],
       })
+      await upsertMissionRuntimeScene(sceneToSave)
       await refreshMissionRuntime()
       if (onRefresh) await onRefresh()
       setMissionRuntimeDraft(createEmptyMissionRuntimeScene())
@@ -1281,11 +1324,11 @@ export function AdminScreen({
       'Salvando Scene Draft...',
       `Draft "${aiMissionDraft.runtimeScene.title}" salvo no Mission Runtime.`,
       async () => {
-        await upsertMissionRuntimeScene({
+        await upsertMissionRuntimeScene(withComputedMissionRuntimeSceneTotal(missionRuntimeScenes, {
           ...aiMissionDraft.runtimeScene,
           publicationStatus: 'draft',
           active: true,
-        })
+        }))
         await refreshMissionRuntime()
         if (onRefresh) await onRefresh()
       },
@@ -1299,7 +1342,12 @@ export function AdminScreen({
       'Publicando Scene Draft...',
       `Scene "${aiMissionDraft.runtimeScene.title}" publicada para os alunos.`,
       async () => {
-        await upsertMissionRuntimeScene(markMissionRuntimeScenePublished(aiMissionDraft.runtimeScene, 'admin'))
+        await upsertMissionRuntimeScene(
+          markMissionRuntimeScenePublished(
+            withComputedMissionRuntimeSceneTotal(missionRuntimeScenes, aiMissionDraft.runtimeScene),
+            'admin',
+          ),
+        )
         await refreshMissionRuntime()
         if (onRefresh) await onRefresh()
         setAiMissionDraft(null)
@@ -1334,7 +1382,9 @@ export function AdminScreen({
     `Publicando "${scene.title}"...`,
     `"${scene.title}" publicada para os alunos.`,
     async () => {
-      await upsertMissionRuntimeScene(markMissionRuntimeScenePublished(scene, 'admin'))
+      await upsertMissionRuntimeScene(
+        markMissionRuntimeScenePublished(withComputedMissionRuntimeSceneTotal(missionRuntimeScenes, scene), 'admin'),
+      )
       await refreshMissionRuntime()
       if (onRefresh) await onRefresh()
     },
@@ -2353,9 +2403,14 @@ export function AdminScreen({
     }
 
     if (drawer.kind === 'runtime-scene') {
+      const computedRuntimeSceneTotal = computeMissionRuntimeSceneTotal(missionRuntimeScenes, {
+        ...missionRuntimeDraft,
+        id: missionRuntimeDraft.id || missionRuntimeIdPreview,
+      })
       const runtimePreviewScene = {
         ...missionRuntimeDraft,
         id: missionRuntimeDraft.id || missionRuntimeIdPreview,
+        sceneTotal: computedRuntimeSceneTotal,
         backgroundImageUrl:
           missionRuntimeDraft.backgroundImageUrl ||
           currentMissionRuntimeAsset?.imageUrlDesktop ||
@@ -2490,8 +2545,9 @@ export function AdminScreen({
                   <input
                     type="number"
                     min="1"
-                    value={missionRuntimeDraft.sceneTotal}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, sceneTotal: Number(event.target.value) || 1 }))}
+                    value={computedRuntimeSceneTotal}
+                    readOnly
+                    aria-label="Scene total automático"
                   />
                 </label>
               </div>
@@ -2554,50 +2610,11 @@ export function AdminScreen({
                 </label>
               </div>
               <div className="scene-asset-inline-grid">
-                <label>Companion URL
-                  <input
-                    value={missionRuntimeDraft.companionImageUrl}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, companionImageUrl: event.target.value }))}
-                    placeholder="/Images/Mascote/Sparklingo.png"
-                  />
-                </label>
                 <label>Audio URL
                   <input
                     value={missionRuntimeDraft.audioUrl}
                     onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, audioUrl: event.target.value }))}
                     placeholder="https://..."
-                  />
-                </label>
-              </div>
-              <div className="scene-asset-inline-grid">
-                <label>Feedback mascot (positive)
-                  <input
-                    value={missionRuntimeDraft.feedbackCompanionPositiveImageUrl}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, feedbackCompanionPositiveImageUrl: event.target.value }))}
-                    placeholder="/Images/Mascote/spark-happy.png"
-                  />
-                </label>
-                <label>Feedback mascot (retry)
-                  <input
-                    value={missionRuntimeDraft.feedbackCompanionRetryImageUrl}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, feedbackCompanionRetryImageUrl: event.target.value }))}
-                    placeholder="/Images/Mascote/spark-try-again.png"
-                  />
-                </label>
-              </div>
-              <div className="scene-asset-inline-grid">
-                <label>Story feedback mascot (positive)
-                  <input
-                    value={missionRuntimeDraft.storyFeedbackCompanionPositiveImageUrl}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, storyFeedbackCompanionPositiveImageUrl: event.target.value }))}
-                    placeholder="/Images/Mascote/spark-happy-story.png"
-                  />
-                </label>
-                <label>Story feedback mascot (retry)
-                  <input
-                    value={missionRuntimeDraft.storyFeedbackCompanionRetryImageUrl}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, storyFeedbackCompanionRetryImageUrl: event.target.value }))}
-                    placeholder="/Images/Mascote/spark-try-again-story.png"
                   />
                 </label>
               </div>
@@ -2651,46 +2668,8 @@ export function AdminScreen({
                     onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, backgroundScale: Number(event.target.value) || 80 }))}
                   />
                 </label>
-                <label>Escala do companion ({missionRuntimeDraft.companionScale}%)
-                  <input
-                    type="range"
-                    min="50"
-                    max="180"
-                    value={missionRuntimeDraft.companionScale}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, companionScale: Number(event.target.value) || 60 }))}
-                  />
-                </label>
               </div>
               <div className="scene-asset-inline-grid">
-                <label>Companion horizontal ({missionRuntimeDraft.companionOffsetX}%)
-                  <input
-                    type="range"
-                    min="-60"
-                    max="60"
-                    value={missionRuntimeDraft.companionOffsetX}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, companionOffsetX: Number(event.target.value) || 0 }))}
-                  />
-                </label>
-                <label>Companion vertical ({missionRuntimeDraft.companionOffsetY}%)
-                  <input
-                    type="range"
-                    min="-60"
-                    max="60"
-                    value={missionRuntimeDraft.companionOffsetY}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, companionOffsetY: Number(event.target.value) || -55 }))}
-                  />
-                </label>
-              </div>
-              <div className="scene-asset-inline-grid">
-                <label>Brilho do companion ({missionRuntimeDraft.companionGlowStrength}%)
-                  <input
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={missionRuntimeDraft.companionGlowStrength}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, companionGlowStrength: Number(event.target.value) || 0 }))}
-                  />
-                </label>
                 <label>XP reward
                   <input
                     type="number"
@@ -2714,67 +2693,6 @@ export function AdminScreen({
                   >
                     {missionRuntimeFeedbackToneOptions.map((tone) => <option key={tone} value={tone}>{tone}</option>)}
                   </select>
-                </label>
-              </div>
-                <div className="scene-asset-inline-grid">
-                  <label>XP badge icon URL
-                    <input
-                      value={missionRuntimeDraft.rewardIconUrl}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, rewardIconUrl: event.target.value }))}
-                    placeholder="https://.../xp-badge-icon.png"
-                  />
-                </label>
-                <label>Reward chest icon URL
-                  <input
-                    value={missionRuntimeDraft.rewardChestIconUrl}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, rewardChestIconUrl: event.target.value }))}
-                    placeholder="https://.../reward-chest-icon.png"
-                  />
-                </label>
-              </div>
-              <div className="scene-asset-inline-grid">
-                <label>Feedback icon URL
-                  <input
-                    value={missionRuntimeDraft.feedbackIconUrl}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, feedbackIconUrl: event.target.value }))}
-                    placeholder="https://.../feedback-icon.png"
-                  />
-                </label>
-              </div>
-              <div className="runtime-icon-preview-strip">
-                {[ 
-                  { label: 'XP badge', url: missionRuntimeDraft.rewardIconUrl },
-                  { label: 'Reward chest', url: missionRuntimeDraft.rewardChestIconUrl || missionRuntimeDraft.rewardIconUrl },
-                  { label: 'Feedback', url: missionRuntimeDraft.feedbackIconUrl },
-                  { label: 'Prompt audio', url: missionRuntimeDraft.promptAudioIconUrl },
-                  { label: 'Answer audio', url: missionRuntimeDraft.answerAudioIconUrl },
-                  { label: 'Stage mascot +', url: missionRuntimeDraft.feedbackCompanionPositiveImageUrl || missionRuntimeDraft.companionImageUrl },
-                  { label: 'Stage mascot retry', url: missionRuntimeDraft.feedbackCompanionRetryImageUrl || missionRuntimeDraft.companionImageUrl },
-                  { label: 'Story mascot +', url: missionRuntimeDraft.storyFeedbackCompanionPositiveImageUrl || missionRuntimeDraft.feedbackCompanionPositiveImageUrl || missionRuntimeDraft.companionImageUrl },
-                  { label: 'Story mascot retry', url: missionRuntimeDraft.storyFeedbackCompanionRetryImageUrl || missionRuntimeDraft.feedbackCompanionRetryImageUrl || missionRuntimeDraft.companionImageUrl },
-                ].map((item) => (
-                  <div key={item.label} className="runtime-icon-preview">
-                    <span>{item.label}</span>
-                    <div className="runtime-icon-preview-orb">
-                      {item.url ? <img src={item.url} alt={item.label} /> : <Sparkles size={16} />}
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="scene-asset-inline-grid">
-                <label>Prompt audio icon URL
-                  <input
-                    value={missionRuntimeDraft.promptAudioIconUrl}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, promptAudioIconUrl: event.target.value }))}
-                    placeholder="https://.../prompt-icon.png"
-                  />
-                </label>
-                <label>Answer audio icon URL
-                  <input
-                    value={missionRuntimeDraft.answerAudioIconUrl}
-                    onChange={(event) => setMissionRuntimeDraft((current) => ({ ...current, answerAudioIconUrl: event.target.value }))}
-                    placeholder="https://.../answer-icon.png"
-                  />
                 </label>
               </div>
               <label>Feedback body
@@ -3269,6 +3187,7 @@ export function AdminScreen({
                         mission={aiMissionPreviewMission}
                         scenes={[aiMissionDraft.runtimeScene]}
                         learnerLevel={1}
+                        disableResponseTimer
                         streakDays={1}
                         totalXp={130}
                         avatarUrl={null}
@@ -4147,7 +4066,7 @@ export function AdminScreen({
                         <p>{scene.question}</p>
                         <div className="scene-asset-card-meta">
                           <span>{scene.character}</span>
-                          <span>{scene.sceneNumber}/{scene.sceneTotal}</span>
+                          <span>{scene.sceneNumber}/{computeMissionRuntimeSceneTotal(missionRuntimeScenes, scene)}</span>
                           <span>{scene.answers.length} respostas</span>
                           <span className={`runtime-publication-badge is-${scene.publicationStatus}`}>
                             {missionRuntimePublicationLabels[scene.publicationStatus]}
