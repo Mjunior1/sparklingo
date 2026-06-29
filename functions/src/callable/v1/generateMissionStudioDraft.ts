@@ -1,6 +1,7 @@
 import { HttpsError, onCall } from 'firebase-functions/v2/https'
 
 import { generateAIText } from '../../ai/gateway/aiGateway'
+import { openRouterApiKey } from '../../config/secrets'
 
 type Brief = {
   world?: string
@@ -40,7 +41,7 @@ type DraftDefaults = {
 }
 
 const fallbackBackground = '/Images/Airport/MISSION SCENE — AIRPORT IMMIGRATION.png'
-const missionStudioPromptVersion = 'mission-studio-mock-v1'
+const missionStudioPromptVersion = 'mission-studio-openrouter-v1'
 
 const cleanString = (value: unknown, fallback = '') =>
   typeof value === 'string' && value.trim() ? value.trim() : fallback
@@ -103,6 +104,8 @@ const buildRuntimeScene = (
   brief: Required<Brief>,
   sceneAsset: SceneAssetInput | null,
   defaults: DraftDefaults,
+  generatedScene?: Record<string, unknown> | null,
+  generationOverride?: Record<string, unknown>,
 ) => {
   const background =
     cleanString(sceneAsset?.heroBackgroundImageUrl) ||
@@ -121,7 +124,22 @@ const buildRuntimeScene = (
     model: 'mock-mission-studio-v1',
     promptVersion: missionStudioPromptVersion,
     generatedAt,
+    ...generationOverride,
   }
+  const rawAnswers = Array.isArray(generatedScene?.answers) ? generatedScene.answers : []
+  const generatedAnswers = rawAnswers
+    .filter((answer): answer is Record<string, unknown> => Boolean(answer) && typeof answer === 'object')
+    .slice(0, 4)
+    .map((answer, index) => ({
+      id: cleanString(answer.id, `answer-${index + 1}`),
+      text: cleanString(answer.text, index === 0 ? 'I can answer clearly.' : 'I am not sure.'),
+      translation: cleanString(answer.translation, 'Resposta em português.'),
+      audioUrl: cleanString(answer.audioUrl),
+      isCorrect: !!answer.isCorrect,
+      feedbackTitle: cleanString(answer.feedbackTitle, answer.isCorrect ? 'Clear answer.' : 'Try again.'),
+      feedbackBody: cleanString(answer.feedbackBody, 'Keep the answer natural and connected to the scene.'),
+      xpReward: answer.isCorrect ? cleanNumber(answer.xpReward, 25) : 0,
+    }))
 
   return {
     id: cleanString(defaults.nextId, `RT-${Date.now()}`),
@@ -131,12 +149,12 @@ const buildRuntimeScene = (
     chapter: 'Chapter 1',
     sceneNumber: 1,
     sceneTotal: 1,
-    title: brief.mission,
-    subtitle: brief.learningIntent,
-    character: brief.scenario.toUpperCase(),
-    dialogue: brief.scenario,
-    question: "What's the purpose of your trip?",
-    questionTranslation: 'Qual é o propósito da sua viagem?',
+    title: cleanString(generatedScene?.title, brief.mission),
+    subtitle: cleanString(generatedScene?.subtitle, brief.learningIntent),
+    character: cleanString(generatedScene?.character, brief.scenario).toUpperCase(),
+    dialogue: cleanString(generatedScene?.dialogue, brief.scenario),
+    question: cleanString(generatedScene?.question, "What's the purpose of your trip?"),
+    questionTranslation: cleanString(generatedScene?.questionTranslation, 'Qual é o propósito da sua viagem?'),
     backgroundImageUrl: background,
     backgroundImageUrlMobile: mobileBackground,
     backgroundFocalX: cleanNumber(sceneAsset?.focalPointX, 56),
@@ -159,10 +177,10 @@ const buildRuntimeScene = (
     feedbackIconUrl: '',
     rewardIconUrl: '',
     rewardChestIconUrl: '',
-    xpReward: 25,
-    emotionalFeedbackTitle: 'That sounded natural.',
-    emotionalFeedbackBody: 'Resposta clara, simples e natural para a imigração.',
-    emotionalFeedbackTone: 'celebration',
+    xpReward: cleanNumber(generatedScene?.xpReward, 25),
+    emotionalFeedbackTitle: cleanString(generatedScene?.emotionalFeedbackTitle, 'That sounded natural.'),
+    emotionalFeedbackBody: cleanString(generatedScene?.emotionalFeedbackBody, 'Resposta clara, simples e natural para a cena.'),
+    emotionalFeedbackTone: cleanString(generatedScene?.emotionalFeedbackTone, 'celebration'),
     nextSceneId: '',
     active: true,
     publicationStatus: 'draft',
@@ -177,7 +195,7 @@ const buildRuntimeScene = (
       },
     ],
     order: cleanNumber(defaults.order, 1),
-    answers: [
+    answers: generatedAnswers.length >= 2 && generatedAnswers.some((answer) => answer.isCorrect) ? generatedAnswers : [
       {
         id: 'answer-tourism',
         text: "I'm here for tourism.",
@@ -212,7 +230,44 @@ const buildRuntimeScene = (
   }
 }
 
-export const generateMissionStudioDraft = onCall(async (request) => {
+const extractJson = (value: string) => {
+  const trimmed = value.trim()
+  if (!trimmed) return null
+  try {
+    return JSON.parse(trimmed)
+  } catch {
+    const match = trimmed.match(/\{[\s\S]*\}/)
+    if (!match) return null
+    return JSON.parse(match[0])
+  }
+}
+
+const buildSystemPrompt = () => [
+  'You are SparkLingo Mission Studio, an editorial AI that generates ONE playable cinematic English-learning scene.',
+  'Return only valid JSON. No markdown.',
+  'The JSON must contain: runtimeScene and quality.',
+  'runtimeScene must contain: title, subtitle, character, dialogue, question, questionTranslation, xpReward, emotionalFeedbackTitle, emotionalFeedbackBody, emotionalFeedbackTone, answers.',
+  'answers must contain 3 or 4 items with: id, text, translation, isCorrect, feedbackTitle, feedbackBody, xpReward.',
+  'Only correct answers may receive XP. Incorrect answers must have xpReward 0.',
+  'Do not reuse generic immigration-purpose content unless the brief specifically asks for it.',
+  'Adapt vocabulary, complexity, question and answers to the requested level, skill, grammar target, learning outcome and emotional design.',
+  'For B2, use more nuanced and context-rich language than A1/A2.',
+  'For Writing, make the interaction feel like choosing or composing a written response, not a speaking drill.',
+].join('\n')
+
+const buildUserPrompt = (brief: Required<Brief>) => JSON.stringify({
+  task: 'Generate one SparkLingo Mission Runtime Scene Draft.',
+  brief,
+  outputRules: {
+    language: 'English for original text, Brazilian Portuguese for translations.',
+    sceneCount: 1,
+    keepItCinematic: true,
+    noSchoolExerciseTone: true,
+    noRepeatedDefaultQuestion: true,
+  },
+})
+
+export const generateMissionStudioDraft = onCall({ secrets: [openRouterApiKey] }, async (request) => {
   if (!request.auth?.uid) {
     throw new HttpsError('unauthenticated', 'Faça login para gerar cenas no AI Mission Studio.')
   }
@@ -220,23 +275,41 @@ export const generateMissionStudioDraft = onCall(async (request) => {
   const brief = normalizeBrief((request.data?.brief ?? {}) as Brief)
   const sceneAsset = (request.data?.sceneAsset ?? null) as SceneAssetInput | null
   const defaults = (request.data?.defaults ?? {}) as DraftDefaults
+  const generatedAt = new Date().toISOString()
 
   const gatewayResponse = await generateAIText({
     feature: 'mission-studio',
     userId: request.auth.uid,
     missionId: brief.mission,
-    provider: 'mock',
+    provider: 'openrouter',
+    model: 'gpt-4.1-mini',
     input: {
-      systemPrompt: 'Generate a SparkLingo Mission Runtime scene draft as JSON.',
-      userPrompt: JSON.stringify(brief),
+      systemPrompt: buildSystemPrompt(),
+      userPrompt: buildUserPrompt(brief),
       jsonMode: true,
     },
     metadata: {
       level: brief.level,
       skill: brief.skill,
+      grammarTarget: brief.grammarTarget,
       sceneAssetId: brief.sceneAssetId || null,
     },
   })
+
+  const parsed = extractJson(gatewayResponse.text) as Record<string, unknown> | null
+  const runtimePayload = parsed?.runtimeScene && typeof parsed.runtimeScene === 'object'
+    ? parsed.runtimeScene as Record<string, unknown>
+    : parsed
+  const generation = {
+    provider: gatewayResponse.provider,
+    model: gatewayResponse.model,
+    promptVersion: missionStudioPromptVersion,
+    generatedAt,
+  }
+  const runtimeScene = buildRuntimeScene(brief, sceneAsset, defaults, runtimePayload, generation)
+  const quality = parsed?.quality && typeof parsed.quality === 'object'
+    ? parsed.quality
+    : buildQualityReport(brief)
 
   return {
     ok: true,
@@ -248,15 +321,10 @@ export const generateMissionStudioDraft = onCall(async (request) => {
     },
     draft: {
       source: 'ai',
-      generation: {
-        provider: gatewayResponse.provider,
-        model: gatewayResponse.model,
-        promptVersion: missionStudioPromptVersion,
-        generatedAt: new Date().toISOString(),
-      },
+      generation,
       brief,
-      runtimeScene: buildRuntimeScene(brief, sceneAsset, defaults),
-      quality: buildQualityReport(brief),
+      runtimeScene,
+      quality,
       validation: {
         valid: true,
         issues: [],

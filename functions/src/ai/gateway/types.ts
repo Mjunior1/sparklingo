@@ -1,5 +1,5 @@
 export type AIGatewayFeature = 'mission-studio'
-export type AIGatewayProviderName = 'mock'
+export type AIGatewayProviderName = 'mock' | 'openrouter'
 
 export type AIGatewayRequest = {
   feature: AIGatewayFeature

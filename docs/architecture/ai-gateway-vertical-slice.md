@@ -1,6 +1,6 @@
 # AI Gateway Vertical Slice
 
-This slice validates the first end-to-end AI flow without integrating a paid or external provider yet.
+This slice validates the first end-to-end AI flow used by the Admin AI Mission Studio.
 
 ## Flow
 
@@ -9,8 +9,8 @@ AI Mission Studio Admin
   -> Firebase Callable Function: generateMissionStudioDraft
   -> AI Gateway: generateAIText()
   -> Provider Registry
-  -> MockAIProvider
-  -> normalized draft response
+  -> OpenRouterAIProvider
+  -> generated draft JSON
   -> Runtime Preview
   -> Save Draft
   -> Publish
@@ -19,11 +19,11 @@ AI Mission Studio Admin
 
 ## Current Provider
 
-Only `MockAIProvider` is enabled.
+`OpenRouterAIProvider` is the primary provider for Mission Studio.
 
-It returns deterministic JSON through the same gateway contract that OpenRouter or another model provider will use later.
+`MockAIProvider` remains available as a development fallback and should not be treated as production generation.
 
-No API tokens are required for this slice.
+The Firebase Functions secret `OPENROUTER_API_KEY` is required for real generation.
 
 ## Function
 
@@ -37,8 +37,8 @@ Responsibilities:
 
 - Requires an authenticated Firebase user.
 - Receives the Mission Studio brief from the Admin.
-- Calls the AI Gateway using `provider: "mock"`.
-- Builds a Mission Runtime compatible draft.
+- Calls the AI Gateway using `provider: "openrouter"`.
+- Maps generated JSON into a Mission Runtime compatible draft.
 - Returns quality metrics and schema validation status.
 
 ## Editorial Publishing Loop
@@ -82,17 +82,16 @@ This is intentionally not a full versioning system yet. It is enough to validate
 - normalized response
 - success/error telemetry
 
-## Provider Replacement Path
+## OpenRouter Configuration
 
-To add OpenRouter later:
+Configure the provider secret before deploying Functions:
 
-1. Add `openRouterAiProvider.ts` implementing `MissionAIProvider`.
-2. Register it in `providerRegistry.ts`.
-3. Add the provider name to `AIGatewayProviderName`.
-4. Read `OPENROUTER_API_KEY` from Firebase Secrets inside the real provider or its function wrapper.
-5. Keep the frontend unchanged.
+```bash
+firebase functions:secrets:set OPENROUTER_API_KEY --project sparklingo-d59aa
+firebase deploy --only functions --project sparklingo-d59aa
+```
 
-The Admin and Mission Studio should continue calling `generateMissionStudioDraft`; only backend provider selection changes. The publishing loop remains unchanged.
+The Admin and Mission Studio continue calling `generateMissionStudioDraft`; provider details stay server-side.
 
 ## Why This Exists
 
