@@ -1556,7 +1556,7 @@ export function AdminScreen({
           isCorrect: false,
           feedbackTitle: '',
           feedbackBody: '',
-          xpReward: current.xpReward || 25,
+          xpReward: 0,
         },
       ],
     }))
@@ -2731,7 +2731,7 @@ export function AdminScreen({
             <div className="scene-asset-safearea-panel">
               <div className="media-slot-head">
                 <strong>Answers & narrative decisions</strong>
-                <span>Monte as escolhas do usuário com feedback, áudio e recompensa de XP, mantendo a lógica de diálogo narrativo.</span>
+                <span>Monte as escolhas do usuário com feedback e áudio. A resposta correta usa o XP da cena; respostas incorretas valem 0 XP.</span>
               </div>
               <div className="mission-runtime-answer-stack">
                 {missionRuntimeDraft.answers.map((answer, index) => (
@@ -2755,14 +2755,6 @@ export function AdminScreen({
                         <input
                           value={answer.audioUrl}
                           onChange={(event) => updateMissionRuntimeAnswer(index, 'audioUrl', event.target.value)}
-                        />
-                      </label>
-                      <label>XP reward
-                        <input
-                          type="number"
-                          min="0"
-                          value={answer.xpReward}
-                          onChange={(event) => updateMissionRuntimeAnswer(index, 'xpReward', Number(event.target.value) || 0)}
                         />
                       </label>
                     </div>

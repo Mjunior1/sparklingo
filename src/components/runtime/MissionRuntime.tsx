@@ -455,9 +455,11 @@ const buildFeedback = (
     feedbackExperience?.payload.body ||
     scene.emotionalFeedbackBody,
   xp:
-    selectedAnswer?.xpReward ??
-    feedbackExperience?.payload.xpReward ??
-    scene.xpReward,
+    selectedAnswer
+      ? selectedAnswer.isCorrect
+        ? Math.max(0, scene.xpReward)
+        : 0
+      : feedbackExperience?.payload.xpReward ?? scene.xpReward,
   tone:
     feedbackExperience?.payload.tone ||
     scene.emotionalFeedbackTone,
@@ -1074,7 +1076,7 @@ export function MissionRuntime({
           : 'React to the scene and Spark will guide your next move.'
       : ''
   const feedbackXpValue = rewardVisible && selectedAnswer?.isCorrect
-    ? Math.max(0, selectedAnswer.xpReward || feedback?.xp || currentScene?.xpReward || 0)
+    ? Math.max(0, currentScene?.xpReward || feedback?.xp || 0)
     : 0
   const runtimeFocusMode =
     phase === 'scene'
@@ -1417,7 +1419,7 @@ export function MissionRuntime({
     playRuntimeAnswerCue(answer.isCorrect)
 
     if (answer.isCorrect) {
-      setEarnedXp((current) => current + Math.max(0, answer.xpReward))
+      setEarnedXp((current) => current + Math.max(0, currentScene.xpReward))
     }
 
     setComboCount((current) => (answer.isCorrect ? current + 1 : Math.max(0, current - 1)))

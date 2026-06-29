@@ -109,6 +109,14 @@ const shuffleDraftItems = <T,>(items: T[]) => {
   return shuffled
 }
 
+const normalizeAnswerXp = (scene: MissionRuntimeSceneRecord): MissionRuntimeSceneRecord => ({
+  ...scene,
+  answers: scene.answers.map((answer) => ({
+    ...answer,
+    xpReward: answer.isCorrect ? Math.max(0, scene.xpReward) : 0,
+  })),
+})
+
 const createQualityReport = (brief: AiMissionStudioBrief): AiMissionStudioQualityReport => ({
   linguisticQuality: {
     grammarCoverage: buildMetric(
@@ -235,7 +243,7 @@ export const createLocalAiMissionDraft = (
         isCorrect: false,
         feedbackTitle: 'Almost there.',
         feedbackBody: 'This is a clear sentence, but it does not match the travel purpose in this scene.',
-        xpReward: 15,
+        xpReward: 0,
       },
       {
         id: 'answer-vague',
@@ -245,18 +253,19 @@ export const createLocalAiMissionDraft = (
         isCorrect: false,
         feedbackTitle: 'Keep going.',
         feedbackBody: 'The officer needs one clear purpose. Try adding tourism, business or study.',
-        xpReward: 10,
+        xpReward: 0,
       },
     ]),
   }
+  const normalizedRuntimeScene = normalizeAnswerXp(runtimeScene)
 
   return {
     source,
     generation,
     brief,
-    runtimeScene,
+    runtimeScene: normalizedRuntimeScene,
     quality: createQualityReport(brief),
-    validation: validateAiMissionDraft(runtimeScene),
+    validation: validateAiMissionDraft(normalizedRuntimeScene),
   }
 }
 
@@ -297,10 +306,10 @@ const normalizeDraft = (
       }
     : fallback.runtimeScene
 
-  const runtimeSceneWithShuffledAnswers = {
+  const runtimeSceneWithShuffledAnswers = normalizeAnswerXp({
     ...runtimeScene,
     answers: shuffleDraftItems(runtimeScene.answers),
-  }
+  })
   const validation = validateAiMissionDraft(runtimeSceneWithShuffledAnswers)
   return {
     source: payload?.source === 'ai' ? 'ai' : fallback.source,
