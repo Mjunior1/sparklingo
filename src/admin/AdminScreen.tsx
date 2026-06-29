@@ -2954,7 +2954,7 @@ export function AdminScreen({
   }
 
   return (
-    <div className={`cms-shell ${activeSection === 'ai-mission-studio' ? 'cms-shell-wide' : ''}`}>
+    <div className="cms-shell">
       <aside className="cms-sidebar">
         <div className="cms-brand">
           <div className="cms-brand-mark"><Shield size={18} /></div>

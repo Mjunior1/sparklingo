@@ -1,6 +1,7 @@
 .cms-shell {
-  width: min(1500px, 100%);
-  margin: 0 auto;
+  width: 100%;
+  max-width: none;
+  margin: 0;
   display: grid;
   grid-template-columns: 260px minmax(0, 1fr);
   gap: 24px;
@@ -121,6 +122,7 @@
 }
 
 .cms-main {
+  min-width: 0;
   display: grid;
   gap: 22px;
 }
@@ -436,11 +438,6 @@
   grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.08fr);
   gap: 18px;
   align-items: start;
-}
-
-.cms-shell-wide {
-  width: min(1880px, calc(100vw - 32px));
-  grid-template-columns: 260px minmax(0, 1fr);
 }
 
 .cms-quickwins-preview-wrap,
