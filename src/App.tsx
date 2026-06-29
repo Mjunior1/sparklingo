@@ -134,6 +134,45 @@ const getAssetImage = (
   return asset.imageUrl || asset.imageUrlDesktop || asset.mobileImageUrl || asset.imageUrlMobile || asset.heroBackgroundImageUrl
 }
 
+const runtimeSceneBelongsToMission = (
+  scene: MissionRuntimeSceneRecord,
+  asset: SceneAssetRecord,
+  lesson: LessonCatalogItem | null,
+) => {
+  if (scene.sceneAssetId && scene.sceneAssetId === asset.id) return true
+  if (lesson?.id && scene.lessonId && scene.lessonId === lesson.id) return true
+
+  const sceneMission = normalizeText(scene.missionTitle)
+  const assetMission = normalizeText(asset.mission)
+  const assetTitle = normalizeText(asset.title)
+  const lessonMission = normalizeText(lesson?.missionTitle)
+  const lessonTitle = normalizeText(lesson?.title)
+
+  return Boolean(
+    sceneMission &&
+      (
+        (assetMission && (sceneMission.includes(assetMission) || assetMission.includes(sceneMission))) ||
+        (assetTitle && (sceneMission.includes(assetTitle) || assetTitle.includes(sceneMission))) ||
+        (lessonMission && (sceneMission.includes(lessonMission) || lessonMission.includes(sceneMission))) ||
+        (lessonTitle && (sceneMission.includes(lessonTitle) || lessonTitle.includes(sceneMission)))
+      ),
+  )
+}
+
+const getRuntimeSceneCountForMission = (
+  runtimeScenes: MissionRuntimeSceneRecord[],
+  asset: SceneAssetRecord,
+  lesson: LessonCatalogItem | null,
+) => {
+  const sceneIds = new Set(
+    runtimeScenes
+      .filter((scene) => scene.active && runtimeSceneBelongsToMission(scene, asset, lesson))
+      .map((scene) => scene.id),
+  )
+
+  return sceneIds.size
+}
+
 type MissionVisual = {
   id: string
   asset: SceneAssetRecord
@@ -158,10 +197,12 @@ const buildMissionVisual = (
   quizzes: QuizCatalogItem[],
   asset: SceneAssetRecord,
   progressionOrder: number,
+  runtimeScenes: MissionRuntimeSceneRecord[],
   savedProgress?: number,
 ): MissionVisual => {
   const lessonQuizzes = lesson ? quizzes.filter((quiz) => quiz.lessonId === lesson.id) : []
-  const sceneCount = Math.max(lessonQuizzes.length || 0, 5)
+  const runtimeSceneCount = getRuntimeSceneCountForMission(runtimeScenes, asset, lesson)
+  const sceneCount = Math.max(runtimeSceneCount || lessonQuizzes.length || 0, 1)
   const progressPercent = clampPercent(savedProgress ?? lesson?.progress ?? 0)
 
   return {
@@ -332,10 +373,11 @@ function App() {
         quizCatalog,
         asset,
         index,
+        runtimeSceneSourceCatalog,
         missionProgressMap[asset.id],
       ),
     )
-  }, [activeSceneAssets, lessonsCatalog, missionProgressMap, quizCatalog])
+  }, [activeSceneAssets, lessonsCatalog, missionProgressMap, quizCatalog, runtimeSceneSourceCatalog])
 
   const featuredMission = useMemo(() => {
     const featuredAsset = activeSceneAssets.find((asset) => asset.featuredHero) ?? null
