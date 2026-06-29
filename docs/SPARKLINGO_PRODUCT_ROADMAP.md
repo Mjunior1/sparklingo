@@ -78,7 +78,7 @@ Recommended allocation:
 Goal:
 Make the student runtime feel consistent, cinematic, readable, and pedagogically clear.
 
-### Next Sprint
+### Completed in Sprint 1
 
 - Fix Home vs Runtime scene count inconsistency.
 - Make the question prompt more horizontal and easier to read.
@@ -93,7 +93,7 @@ Make the student runtime feel consistent, cinematic, readable, and pedagogically
 - Refine mobile-first runtime pacing.
 - Add stronger emotional state transitions.
 
-Status: `Next Sprint`
+Status: `Sprint 1 Complete`
 
 ---
 
@@ -301,6 +301,14 @@ Success criteria:
 - Wrong answers no longer add XP.
 - Correct answers use the scene/question XP.
 
+Status: `Complete`
+
+Implementation notes:
+
+- Home now derives mission scene totals from the same runtime scene source used by Mission Runtime.
+- Long prompts use a wider, more cinematic composition instead of a narrow vertical quiz card.
+- XP is centralized at scene/question level: correct answers receive the scene XP, wrong answers receive 0 XP.
+
 ---
 
 ## Sprint 2 — Admin Organization
@@ -333,6 +341,32 @@ Success criteria:
 - Editor writes less.
 - AI asks useful questions.
 - Generated scene better respects level, skill, grammar target, and learning intent.
+
+---
+
+# Parking Lot
+
+This section records product and UX observations discovered during development.
+
+Items here must not be implemented immediately. They should be revisited during sprint planning and converted into scoped work only when they become the sprint focus.
+
+## Runtime Visual Polish
+
+Goal:
+Make the Mission Runtime feel more like a cinematic narrative moment and less like a quiz interface.
+
+Observed opportunities:
+
+- Make the question feel like character dialogue instead of a quiz card.
+- Improve scene hierarchy from `background -> question -> answers` toward `scene -> character -> dialogue -> student decision`.
+- Study better use of horizontal space without creating dashboard-like layout.
+- Reduce the feeling of a vertical question column where possible.
+- Make Spark's presence dynamic:
+  - more present during introduction and emotional beats
+  - more discreet during question/decision moments
+- Preserve the current runtime architecture until this becomes a dedicated sprint.
+
+Status: `Parking Lot`
 
 ---
 
@@ -381,4 +415,3 @@ For editors:
 For the product:
 
 > "Every technical system should disappear behind emotion, confidence, and story."
-
