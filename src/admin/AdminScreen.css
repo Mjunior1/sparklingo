@@ -2033,6 +2033,98 @@
   overflow: hidden;
 }
 
+.ai-mission-director-panel {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) auto;
+  gap: 18px;
+  align-items: center;
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(139, 92, 246, 0.18);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(247, 241, 255, 0.74)),
+    radial-gradient(circle at 18% 0%, rgba(139, 92, 246, 0.16), transparent 42%),
+    radial-gradient(circle at 92% 20%, rgba(255, 204, 102, 0.13), transparent 36%);
+}
+
+.ai-mission-director-copy h2 {
+  margin: 6px 0 8px;
+  color: #22185b;
+  font-size: clamp(1.8rem, 3vw, 3rem);
+  letter-spacing: -0.05em;
+}
+
+.ai-mission-director-copy p {
+  max-width: 760px;
+  margin: 0;
+  color: #675c89;
+  font-weight: 750;
+  line-height: 1.6;
+}
+
+.ai-mission-director-status {
+  display: grid;
+  gap: 12px;
+  justify-items: end;
+}
+
+.ai-mission-director-score {
+  min-width: 150px;
+  padding: 14px 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(139, 92, 246, 0.18);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 18px 42px rgba(54, 34, 120, 0.08);
+}
+
+.ai-mission-director-score strong {
+  display: block;
+  color: #2b2168;
+  font-size: 1.8rem;
+  line-height: 1;
+}
+
+.ai-mission-director-score span {
+  color: #7b719f;
+  font-size: 0.78rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.ai-mission-director-presets {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.ai-mission-director-presets button {
+  display: grid;
+  gap: 6px;
+  text-align: left;
+  padding: 15px;
+  border-radius: 22px;
+  border: 1px solid rgba(139, 92, 246, 0.16);
+  color: #2b2168;
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.86), rgba(246, 240, 255, 0.62)),
+    rgba(255, 255, 255, 0.66);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.ai-mission-director-presets button:hover {
+  transform: translateY(-2px);
+  border-color: rgba(139, 92, 246, 0.34);
+  box-shadow: 0 16px 36px rgba(80, 55, 160, 0.11);
+}
+
+.ai-mission-director-presets button span {
+  color: #6d638d;
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
 .ai-studio-brief-panel::before {
   content: '';
   position: absolute;
@@ -2175,9 +2267,18 @@
 }
 
 @media (max-width: 1180px) {
+  .ai-mission-director-panel,
   .ai-studio-grid,
   .ai-quality-columns,
   .ai-quality-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-mission-director-status {
+    justify-items: stretch;
+  }
+
+  .ai-mission-director-presets {
     grid-template-columns: 1fr;
   }
 

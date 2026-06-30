@@ -234,6 +234,56 @@ const questionKinds: Array<QuizQuestionItem['kind']> = ['multiple-choice', 'drag
 const aiMissionStudioLevels: AiMissionStudioLevel[] = ['A1', 'A2', 'B1', 'B2']
 const aiMissionStudioSkills: AiMissionStudioSkill[] = ['Speaking', 'Listening', 'Reading', 'Writing', 'Mixed']
 const aiMissionStudioImpactLevels: AiMissionStudioImpactLevel[] = ['Low', 'Medium', 'High']
+const aiMissionDirectorRequiredFields: Array<keyof AiMissionStudioBrief> = [
+  'world',
+  'mission',
+  'level',
+  'skill',
+  'grammarTarget',
+  'learningIntent',
+  'confidenceGoal',
+  'scenario',
+]
+const aiMissionDirectorPresets: Array<{
+  id: string
+  title: string
+  description: string
+  patch: Partial<AiMissionStudioBrief>
+}> = [
+  {
+    id: 'authority-confidence',
+    title: 'Figura de autoridade',
+    description: 'Leve pressão, resposta curta e recuperação gentil.',
+    patch: {
+      pressureLevel: 'Low',
+      emotionalTone: 'Leve tensão.',
+      confidenceGoal: 'Reduzir a hesitação ao responder uma figura de autoridade.',
+      failureMode: 'Responder de forma vaga ou escolher uma resposta incompatível com a pergunta.',
+      recoveryStyle: 'Gentil e encorajador.',
+    },
+  },
+  {
+    id: 'real-world-survival',
+    title: 'Sobrevivência real',
+    description: 'Foco em frase útil, transferência prática e clareza.',
+    patch: {
+      skill: 'Speaking',
+      realLifeTransfer: 'Pode ser reutilizado em aeroportos, entrevistas de visto, consulados e controle de fronteira.',
+      recoveryStyle: 'Direto, calmo e sem punição.',
+    },
+  },
+  {
+    id: 'listening-first',
+    title: 'Escuta contextual',
+    description: 'NPC pergunta primeiro; aluno responde como numa situação real.',
+    patch: {
+      skill: 'Listening',
+      pressureLevel: 'Medium',
+      emotionalTone: 'Atenção contextual.',
+      confidenceGoal: 'Ajudar o aluno a reconhecer a intenção da pergunta antes de responder.',
+    },
+  },
+]
 const missionRuntimePublicationLabels: Record<MissionRuntimePublicationStatus, string> = {
   draft: 'Draft',
   published: 'Publicado',
@@ -890,6 +940,17 @@ export function AdminScreen({
     backgroundMobile: aiMissionDraft.runtimeScene.backgroundImageUrlMobile || aiMissionDraft.runtimeScene.backgroundImageUrl,
     asset: selectedAiMissionAsset ?? defaultSceneAssetDraft,
   } : null
+  const aiMissionBriefCompletion = useMemo(() => {
+    const completed = aiMissionDirectorRequiredFields.filter((field) => String(aiMissionBrief[field] ?? '').trim()).length
+    return Math.round((completed / aiMissionDirectorRequiredFields.length) * 100)
+  }, [aiMissionBrief])
+  const aiMissionDirectorNextQuestion = useMemo(() => {
+    if (!aiMissionBrief.mission.trim()) return 'Qual situação real o aluno precisa dominar primeiro?'
+    if (!aiMissionBrief.learningIntent.trim()) return 'Qual comportamento real o aluno deve conseguir executar com confiança?'
+    if (!aiMissionBrief.confidenceGoal.trim()) return 'Qual medo ou hesitação esta cena precisa reduzir?'
+    if (!aiMissionBrief.realLifeTransfer.trim()) return 'Onde esta habilidade será reutilizada fora do app?'
+    return 'Brief pronto para gerar uma cena. Revise se o nível, skill e gramática realmente combinam com a intenção.'
+  }, [aiMissionBrief.confidenceGoal, aiMissionBrief.learningIntent, aiMissionBrief.mission, aiMissionBrief.realLifeTransfer])
 
   const questionPreview = useMemo(() => {
     if (questionDraft.kind === 'drag-fill') {
@@ -1259,6 +1320,43 @@ export function AdminScreen({
 
   const updateAiMissionBrief = <Key extends keyof AiMissionStudioBrief>(field: Key, value: AiMissionStudioBrief[Key]) => {
     setAiMissionBrief((current) => ({ ...current, [field]: value }))
+  }
+
+  const applyAiMissionDirectorSuggestion = () => {
+    setAiMissionBrief((current) => {
+      const scenario = current.scenario.trim() || 'real-world situation'
+      const mission = current.mission.trim() || 'New Mission'
+      const grammar = current.grammarTarget.trim() || 'target language'
+      const skill = current.skill
+      return {
+        ...current,
+        learningOutcome:
+          current.learningOutcome.trim() ||
+          `Student should be able to handle ${scenario.toLowerCase()} using ${grammar}.`,
+        learningIntent:
+          current.learningIntent.trim() ||
+          `O aluno deve conseguir agir com clareza e confiança em "${mission}", usando ${grammar} em uma interação real de ${skill.toLowerCase()}.`,
+        confidenceGoal:
+          current.confidenceGoal.trim() ||
+          `Reduzir a hesitação do aluno ao responder em uma situação de ${scenario.toLowerCase()}.`,
+        failureMode:
+          current.failureMode.trim() ||
+          'Responder de forma vaga, incompatível com a pergunta ou com pouca clareza comunicativa.',
+        recoveryStyle:
+          current.recoveryStyle.trim() ||
+          'Gentil, específico e orientado à próxima tentativa.',
+        emotionalTone:
+          current.emotionalTone.trim() ||
+          (current.pressureLevel === 'High' ? 'Tensão controlada.' : current.pressureLevel === 'Medium' ? 'Atenção prática.' : 'Leve tensão.'),
+        realLifeTransfer:
+          current.realLifeTransfer.trim() ||
+          `Pode ser reutilizado em situações reais de ${scenario.toLowerCase()}, viagens, atendimento e conversas práticas.`,
+      }
+    })
+  }
+
+  const applyAiMissionDirectorPreset = (patch: Partial<AiMissionStudioBrief>) => {
+    setAiMissionBrief((current) => ({ ...current, ...patch }))
   }
 
   const generateAiMissionDraft = async () => {
@@ -2859,6 +2957,32 @@ export function AdminScreen({
                 <strong>Mission Runtime</strong>
                 <small>Approve & Save controlado</small>
               </article>
+            </section>
+
+            <section className="cms-panel ai-mission-director-panel">
+              <div className="ai-mission-director-copy">
+                <span className="admin-kicker">Mission Director</span>
+                <h2>Construa o brief como uma conversa editorial.</h2>
+                <p>{aiMissionDirectorNextQuestion}</p>
+              </div>
+              <div className="ai-mission-director-status">
+                <div className="ai-mission-director-score">
+                  <strong>{aiMissionBriefCompletion}%</strong>
+                  <span>brief pronto</span>
+                </div>
+                <button className="admin-primary" type="button" onClick={applyAiMissionDirectorSuggestion}>
+                  <Sparkles size={16} />
+                  Sugerir brief
+                </button>
+              </div>
+              <div className="ai-mission-director-presets">
+                {aiMissionDirectorPresets.map((preset) => (
+                  <button key={preset.id} type="button" onClick={() => applyAiMissionDirectorPreset(preset.patch)}>
+                    <strong>{preset.title}</strong>
+                    <span>{preset.description}</span>
+                  </button>
+                ))}
+              </div>
             </section>
 
             <section className="cms-panel ai-studio-brief-panel">

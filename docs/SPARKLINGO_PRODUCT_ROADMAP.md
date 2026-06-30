@@ -326,6 +326,14 @@ Success criteria:
 - Runtime editor feels pedagogical, not media-heavy.
 - Scene Assets becomes the clear home for visual composition.
 
+Status: `Complete`
+
+Implementation notes:
+
+- Mission Runtime now supports list, 2-column grid, and 4-column grid browsing.
+- Runtime media controls were deprecated from the editor UI without deleting legacy fields.
+- Scene Assets is now the explicit owner for background, crop, focus, overlay, and visual composition.
+
 ---
 
 ## Sprint 3 — Mission Brief Assistant
@@ -341,6 +349,13 @@ Success criteria:
 - Editor writes less.
 - AI asks useful questions.
 - Generated scene better respects level, skill, grammar target, and learning intent.
+
+Status: `In Progress`
+
+Implementation notes:
+
+- AI Mission Studio now includes a lightweight Mission Director layer.
+- The Mission Director evaluates brief completeness, asks the next useful editorial question, applies pedagogical presets, and can suggest missing brief fields without changing the generation contract.
 
 ---
 
