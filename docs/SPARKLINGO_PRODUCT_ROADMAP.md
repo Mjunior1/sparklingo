@@ -350,7 +350,7 @@ Success criteria:
 - AI asks useful questions.
 - Generated scene better respects level, skill, grammar target, and learning intent.
 
-Status: `In Progress`
+Status: `Complete`
 
 Implementation notes:
 
@@ -359,6 +359,30 @@ Implementation notes:
 - The Mission Director now guides the editor through four focused briefing steps: situation, pedagogy, confidence, and real-world transfer.
 - Each step can suggest only its missing fields, keeping the editor in control while reducing manual form writing.
 - Scene generation is now gated by editorial readiness so incomplete briefs surface specific gaps before calling the generator.
+
+---
+
+## Sprint 4 — Runtime Visual Polish
+
+Scope:
+
+- Make the question prompt feel more like character dialogue and less like a quiz card.
+- Improve narrative hierarchy without changing runtime contracts, data model, or scene flow.
+- Preserve current answer, feedback, XP, timer, audio, and completion logic.
+- Keep the first iteration CSS-focused so it is low risk.
+
+Success criteria:
+
+- The prompt reads as dialogue from the scene character.
+- Long questions remain readable without becoming a vertical quiz block.
+- The runtime keeps the same behavior and data contracts.
+- Mobile remains stable.
+
+Status: `In Progress`
+
+Implementation notes:
+
+- First pass focuses only on visual treatment of the prompt card: cinematic speaker tag, wider reading surface, softer glass, and subtle dialogue-tail lighting.
 
 ---
 
@@ -384,7 +408,7 @@ Observed opportunities:
   - more discreet during question/decision moments
 - Preserve the current runtime architecture until this becomes a dedicated sprint.
 
-Status: `Parking Lot`
+Status: `Promoted to Sprint 4`
 
 ---
 

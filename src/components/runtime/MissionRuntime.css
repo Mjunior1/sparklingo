@@ -581,9 +581,9 @@
 .mission-runtime-dialogue {
   display: grid;
   align-content: start;
-  gap: 18px;
-  padding-top: 30px;
-  width: min(100%, 720px);
+  gap: 16px;
+  padding-top: 28px;
+  width: min(100%, 760px);
 }
 
 .mission-runtime-prompt-card,
@@ -603,19 +603,20 @@
 }
 
 .mission-runtime-prompt-card {
-  width: min(100%, 620px);
-  min-height: 236px;
-  padding: 30px 34px;
-  border-radius: 32px;
-  border-color: rgba(199, 174, 255, 0.22);
+  width: min(100%, 690px);
+  min-height: 218px;
+  padding: 30px 36px 32px 40px;
+  border-radius: 30px 34px 34px 30px;
+  border-color: rgba(218, 196, 255, 0.2);
   background:
-    linear-gradient(155deg, rgba(24, 20, 45, 0.92), rgba(13, 13, 31, 0.84)),
-    radial-gradient(circle at 88% 14%, rgba(157, 110, 255, 0.18), transparent 30%),
-    radial-gradient(circle at 68% 18%, rgba(255, 184, 122, 0.08), transparent 28%);
+    linear-gradient(150deg, rgba(31, 24, 49, 0.82), rgba(11, 11, 27, 0.78)),
+    radial-gradient(ellipse 76% 70% at 3% 30%, rgba(183, 130, 255, 0.18), transparent 56%),
+    radial-gradient(ellipse 58% 46% at 92% 12%, rgba(255, 204, 145, 0.09), transparent 62%);
   box-shadow:
-    0 30px 52px rgba(0, 0, 0, 0.3),
-    0 0 36px rgba(132, 85, 226, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.07);
+    0 30px 54px rgba(0, 0, 0, 0.28),
+    -18px 0 38px rgba(143, 87, 255, 0.08),
+    0 0 42px rgba(132, 85, 226, 0.07),
+    inset 0 1px 0 rgba(255, 255, 255, 0.075);
   transition:
     transform 720ms cubic-bezier(0.2, 0.7, 0.2, 1),
     box-shadow 720ms ease,
@@ -624,15 +625,15 @@
 }
 
 .mission-runtime-prompt-card.is-long-prompt {
-  width: min(100%, 720px);
-  min-height: 206px;
-  padding: 28px 36px 30px;
+  width: min(100%, 760px);
+  min-height: 196px;
+  padding: 28px 38px 30px 42px;
 }
 
 .mission-runtime-prompt-card.is-long-prompt h1 {
-  max-width: 15.8em;
-  font-size: clamp(2rem, 1.15vw + 1.22rem, 3rem);
-  line-height: 1.02;
+  max-width: 18.5em;
+  font-size: clamp(1.88rem, 0.86vw + 1.34rem, 2.72rem);
+  line-height: 1.04;
   letter-spacing: -0.04em;
 }
 
@@ -643,12 +644,13 @@
 
 .mission-runtime-focus-listening .mission-runtime-prompt-card,
 .mission-runtime-focus-speaking .mission-runtime-prompt-card {
-  transform: translateY(-4px);
-  border-color: rgba(196, 172, 255, 0.22);
+  transform: translateY(-3px);
+  border-color: rgba(211, 188, 255, 0.25);
   box-shadow:
-    0 32px 48px rgba(0, 0, 0, 0.24),
-    0 0 28px rgba(167, 113, 255, 0.08),
-    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    0 34px 52px rgba(0, 0, 0, 0.25),
+    -20px 0 44px rgba(155, 101, 255, 0.1),
+    0 0 30px rgba(167, 113, 255, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .mission-runtime-focus-speaking .mission-runtime-prompt-card {
@@ -667,6 +669,28 @@
 .mission-runtime-phase-scene .mission-runtime-story-response-card,
 .mission-runtime-phase-scene .mission-runtime-story-feedback-card {
   position: relative;
+}
+
+.mission-runtime-phase-scene .mission-runtime-prompt-card {
+  overflow: visible;
+}
+
+.mission-runtime-phase-scene .mission-runtime-prompt-card::before {
+  content: "";
+  position: absolute;
+  left: 20px;
+  bottom: -13px;
+  width: 42px;
+  height: 28px;
+  border-radius: 0 0 0 24px;
+  background:
+    linear-gradient(145deg, rgba(28, 22, 47, 0.62), rgba(12, 12, 29, 0.18)),
+    radial-gradient(ellipse at 20% 20%, rgba(190, 150, 255, 0.16), transparent 62%);
+  border-left: 1px solid rgba(218, 196, 255, 0.13);
+  border-bottom: 1px solid rgba(218, 196, 255, 0.1);
+  transform: skewX(-22deg);
+  filter: blur(0.1px);
+  pointer-events: none;
 }
 
 .mission-runtime-phase-scene .mission-runtime-prompt-card::after,
@@ -712,15 +736,26 @@
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
 }
 
 .mission-runtime-prompt-head span {
-  color: #c9a9ff;
-  font-size: 0.88rem;
+  display: inline-flex;
+  align-items: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  color: #d9c4ff;
+  font-size: 0.78rem;
   font-weight: 800;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+  background:
+    linear-gradient(135deg, rgba(121, 78, 211, 0.2), rgba(55, 39, 105, 0.14)),
+    rgba(255, 255, 255, 0.035);
+  box-shadow:
+    inset 0 0 0 1px rgba(211, 188, 255, 0.13),
+    0 8px 18px rgba(0, 0, 0, 0.12);
 }
 
 .mission-runtime-prompt-head button,
@@ -783,8 +818,9 @@
 .mission-runtime-prompt-card h1 {
   margin: 0;
   color: #fff8ff;
-  font-size: clamp(2rem, 2vw + 1.25rem, 3.55rem);
-  line-height: 1.02;
+  max-width: 16.8em;
+  font-size: clamp(2rem, 1.65vw + 1.22rem, 3.34rem);
+  line-height: 1.04;
   letter-spacing: -0.035em;
   text-shadow: 0 14px 34px rgba(0, 0, 0, 0.3);
 }
