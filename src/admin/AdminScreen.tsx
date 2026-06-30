@@ -977,6 +977,40 @@ export function AdminScreen({
     const completed = aiMissionDirectorRequiredFields.filter((field) => String(aiMissionBrief[field] ?? '').trim()).length
     return Math.round((completed / aiMissionDirectorRequiredFields.length) * 100)
   }, [aiMissionBrief])
+  const aiMissionDirectorGaps = useMemo(() => {
+    const gaps: Array<{ label: string; description: string }> = []
+
+    if (!aiMissionBrief.world.trim() || !aiMissionBrief.mission.trim() || !aiMissionBrief.scenario.trim()) {
+      gaps.push({
+        label: 'Situação incompleta',
+        description: 'Defina world, mission e scenario para a cena nascer com contexto real.',
+      })
+    }
+
+    if (!aiMissionBrief.grammarTarget.trim() || !aiMissionBrief.learningOutcome.trim() || !aiMissionBrief.learningIntent.trim()) {
+      gaps.push({
+        label: 'Núcleo pedagógico fraco',
+        description: 'Complete grammar target, learning outcome e learning intent antes de gerar.',
+      })
+    }
+
+    if (!aiMissionBrief.confidenceGoal.trim() || !aiMissionBrief.failureMode.trim() || !aiMissionBrief.recoveryStyle.trim()) {
+      gaps.push({
+        label: 'Design emocional incompleto',
+        description: 'Explique a hesitação, o erro provável e como o Spark deve recuperar o aluno.',
+      })
+    }
+
+    if (!aiMissionBrief.realLifeTransfer.trim()) {
+      gaps.push({
+        label: 'Transferência real ausente',
+        description: 'Descreva onde o aluno reutiliza essa habilidade fora do app.',
+      })
+    }
+
+    return gaps
+  }, [aiMissionBrief])
+  const aiMissionDirectorReady = aiMissionDirectorGaps.length === 0
   const aiMissionDirectorStepIndex = aiMissionDirectorSteps.findIndex((step) => step.key === aiMissionDirectorStep)
   const aiMissionDirectorActiveStep =
     aiMissionDirectorSteps[aiMissionDirectorStepIndex >= 0 ? aiMissionDirectorStepIndex : 0]
@@ -1474,6 +1508,14 @@ export function AdminScreen({
   }
 
   const generateAiMissionDraft = async () => {
+    if (!aiMissionDirectorReady) {
+      setToast({
+        tone: 'info',
+        message: 'Complete as lacunas do Mission Director antes de gerar a cena.',
+      })
+      return
+    }
+
     setAiMissionGenerating(true)
     setStatus('Gerando Scene Draft com base no Learning Intent...')
     try {
@@ -3082,7 +3124,7 @@ export function AdminScreen({
               <div className="ai-mission-director-status">
                 <div className="ai-mission-director-score">
                   <strong>{aiMissionBriefCompletion}%</strong>
-                  <span>brief pronto</span>
+                  <span>{aiMissionDirectorReady ? 'brief pronto' : 'revisar brief'}</span>
                 </div>
                 <button className="admin-primary" type="button" onClick={applyAiMissionDirectorSuggestion}>
                   <Sparkles size={16} />
@@ -3113,6 +3155,21 @@ export function AdminScreen({
                   <div className="ai-mission-director-answer">
                     <small>Resposta atual</small>
                     <strong>{aiMissionDirectorStepSummary}</strong>
+                  </div>
+                  <div className={`ai-mission-director-readiness ${aiMissionDirectorReady ? 'is-ready' : ''}`}>
+                    <strong>{aiMissionDirectorReady ? 'Pronto para gerar' : 'Antes de gerar'}</strong>
+                    {aiMissionDirectorReady ? (
+                      <p>O brief possui contexto, pedagogia, confiança e transferência suficientes para gerar uma cena.</p>
+                    ) : (
+                      <ul>
+                        {aiMissionDirectorGaps.map((gap) => (
+                          <li key={gap.label}>
+                            <strong>{gap.label}</strong>
+                            <span>{gap.description}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </div>
                   <div className="cms-content-actions">
                     <button className="admin-secondary" type="button" onClick={applyAiMissionDirectorStepSuggestion}>
@@ -3147,7 +3204,7 @@ export function AdminScreen({
                     <RefreshCw size={14} />
                     Resetar brief
                   </button>
-                  <button className="admin-primary" type="button" disabled={aiMissionGenerating} onClick={generateAiMissionDraft}>
+                  <button className="admin-primary" type="button" disabled={aiMissionGenerating || !aiMissionDirectorReady} onClick={generateAiMissionDraft}>
                     <Sparkles size={16} />
                     {aiMissionGenerating ? 'Gerando...' : 'Gerar Scene Draft'}
                   </button>

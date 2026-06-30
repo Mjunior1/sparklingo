@@ -2203,6 +2203,54 @@
   line-height: 1.45;
 }
 
+.ai-mission-director-readiness {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 205, 120, 0.22);
+  background: rgba(255, 197, 103, 0.09);
+}
+
+.ai-mission-director-readiness.is-ready {
+  border-color: rgba(92, 230, 166, 0.28);
+  background: rgba(70, 211, 147, 0.1);
+}
+
+.ai-mission-director-readiness > strong {
+  color: #fff7c7;
+  font-size: 0.92rem;
+}
+
+.ai-mission-director-readiness p,
+.ai-mission-director-readiness ul {
+  margin: 0;
+  color: rgba(245, 241, 255, 0.76);
+}
+
+.ai-mission-director-readiness ul {
+  display: grid;
+  gap: 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-mission-director-readiness li {
+  display: grid;
+  gap: 2px;
+}
+
+.ai-mission-director-readiness li strong {
+  color: #fff;
+  font-size: 0.86rem;
+}
+
+.ai-mission-director-readiness li span {
+  color: rgba(245, 241, 255, 0.68);
+  font-size: 0.84rem;
+  line-height: 1.4;
+}
+
 .ai-mission-director-presets {
   grid-column: 1 / -1;
   display: grid;
