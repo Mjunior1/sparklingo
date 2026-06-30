@@ -175,54 +175,54 @@ const buildRuntimeAsset = (mission: MissionRuntimeMission, scene: MissionRuntime
   ...mission.asset,
   title: scene.title || mission.title,
   imageUrl:
-    scene.backgroundImageUrl ||
-    scene.backgroundImageUrlMobile ||
-    mission.backgroundDesktop ||
-    mission.backgroundMobile ||
     mission.asset.imageUrlDesktop ||
     mission.asset.imageUrlMobile ||
     mission.asset.imageUrl ||
-    mission.asset.heroBackgroundImageUrl,
+    mission.asset.heroBackgroundImageUrl ||
+    mission.backgroundDesktop ||
+    mission.backgroundMobile ||
+    scene.backgroundImageUrl ||
+    scene.backgroundImageUrlMobile,
   imageUrlDesktop:
-    scene.backgroundImageUrl ||
-    scene.backgroundImageUrlMobile ||
-    mission.backgroundDesktop ||
-    mission.backgroundMobile ||
     mission.asset.imageUrlDesktop ||
     mission.asset.imageUrlMobile ||
     mission.asset.imageUrl ||
-    mission.asset.heroBackgroundImageUrl,
+    mission.asset.heroBackgroundImageUrl ||
+    mission.backgroundDesktop ||
+    mission.backgroundMobile ||
+    scene.backgroundImageUrl ||
+    scene.backgroundImageUrlMobile,
   mobileImageUrl:
-    scene.backgroundImageUrlMobile ||
-    scene.backgroundImageUrl ||
-    mission.backgroundMobile ||
-    mission.backgroundDesktop ||
     mission.asset.imageUrlMobile ||
     mission.asset.mobileImageUrl ||
     mission.asset.imageUrlDesktop ||
     mission.asset.imageUrl ||
-    mission.asset.heroBackgroundImageUrl,
+    mission.asset.heroBackgroundImageUrl ||
+    mission.backgroundMobile ||
+    mission.backgroundDesktop ||
+    scene.backgroundImageUrlMobile ||
+    scene.backgroundImageUrl,
   imageUrlMobile:
-    scene.backgroundImageUrlMobile ||
-    scene.backgroundImageUrl ||
-    mission.backgroundMobile ||
-    mission.backgroundDesktop ||
     mission.asset.imageUrlMobile ||
     mission.asset.mobileImageUrl ||
     mission.asset.imageUrlDesktop ||
     mission.asset.imageUrl ||
-    mission.asset.heroBackgroundImageUrl,
-  heroBackgroundImageUrl:
-    scene.backgroundImageUrl ||
-    scene.backgroundImageUrlMobile ||
-    mission.backgroundDesktop ||
+    mission.asset.heroBackgroundImageUrl ||
     mission.backgroundMobile ||
+    mission.backgroundDesktop ||
+    scene.backgroundImageUrlMobile ||
+    scene.backgroundImageUrl,
+  heroBackgroundImageUrl:
     mission.asset.imageUrlDesktop ||
     mission.asset.imageUrlMobile ||
     mission.asset.imageUrl ||
-    mission.asset.heroBackgroundImageUrl,
-  focalPointX: scene.backgroundFocalX,
-  focalPointY: scene.backgroundFocalY,
+    mission.asset.heroBackgroundImageUrl ||
+    mission.backgroundDesktop ||
+    mission.backgroundMobile ||
+    scene.backgroundImageUrl ||
+    scene.backgroundImageUrlMobile,
+  focalPointX: mission.asset.focalPointX ?? scene.backgroundFocalX,
+  focalPointY: mission.asset.focalPointY ?? scene.backgroundFocalY,
 })
 
 const pickRuntimeBackgroundSource = (
@@ -234,27 +234,27 @@ const pickRuntimeBackgroundSource = (
 
   if (isMobileViewport) {
     return (
-      scene.backgroundImageUrlMobile ||
-      scene.backgroundImageUrl ||
-      mission.backgroundMobile ||
-      mission.backgroundDesktop ||
       mission.asset.imageUrlMobile ||
       mission.asset.mobileImageUrl ||
       mission.asset.imageUrlDesktop ||
       mission.asset.imageUrl ||
-      mission.asset.heroBackgroundImageUrl
+      mission.asset.heroBackgroundImageUrl ||
+      mission.backgroundMobile ||
+      mission.backgroundDesktop ||
+      scene.backgroundImageUrlMobile ||
+      scene.backgroundImageUrl
     )
   }
 
   return (
-    scene.backgroundImageUrl ||
-    scene.backgroundImageUrlMobile ||
-    mission.backgroundDesktop ||
-    mission.backgroundMobile ||
     mission.asset.imageUrlDesktop ||
     mission.asset.imageUrlMobile ||
     mission.asset.imageUrl ||
-    mission.asset.heroBackgroundImageUrl
+    mission.asset.heroBackgroundImageUrl ||
+    mission.backgroundDesktop ||
+    mission.backgroundMobile ||
+    scene.backgroundImageUrl ||
+    scene.backgroundImageUrlMobile
   )
 }
 
@@ -266,26 +266,26 @@ const buildRuntimeBackgroundCandidates = (
 ) => {
   const rawCandidates = isMobileViewport
     ? [
-        scene?.backgroundImageUrlMobile,
-        scene?.backgroundImageUrl,
-        mission.backgroundMobile,
-        mission.backgroundDesktop,
         asset.imageUrlMobile,
         asset.mobileImageUrl,
         asset.imageUrlDesktop,
         asset.imageUrl,
         asset.heroBackgroundImageUrl,
+        mission.backgroundMobile,
+        mission.backgroundDesktop,
+        scene?.backgroundImageUrlMobile,
+        scene?.backgroundImageUrl,
       ]
     : [
-        scene?.backgroundImageUrl,
-        scene?.backgroundImageUrlMobile,
-        mission.backgroundDesktop,
-        mission.backgroundMobile,
         asset.imageUrlDesktop,
         asset.imageUrl,
         asset.imageUrlMobile,
         asset.mobileImageUrl,
         asset.heroBackgroundImageUrl,
+        mission.backgroundDesktop,
+        mission.backgroundMobile,
+        scene?.backgroundImageUrl,
+        scene?.backgroundImageUrlMobile,
       ]
 
   return Array.from(new Set(rawCandidates.map((candidate) => (candidate || '').trim()).filter(Boolean)))

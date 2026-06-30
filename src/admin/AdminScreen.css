@@ -658,6 +658,42 @@
   flex-wrap: wrap;
 }
 
+.runtime-editor-ownership-card {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border-radius: 22px;
+  border: 1px solid rgba(126, 87, 255, 0.16);
+  background:
+    linear-gradient(135deg, rgba(126, 87, 255, 0.1), rgba(255, 255, 255, 0.86)),
+    rgba(255, 255, 255, 0.9);
+}
+
+.runtime-editor-ownership-meta {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px 12px;
+  align-items: center;
+}
+
+.runtime-editor-ownership-meta span {
+  color: #7b719f;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.runtime-editor-ownership-meta strong {
+  color: #2b2168;
+}
+
+.runtime-editor-ownership-meta button {
+  grid-row: 1 / span 2;
+  grid-column: 2;
+  padding: 10px 12px;
+}
+
 .cms-empty-panel {
   min-height: 340px;
   place-items: center;
