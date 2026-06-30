@@ -229,11 +229,43 @@ type ToastState = {
 
 type StatusFilter = 'all' | 'active' | 'inactive'
 type QuickWinStatusFilter = 'all' | 'active' | 'inactive'
+type AiMissionDirectorStepKey = 'situation' | 'pedagogy' | 'confidence' | 'transfer'
 
 const questionKinds: Array<QuizQuestionItem['kind']> = ['multiple-choice', 'drag-fill', 'ordering', 'listening', 'speaking']
 const aiMissionStudioLevels: AiMissionStudioLevel[] = ['A1', 'A2', 'B1', 'B2']
 const aiMissionStudioSkills: AiMissionStudioSkill[] = ['Speaking', 'Listening', 'Reading', 'Writing', 'Mixed']
 const aiMissionStudioImpactLevels: AiMissionStudioImpactLevel[] = ['Low', 'Medium', 'High']
+const aiMissionDirectorSteps: Array<{
+  key: AiMissionDirectorStepKey
+  title: string
+  question: string
+  helper: string
+}> = [
+  {
+    key: 'situation',
+    title: 'Situação',
+    question: 'Qual momento real o aluno precisa enfrentar?',
+    helper: 'Defina mundo, missão e cenário antes de pedir qualquer geração.',
+  },
+  {
+    key: 'pedagogy',
+    title: 'Pedagogia',
+    question: 'Qual habilidade e estrutura linguística sustentam a cena?',
+    helper: 'Conecte nível, skill e gramática a um comportamento observável.',
+  },
+  {
+    key: 'confidence',
+    title: 'Confiança',
+    question: 'Que hesitação emocional a cena precisa reduzir?',
+    helper: 'Descreva pressão, falha provável e estilo de recuperação.',
+  },
+  {
+    key: 'transfer',
+    title: 'Transferência',
+    question: 'Onde essa habilidade será reutilizada fora do app?',
+    helper: 'Finalize com intenção de aprendizagem e aplicação no mundo real.',
+  },
+]
 const aiMissionDirectorRequiredFields: Array<keyof AiMissionStudioBrief> = [
   'world',
   'mission',
@@ -655,6 +687,7 @@ export function AdminScreen({
   const [aiMissionBrief, setAiMissionBrief] = useState<AiMissionStudioBrief>(defaultAiMissionStudioBrief)
   const [aiMissionDraft, setAiMissionDraft] = useState<AiMissionStudioDraft | null>(null)
   const [aiMissionGenerating, setAiMissionGenerating] = useState(false)
+  const [aiMissionDirectorStep, setAiMissionDirectorStep] = useState<AiMissionDirectorStepKey>('situation')
 
   const debouncedLessonSearch = useDebouncedValue(lessonSearch)
   const debouncedQuizSearch = useDebouncedValue(quizSearch)
@@ -944,6 +977,24 @@ export function AdminScreen({
     const completed = aiMissionDirectorRequiredFields.filter((field) => String(aiMissionBrief[field] ?? '').trim()).length
     return Math.round((completed / aiMissionDirectorRequiredFields.length) * 100)
   }, [aiMissionBrief])
+  const aiMissionDirectorStepIndex = aiMissionDirectorSteps.findIndex((step) => step.key === aiMissionDirectorStep)
+  const aiMissionDirectorActiveStep =
+    aiMissionDirectorSteps[aiMissionDirectorStepIndex >= 0 ? aiMissionDirectorStepIndex : 0]
+  const aiMissionDirectorStepSummary = useMemo(() => {
+    if (aiMissionDirectorStep === 'situation') {
+      return `${aiMissionBrief.world || 'World indefinido'} → ${aiMissionBrief.mission || 'missão indefinida'} • ${aiMissionBrief.scenario || 'cenário pendente'}`
+    }
+
+    if (aiMissionDirectorStep === 'pedagogy') {
+      return `${aiMissionBrief.level} • ${aiMissionBrief.skill} • ${aiMissionBrief.grammarTarget || 'grammar target pendente'}`
+    }
+
+    if (aiMissionDirectorStep === 'confidence') {
+      return `${aiMissionBrief.pressureLevel} pressure • ${aiMissionBrief.confidenceGoal || 'confidence goal pendente'}`
+    }
+
+    return aiMissionBrief.realLifeTransfer || aiMissionBrief.learningIntent || 'transferência real pendente'
+  }, [aiMissionBrief, aiMissionDirectorStep])
   const aiMissionDirectorNextQuestion = useMemo(() => {
     if (!aiMissionBrief.mission.trim()) return 'Qual situação real o aluno precisa dominar primeiro?'
     if (!aiMissionBrief.learningIntent.trim()) return 'Qual comportamento real o aluno deve conseguir executar com confiança?'
@@ -1352,6 +1403,69 @@ export function AdminScreen({
           current.realLifeTransfer.trim() ||
           `Pode ser reutilizado em situações reais de ${scenario.toLowerCase()}, viagens, atendimento e conversas práticas.`,
       }
+    })
+  }
+
+  const applyAiMissionDirectorStepSuggestion = () => {
+    setAiMissionBrief((current) => {
+      const mission = current.mission.trim() || 'Airport Arrival'
+      const scenario = current.scenario.trim() || 'Immigration Officer'
+      const grammar = current.grammarTarget.trim() || (current.level === 'B2' ? 'functional complex sentences' : 'Present Simple')
+
+      if (aiMissionDirectorStep === 'situation') {
+        return {
+          ...current,
+          world: current.world.trim() || 'Airport Survival',
+          mission,
+          scenario,
+        }
+      }
+
+      if (aiMissionDirectorStep === 'pedagogy') {
+        return {
+          ...current,
+          grammarTarget: grammar,
+          learningOutcome:
+            current.learningOutcome.trim() ||
+            `Student should be able to respond clearly in ${scenario.toLowerCase()} using ${grammar}.`,
+        }
+      }
+
+      if (aiMissionDirectorStep === 'confidence') {
+        return {
+          ...current,
+          confidenceGoal:
+            current.confidenceGoal.trim() ||
+            `Reduzir a hesitação ao responder em ${scenario.toLowerCase()} sem depender de frases longas.`,
+          failureMode:
+            current.failureMode.trim() ||
+            'Escolher uma resposta vaga, incompatível com a pergunta ou pouco natural para o contexto.',
+          recoveryStyle:
+            current.recoveryStyle.trim() ||
+            'Gentil, específico e orientado à próxima tentativa.',
+          emotionalTone:
+            current.emotionalTone.trim() ||
+            (current.pressureLevel === 'High' ? 'Tensão controlada.' : 'Leve tensão.'),
+        }
+      }
+
+      return {
+        ...current,
+        learningIntent:
+          current.learningIntent.trim() ||
+          `O aluno deve conseguir agir com clareza e confiança em "${mission}", usando ${grammar} em uma situação real de ${scenario.toLowerCase()}.`,
+        realLifeTransfer:
+          current.realLifeTransfer.trim() ||
+          `Pode ser reutilizado em situações reais de ${scenario.toLowerCase()}, viagens, atendimento e conversas práticas.`,
+      }
+    })
+  }
+
+  const advanceAiMissionDirectorStep = () => {
+    setAiMissionDirectorStep((current) => {
+      const currentIndex = aiMissionDirectorSteps.findIndex((step) => step.key === current)
+      const nextIndex = currentIndex < 0 ? 0 : (currentIndex + 1) % aiMissionDirectorSteps.length
+      return aiMissionDirectorSteps[nextIndex].key
     })
   }
 
@@ -2974,6 +3088,43 @@ export function AdminScreen({
                   <Sparkles size={16} />
                   Sugerir brief
                 </button>
+              </div>
+              <div className="ai-mission-director-flow">
+                <div className="ai-mission-director-steps" aria-label="Etapas do Mission Director">
+                  {aiMissionDirectorSteps.map((step, index) => (
+                    <button
+                      key={step.key}
+                      className={`ai-mission-director-step ${step.key === aiMissionDirectorStep ? 'is-active' : ''}`}
+                      type="button"
+                      aria-pressed={step.key === aiMissionDirectorStep}
+                      onClick={() => setAiMissionDirectorStep(step.key)}
+                    >
+                      <span>{index + 1}</span>
+                      <strong>{step.title}</strong>
+                    </button>
+                  ))}
+                </div>
+                <article className="ai-mission-director-question">
+                  <span className="admin-kicker">
+                    Pergunta {Math.max(aiMissionDirectorStepIndex, 0) + 1} de {aiMissionDirectorSteps.length}
+                  </span>
+                  <h3>{aiMissionDirectorActiveStep.question}</h3>
+                  <p>{aiMissionDirectorActiveStep.helper}</p>
+                  <div className="ai-mission-director-answer">
+                    <small>Resposta atual</small>
+                    <strong>{aiMissionDirectorStepSummary}</strong>
+                  </div>
+                  <div className="cms-content-actions">
+                    <button className="admin-secondary" type="button" onClick={applyAiMissionDirectorStepSuggestion}>
+                      <WandSparkles size={14} />
+                      Sugerir esta etapa
+                    </button>
+                    <button className="admin-secondary" type="button" onClick={advanceAiMissionDirectorStep}>
+                      Próxima pergunta
+                      <ChevronRight size={14} />
+                    </button>
+                  </div>
+                </article>
               </div>
               <div className="ai-mission-director-presets">
                 {aiMissionDirectorPresets.map((preset) => (

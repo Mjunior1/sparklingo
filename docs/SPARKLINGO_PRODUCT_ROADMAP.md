@@ -356,6 +356,8 @@ Implementation notes:
 
 - AI Mission Studio now includes a lightweight Mission Director layer.
 - The Mission Director evaluates brief completeness, asks the next useful editorial question, applies pedagogical presets, and can suggest missing brief fields without changing the generation contract.
+- The Mission Director now guides the editor through four focused briefing steps: situation, pedagogy, confidence, and real-world transfer.
+- Each step can suggest only its missing fields, keeping the editor in control while reducing manual form writing.
 
 ---
 
