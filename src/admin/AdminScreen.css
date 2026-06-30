@@ -433,6 +433,100 @@
   gap: 16px;
 }
 
+.cms-view-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  border: 1px solid rgba(145, 115, 255, 0.12);
+  background: rgba(255, 255, 255, 0.64);
+}
+
+.cms-view-toolbar > span {
+  color: #6f6599;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.cms-view-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px;
+  border-radius: 14px;
+  background: rgba(42, 31, 98, 0.06);
+}
+
+.cms-view-toggle button {
+  gap: 7px;
+  padding: 9px 11px;
+  border-radius: 12px;
+  border-color: transparent;
+  background: transparent;
+  color: #6d6395;
+  box-shadow: none;
+}
+
+.cms-view-toggle button:hover,
+.cms-view-toggle button.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, #7e57ff, #9c66ff);
+  box-shadow: 0 14px 26px rgba(109, 68, 229, 0.18);
+  transform: translateY(-1px);
+}
+
+.mission-runtime-scene-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.mission-runtime-scene-grid.is-grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.mission-runtime-scene-grid.is-grid-4 {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.mission-runtime-scene-grid.is-list {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.mission-runtime-scene-grid.is-list .mission-runtime-scene-card {
+  grid-template-columns: minmax(240px, 0.36fr) minmax(0, 1fr);
+  align-items: center;
+}
+
+.mission-runtime-scene-grid.is-list .mission-runtime-scene-card .cms-content-actions {
+  grid-column: 1 / -1;
+  justify-content: flex-start;
+}
+
+.mission-runtime-scene-grid.is-grid-4 .mission-runtime-scene-card {
+  gap: 12px;
+  padding: 12px;
+}
+
+.mission-runtime-scene-grid.is-grid-4 .scene-asset-card-copy strong {
+  font-size: 0.92rem;
+}
+
+.mission-runtime-scene-grid.is-grid-4 .scene-asset-card-copy p {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  display: -webkit-box;
+  overflow: hidden;
+}
+
+.mission-runtime-scene-grid.is-grid-4 .scene-asset-card-meta span {
+  padding: 6px 8px;
+  font-size: 0.72rem;
+}
+
 .cms-quickwins-config-grid {
   display: grid;
   grid-template-columns: minmax(320px, 0.92fr) minmax(0, 1.08fr);
@@ -1786,6 +1880,10 @@
   .cms-filter-row {
     grid-template-columns: 1fr;
   }
+
+  .mission-runtime-scene-grid.is-grid-4 {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 920px) {
@@ -1802,6 +1900,16 @@
     grid-template-columns: 1fr;
   }
 
+  .cms-view-toolbar {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .cms-view-toggle {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
   .cms-template-grid,
   .cms-quickwins-config-grid,
   .cms-quickwins-grid,
@@ -1811,6 +1919,10 @@
   .cms-draft-meta-grid,
   .scene-asset-grid,
   .runtime-icon-preview-strip,
+  .mission-runtime-scene-grid.is-list,
+  .mission-runtime-scene-grid.is-grid-2,
+  .mission-runtime-scene-grid.is-grid-4,
+  .mission-runtime-scene-grid.is-list .mission-runtime-scene-card,
   .mission-runtime-answer-grid,
   .scene-asset-inline-grid,
   .scene-asset-safearea-grid {

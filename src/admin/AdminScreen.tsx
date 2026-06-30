@@ -18,7 +18,10 @@ import {
   Gauge,
   Gem,
   Image,
+  Columns2,
+  Grid3X3,
   LayoutDashboard,
+  List,
   RefreshCw,
   Pencil,
   Plus,
@@ -223,6 +226,7 @@ type RuntimeMediaGuide = {
 
 type SceneAssetStatusFilter = 'all' | 'active' | 'inactive'
 type MissionRuntimeStatusFilter = 'all' | 'published' | 'draft' | 'archived' | 'active' | 'inactive'
+type MissionRuntimeViewMode = 'list' | 'grid-2' | 'grid-4'
 
 const tagOptions: Exclude<FilterKey, 'Todos'>[] = ['Gramática', 'Vocabulário', 'Listening', 'Reading', 'Speaking']
 type ToastState = {
@@ -597,6 +601,7 @@ export function AdminScreen({
   const [missionRuntimeSearch, setMissionRuntimeSearch] = useState('')
   const [missionRuntimeAssetFilter, setMissionRuntimeAssetFilter] = useState<string>('all')
   const [missionRuntimeStatus, setMissionRuntimeStatus] = useState<MissionRuntimeStatusFilter>('all')
+  const [missionRuntimeViewMode, setMissionRuntimeViewMode] = useState<MissionRuntimeViewMode>('grid-2')
   const [lessonDraft, setLessonDraft] = useState<LessonCatalogItem>(emptyLesson)
   const [quizDraft, setQuizDraft] = useState<QuizCatalogItem>(emptyQuiz)
   const [questionDraft, setQuestionDraft] = useState<QuizQuestionItem>(emptyQuestion)
@@ -4017,6 +4022,39 @@ export function AdminScreen({
                 </select>
               </div>
 
+              <div className="cms-view-toolbar">
+                <span>{filteredMissionRuntimeScenes.length} cenas encontradas</span>
+                <div className="cms-view-toggle" aria-label="Alternar visualização do Mission Runtime">
+                  <button
+                    type="button"
+                    className={missionRuntimeViewMode === 'list' ? 'is-active' : ''}
+                    onClick={() => setMissionRuntimeViewMode('list')}
+                    aria-pressed={missionRuntimeViewMode === 'list'}
+                  >
+                    <List size={15} />
+                    Lista
+                  </button>
+                  <button
+                    type="button"
+                    className={missionRuntimeViewMode === 'grid-2' ? 'is-active' : ''}
+                    onClick={() => setMissionRuntimeViewMode('grid-2')}
+                    aria-pressed={missionRuntimeViewMode === 'grid-2'}
+                  >
+                    <Columns2 size={15} />
+                    2 colunas
+                  </button>
+                  <button
+                    type="button"
+                    className={missionRuntimeViewMode === 'grid-4' ? 'is-active' : ''}
+                    onClick={() => setMissionRuntimeViewMode('grid-4')}
+                    aria-pressed={missionRuntimeViewMode === 'grid-4'}
+                  >
+                    <Grid3X3 size={15} />
+                    4 colunas
+                  </button>
+                </div>
+              </div>
+
               {!filteredMissionRuntimeScenes.length && missionRuntimeLoaded ? (
                 <div className="cms-empty-panel cms-empty-panel-inline">
                   <Clapperboard size={24} />
@@ -4024,7 +4062,7 @@ export function AdminScreen({
                   <p>Popule a base do Mission Runtime ou crie manualmente a primeira cena cinematográfica com diálogos, respostas e recompensa.</p>
                 </div>
               ) : (
-                <div className="scene-asset-grid">
+                <div className={`mission-runtime-scene-grid is-${missionRuntimeViewMode}`}>
                   {filteredMissionRuntimeScenes.map((scene) => {
                     const previewAsset = sceneAssets.find((asset) => asset.id === scene.sceneAssetId)
                     const previewScene = {
@@ -4046,7 +4084,7 @@ export function AdminScreen({
                     }
 
                     return (
-                    <article key={scene.id} className="scene-asset-card">
+                    <article key={scene.id} className="scene-asset-card mission-runtime-scene-card">
                       <div className="cms-quickwins-card-preview">
                         <MissionRuntimeScenePreviewCard scene={previewScene} missionTitle={scene.missionTitle} />
                       </div>
